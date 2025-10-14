@@ -1,0 +1,279 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Database configuration
+// IMPORTANT: Switch between PostgreSQL and SQLite according to your environment
+
+// For PostgreSQL (Recommended for production)
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+//   // Optional: Enable preview features
+//   // directUrl = env("DIRECT_URL")
+// }
+
+// For SQLite (Temporary development)
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// For MySQL (Alternative)
+// datasource db {
+//   provider = "mysql"
+//   url = env("DATABASE_URL")
+//   relationMode = "prisma"
+// }
+
+// For SQLite (Development only)
+// datasource db {
+//   provider = "sqlite"
+//   url      = env("DATABASE_URL")
+// }
+
+// User model - Core entity for authentication and user management (Clerk integration)
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String?   @unique // Clerk user ID for synchronization (optional for NextAuth users)
+  email     String   @unique
+  name      String?  // Made optional for NextAuth compatibility
+  username  String?  @unique
+  imageUrl  String?  // Clerk provides imageUrl field name
+  image     String?  // NextAuth provides image field name (alias for imageUrl)
+  bio       String?
+  location  String?
+  website   String?
+  hashedPassword String? // For NextAuth users
+  
+  // Profile fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  posts    Post[]
+  comments Comment[]
+  likes    Like[]
+  follows  Follow[] @relation("UserFollows")
+  followers Follow[] @relation("UserFollowers")
+  subscription UserSubscription?
+  notifications Notification[]
+  
+  @@map("users")
+}
+
+
+
+// Post model - Generic content entity
+model Post {
+  id          String   @id @default(cuid())
+  title       String?
+  content     String?
+  published   Boolean  @default(false)
+  featured    Boolean  @default(false)
+  imageUrl    String?
+  attachmentUrl String?
+  attachmentType String? // "image", "pdf", "video", etc.
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments    Comment[]
+  likes       Like[]
+  categories  PostCategory[]
+  tags        PostTag[]
+  
+  @@map("posts")
+}
+
+// Category model for organizing posts
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  color       String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  posts       PostCategory[]
+  
+  @@map("categories")
+}
+
+// Tag model for labeling posts
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  
+  createdAt DateTime @default(now())
+  
+  posts     PostTag[]
+  
+  @@map("tags")
+}
+
+// Many-to-many relation between Posts and Categories
+model PostCategory {
+  id         String   @id @default(cuid())
+  postId     String
+  categoryId String
+  
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  @@unique([postId, categoryId])
+  @@map("post_categories")
+}
+
+// Many-to-many relation between Posts and Tags
+model PostTag {
+  id     String @id @default(cuid())
+  postId String
+  tagId  String
+  
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  @@unique([postId, tagId])
+  @@map("post_tags")
+}
+
+// Comment model for user interactions
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  // Self-relation for nested comments
+  parentId  String?
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  
+  @@map("comments")
+}
+
+// Like model for user interactions
+model Like {
+  id       String @id @default(cuid())
+  
+  createdAt DateTime @default(now())
+  
+  // Relations
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId   String
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, postId])
+  @@map("likes")
+}
+
+// Follow model for user relationships
+model Follow {
+  id          String @id @default(cuid())
+  
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  followerId  String
+  follower    User   @relation("UserFollows", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User   @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+// Notification model for user notifications
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   @default("SYSTEM")
+  title     String
+  message   String?
+  read      Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Optional reference to related entities
+  entityId  String?
+  entityType String?
+  
+  @@map("notifications")
+}
+
+// File/Media model for uploads
+model Media {
+  id          String   @id @default(cuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  uploadedById String?
+  // uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+  
+  @@map("media")
+}
+
+// Settings model for application configuration
+model Settings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("settings")
+}
+
+// User subscription model for Stripe integration
+model UserSubscription {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Stripe subscription data
+  stripeCustomerId       String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId   String?   @unique @map("stripe_subscription_id") 
+  stripePriceId          String?   @map("stripe_price_id")
+  stripeCurrentPeriodEnd DateTime? @map("stripe_current_period_end")
+  
+  // Subscription details
+  plan        String    @default("free") // free, pro, enterprise
+  status      String    @default("active") // active, canceled, past_due, etc.
+  cancelAtPeriodEnd Boolean @default(false) @map("cancel_at_period_end")
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("user_subscriptions")
+}
