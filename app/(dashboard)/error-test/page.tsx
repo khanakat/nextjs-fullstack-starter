@@ -1,3 +1,5 @@
+'use client';
+
 import { Container } from "@/components/ui/container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +12,14 @@ export default function ErrorTestPage() {
 
   // This simulates a server error
   const serverError = () => {
-    // @ts-ignore - Intentionally accessing undefined property
-    const result = undefined.someProperty;
-    return result;
+    try {
+      // @ts-ignore - Intentionally accessing undefined property
+      const result = undefined.someProperty;
+      return result;
+    } catch (error) {
+      console.error('Server error test:', error);
+      throw error;
+    }
   };
 
   return (

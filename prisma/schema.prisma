@@ -277,3 +277,104 @@ model UserSubscription {
   
   @@map("user_subscriptions")
 }
+
+// ============================================================================
+// REPORTS SYSTEM MODELS
+// ============================================================================
+
+// Template categories for organizing report templates
+model TemplateCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  templates   Template[]
+  
+  @@map("template_categories")
+}
+
+// Report templates for creating standardized reports
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  categoryId  String?  @map("category_id")
+  config      String   // JSON string for template configuration
+  previewUrl  String?  @map("preview_url")
+  createdBy   String   @map("created_by")
+  isPublic    Boolean  @default(false) @map("is_public")
+  isSystem    Boolean  @default(false) @map("is_system")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  category    TemplateCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  reports     Report[]
+  
+  @@map("templates")
+}
+
+// Reports created by users
+model Report {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  templateId  String?  @map("template_id")
+  config      String   // JSON string for report configuration
+  createdBy   String   @map("created_by")
+  isPublic    Boolean  @default(false) @map("is_public")
+  status      String   @default("draft") // draft, published, archived
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  template    Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  exportJobs  ExportJob[]
+  permissions ReportPermission[]
+  
+  @@map("reports")
+}
+
+// Export jobs for handling PDF/Excel generation
+model ExportJob {
+  id           String    @id @default(cuid())
+  reportId     String    @map("report_id")
+  userId       String    @map("user_id")
+  format       String    // pdf, excel
+  status       String    @default("pending") // pending, processing, completed, failed
+  downloadUrl  String?   @map("download_url")
+  options      String    @default("{}") // JSON string for export options
+  errorMessage String?   @map("error_message")
+  
+  createdAt    DateTime  @default(now()) @map("created_at")
+  completedAt  DateTime? @map("completed_at")
+  
+  // Relations
+  report       Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  @@map("export_jobs")
+}
+
+// Report permissions for access control
+model ReportPermission {
+  id             String   @id @default(cuid())
+  reportId       String   @map("report_id")
+  userId         String   @map("user_id")
+  permissionType String   @map("permission_type") // view, edit, admin
+  
+  grantedAt      DateTime @default(now()) @map("granted_at")
+  
+  // Relations
+  report         Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  @@unique([reportId, userId])
+  @@map("report_permissions")
+}

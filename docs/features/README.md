@@ -54,6 +54,13 @@ This directory contains documentation for all the features implemented in the fu
 - Client-side and server-side patterns
 - URL-based pagination state
 
+### 📈 [Reports System](reports-system.md)
+- Template-based reporting with drag-and-drop builder
+- Multi-format exports (PDF, Excel, CSV)
+- Permission-based access control and sharing
+- Real-time data visualization and filtering
+- Automated report scheduling and generation
+
 ## 🚀 Getting Started
 
 Each feature documentation includes:

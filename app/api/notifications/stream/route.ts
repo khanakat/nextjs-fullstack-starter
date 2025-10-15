@@ -2,6 +2,9 @@ import { NextRequest } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { notificationStore } from '@/lib/notifications';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/notifications/stream - Server-Sent Events endpoint
  * Provides real-time notification updates to connected clients
