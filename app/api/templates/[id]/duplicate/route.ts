@@ -1,16 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
+import { NextRequest } from "next/server";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
+import { logger } from "@/lib/logger";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
 
 // POST /api/templates/[id]/duplicate - Duplicate a template
 export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: { id: string } },
 ) {
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return StandardErrorResponse.unauthorized("Authentication required");
     }
 
     const templateId = params.id;
@@ -19,23 +24,17 @@ export async function POST(
     const originalTemplate = await db.template.findUnique({
       where: { id: templateId },
       include: {
-        category: true
-      }
+        category: true,
+      },
     });
 
     if (!originalTemplate) {
-      return NextResponse.json(
-        { error: 'Template not found' },
-        { status: 404 }
-      );
+      return StandardErrorResponse.notFound("Template not found");
     }
 
     // Check if user has access to the template
     if (!originalTemplate.isPublic && originalTemplate.createdBy !== userId) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
+      return StandardErrorResponse.forbidden("Access denied");
     }
 
     // Create duplicate template
@@ -46,7 +45,7 @@ export async function POST(
         categoryId: originalTemplate.categoryId,
         config: originalTemplate.config,
         isPublic: false, // Duplicated templates are private by default
-        createdBy: userId
+        createdBy: userId,
       },
       include: {
         category: true,
@@ -54,20 +53,17 @@ export async function POST(
           select: {
             id: true,
             name: true,
-            createdAt: true
+            createdAt: true,
           },
           take: 3,
-          orderBy: { createdAt: 'desc' }
-        }
-      }
+          orderBy: { createdAt: "desc" },
+        },
+      },
     });
 
-    return NextResponse.json(duplicatedTemplate, { status: 201 });
+    return StandardSuccessResponse.created(duplicatedTemplate);
   } catch (error) {
-    console.error('Error duplicating template:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger.error("Error processing template request", "template", error);
+    return StandardErrorResponse.internal("Failed to process template request");
   }
 }

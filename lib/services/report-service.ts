@@ -1,20 +1,22 @@
-import { db } from '@/lib/db';
-import { 
-  ReportWithRelations, 
-  CreateReportRequest, 
+import { db } from "@/lib/db";
+import {
+  ReportWithRelations,
+  CreateReportRequest,
   UpdateReportRequest,
   ReportFilters,
   PaginatedReports,
-  ReportPermissions
-} from '@/lib/types/reports';
+  ReportPermissions,
+} from "@/lib/types/reports";
+import { MembershipService } from "./organization-service";
 
 export class ReportService {
   // Get reports with pagination and filters
   static async getReports(
     userId: string,
+    organizationId?: string,
     filters: ReportFilters = {},
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
   ): Promise<PaginatedReports> {
     const skip = (page - 1) * limit;
 
@@ -28,21 +30,35 @@ export class ReportService {
             some: {
               userId: userId,
               permission: {
-                in: ['VIEW', 'EDIT', 'ADMIN']
-              }
-            }
-          }
-        }
-      ]
+                in: ["VIEW", "EDIT", "ADMIN"],
+              },
+            },
+          },
+        },
+      ],
     };
+
+    // Add organization filter if provided
+    if (organizationId) {
+      // Verify user has access to the organization
+      const hasAccess = await MembershipService.hasUserAccess(
+        organizationId,
+        userId,
+      );
+      if (!hasAccess) {
+        throw new Error("Access denied to organization");
+      }
+
+      where.organizationId = organizationId;
+    }
 
     if (filters.search) {
       where.AND = where.AND || [];
       where.AND.push({
         OR: [
-          { title: { contains: filters.search, mode: 'insensitive' } },
-          { description: { contains: filters.search, mode: 'insensitive' } }
-        ]
+          { title: { contains: filters.search, mode: "insensitive" } },
+          { description: { contains: filters.search, mode: "insensitive" } },
+        ],
       });
     }
 
@@ -66,8 +82,8 @@ export class ReportService {
       where.AND.push({
         createdAt: {
           gte: filters.dateRange.from,
-          lte: filters.dateRange.to
-        }
+          lte: filters.dateRange.to,
+        },
       });
     }
 
@@ -77,20 +93,20 @@ export class ReportService {
         include: {
           template: {
             include: {
-              category: true
-            }
+              category: true,
+            },
           },
           permissions: true,
           exportJobs: {
-            orderBy: { createdAt: 'desc' },
-            take: 3
-          }
+            orderBy: { createdAt: "desc" },
+            take: 3,
+          },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { updatedAt: "desc" },
         skip,
-        take: limit
+        take: limit,
       }),
-      db.report.count({ where })
+      db.report.count({ where }),
     ]);
 
     return {
@@ -98,42 +114,60 @@ export class ReportService {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
   // Get a single report by ID
-  static async getReportById(reportId: string, userId: string): Promise<ReportWithRelations | null> {
+  static async getReportById(
+    reportId: string,
+    userId: string,
+    organizationId?: string,
+  ): Promise<ReportWithRelations | null> {
+    const whereClause: any = {
+      id: reportId,
+      OR: [
+        { createdBy: userId },
+        { isPublic: true },
+        {
+          permissions: {
+            some: {
+              userId: userId,
+              permissionType: {
+                in: ["VIEW", "EDIT", "ADMIN"],
+              },
+            },
+          },
+        },
+      ],
+    };
+
+    // Add organization filter if provided
+    if (organizationId) {
+      const hasAccess = await MembershipService.hasUserAccess(
+        organizationId,
+        userId,
+      );
+      if (!hasAccess) {
+        throw new Error("Access denied to organization");
+      }
+      whereClause.organizationId = organizationId;
+    }
+
     const report = await db.report.findFirst({
-      where: {
-        id: reportId,
-        OR: [
-          { createdBy: userId },
-          { isPublic: true },
-          {
-            permissions: {
-              some: {
-                userId: userId,
-                permissionType: {
-                  in: ['VIEW', 'EDIT', 'ADMIN']
-                }
-              }
-            }
-          }
-        ]
-      },
+      where: whereClause,
       include: {
         template: {
           include: {
-            category: true
-          }
+            category: true,
+          },
         },
         permissions: true,
         exportJobs: {
-          orderBy: { createdAt: 'desc' },
-          take: 10
-        }
-      }
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+      },
     });
 
     if (report) {
@@ -149,20 +183,35 @@ export class ReportService {
   }
 
   // Create a new report
-  static async createReport(userId: string, data: CreateReportRequest): Promise<ReportWithRelations> {
+  static async createReport(
+    userId: string,
+    data: CreateReportRequest,
+    organizationId?: string,
+  ): Promise<ReportWithRelations> {
+    // Verify organization access if provided
+    if (organizationId) {
+      const hasAccess = await MembershipService.hasUserAccess(
+        organizationId,
+        userId,
+      );
+      if (!hasAccess) {
+        throw new Error("Access denied to organization");
+      }
+    }
+
     // Verify template exists if provided
     if (data.templateId) {
       const template = await db.template.findUnique({
-        where: { id: data.templateId }
+        where: { id: data.templateId },
       });
-      
+
       if (!template) {
-        throw new Error('Template not found');
+        throw new Error("Template not found");
       }
 
       // Check if user has access to template
       if (!template.isPublic && template.createdBy !== userId) {
-        throw new Error('Access denied to template');
+        throw new Error("Access denied to template");
       }
     }
 
@@ -173,18 +222,19 @@ export class ReportService {
         templateId: data.templateId,
         config: JSON.stringify(data.config),
         isPublic: data.isPublic || false,
-        status: 'DRAFT',
-        createdBy: userId
+        status: "DRAFT",
+        createdBy: userId,
+        organizationId: organizationId,
       },
       include: {
         template: {
           include: {
-            category: true
-          }
+            category: true,
+          },
         },
         permissions: true,
-        exportJobs: true
-      }
+        exportJobs: true,
+      },
     });
 
     return report;
@@ -192,14 +242,20 @@ export class ReportService {
 
   // Update a report
   static async updateReport(
-    reportId: string, 
-    userId: string, 
-    data: UpdateReportRequest
+    reportId: string,
+    userId: string,
+    data: UpdateReportRequest,
+    organizationId?: string,
   ): Promise<ReportWithRelations> {
     // Check permissions
-    const hasPermission = await this.checkReportPermission(reportId, userId, 'EDIT');
+    const hasPermission = await this.checkReportPermission(
+      reportId,
+      userId,
+      "EDIT",
+      organizationId,
+    );
     if (!hasPermission) {
-      throw new Error('Access denied');
+      throw new Error("Access denied");
     }
 
     const updateData: any = { ...data };
@@ -215,65 +271,102 @@ export class ReportService {
       where: { id: reportId },
       data: {
         ...updateData,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         template: {
           include: {
-            category: true
-          }
+            category: true,
+          },
         },
         permissions: true,
         exportJobs: {
-          orderBy: { createdAt: 'desc' },
-          take: 10
-        }
-      }
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+      },
     });
 
     return report;
   }
 
   // Delete a report
-  static async deleteReport(reportId: string, userId: string): Promise<void> {
+  static async deleteReport(
+    reportId: string,
+    userId: string,
+    organizationId?: string,
+  ): Promise<void> {
     const report = await db.report.findUnique({
-      where: { id: reportId }
+      where: { id: reportId },
     });
 
     if (!report) {
-      throw new Error('Report not found');
+      throw new Error("Report not found");
+    }
+
+    // Verify organization access if provided
+    if (organizationId) {
+      const hasAccess = await MembershipService.hasUserAccess(
+        organizationId,
+        userId,
+      );
+      if (!hasAccess) {
+        throw new Error("Access denied to organization");
+      }
+
+      // Ensure report belongs to the organization
+      if (report.organizationId !== organizationId) {
+        throw new Error("Report does not belong to this organization");
+      }
     }
 
     // Only owner can delete
     if (report.createdBy !== userId) {
-      throw new Error('Only the report owner can delete it');
+      throw new Error("Only the report owner can delete it");
     }
 
     // Delete related records first
     await db.$transaction([
       db.exportJob.deleteMany({ where: { reportId } }),
       db.reportPermission.deleteMany({ where: { reportId } }),
-      db.report.delete({ where: { id: reportId } })
+      db.report.delete({ where: { id: reportId } }),
     ]);
   }
 
   // Check report permissions
   static async checkReportPermission(
-    reportId: string, 
-    userId: string, 
-    requiredPermission: 'VIEW' | 'EDIT' | 'ADMIN'
+    reportId: string,
+    userId: string,
+    requiredPermission: "VIEW" | "EDIT" | "ADMIN",
+    organizationId?: string,
   ): Promise<boolean> {
     const report = await db.report.findUnique({
       where: { id: reportId },
       include: {
         permissions: {
-          where: { userId }
-        }
-      }
+          where: { userId },
+        },
+      },
     });
 
     if (!report) {
       return false;
+    }
+
+    // Verify organization access if provided
+    if (organizationId) {
+      const hasAccess = await MembershipService.hasUserAccess(
+        organizationId,
+        userId,
+      );
+      if (!hasAccess) {
+        return false;
+      }
+
+      // Ensure report belongs to the organization
+      if (report.organizationId !== organizationId) {
+        return false;
+      }
     }
 
     // Owner has all permissions
@@ -282,7 +375,7 @@ export class ReportService {
     }
 
     // Public reports can be viewed
-    if (report.isPublic && requiredPermission === 'VIEW') {
+    if (report.isPublic && requiredPermission === "VIEW") {
       return true;
     }
 
@@ -293,23 +386,29 @@ export class ReportService {
     }
 
     const permissionLevels = {
-      'VIEW': ['VIEW', 'EDIT', 'ADMIN'],
-      'EDIT': ['EDIT', 'ADMIN'],
-      'ADMIN': ['ADMIN']
+      VIEW: ["VIEW", "EDIT", "ADMIN"],
+      EDIT: ["EDIT", "ADMIN"],
+      ADMIN: ["ADMIN"],
     };
 
-    return permissionLevels[requiredPermission].includes(permission.permissionType);
+    return permissionLevels[requiredPermission].includes(
+      permission.permissionType,
+    );
   }
 
   // Get user permissions for a report
-  static async getReportPermissions(reportId: string, userId: string): Promise<ReportPermissions> {
+  static async getReportPermissions(
+    reportId: string,
+    userId: string,
+    organizationId?: string,
+  ): Promise<ReportPermissions> {
     const report = await db.report.findUnique({
       where: { id: reportId },
       include: {
         permissions: {
-          where: { userId }
-        }
-      }
+          where: { userId },
+        },
+      },
     });
 
     if (!report) {
@@ -318,8 +417,36 @@ export class ReportService {
         canEdit: false,
         canDelete: false,
         canExport: false,
-        canShare: false
+        canShare: false,
       };
+    }
+
+    // Verify organization access if provided
+    if (organizationId) {
+      const hasAccess = await MembershipService.hasUserAccess(
+        organizationId,
+        userId,
+      );
+      if (!hasAccess) {
+        return {
+          canView: false,
+          canEdit: false,
+          canDelete: false,
+          canExport: false,
+          canShare: false,
+        };
+      }
+
+      // Ensure report belongs to the organization
+      if (report.organizationId !== organizationId) {
+        return {
+          canView: false,
+          canEdit: false,
+          canDelete: false,
+          canExport: false,
+          canShare: false,
+        };
+      }
     }
 
     const isOwner = report.createdBy === userId;
@@ -332,7 +459,7 @@ export class ReportService {
         canEdit: true,
         canDelete: true,
         canExport: true,
-        canShare: true
+        canShare: true,
       };
     }
 
@@ -342,7 +469,7 @@ export class ReportService {
         canEdit: false,
         canDelete: false,
         canExport: true,
-        canShare: false
+        canShare: false,
       };
     }
 
@@ -352,98 +479,130 @@ export class ReportService {
         canEdit: false,
         canDelete: false,
         canExport: false,
-        canShare: false
+        canShare: false,
       };
     }
 
     const permissionLevel = permission.permissionType;
-    
+
     return {
-      canView: ['VIEW', 'EDIT', 'ADMIN'].includes(permissionLevel),
-      canEdit: ['EDIT', 'ADMIN'].includes(permissionLevel),
-      canDelete: permissionLevel === 'ADMIN' && isOwner,
-      canExport: ['VIEW', 'EDIT', 'ADMIN'].includes(permissionLevel),
-      canShare: ['EDIT', 'ADMIN'].includes(permissionLevel)
+      canView: ["VIEW", "EDIT", "ADMIN"].includes(permissionLevel),
+      canEdit: ["EDIT", "ADMIN"].includes(permissionLevel),
+      canDelete: permissionLevel === "ADMIN" && isOwner,
+      canExport: ["VIEW", "EDIT", "ADMIN"].includes(permissionLevel),
+      canShare: ["EDIT", "ADMIN"].includes(permissionLevel),
     };
   }
 
   // Get recent reports for dashboard
-  static async getRecentReports(userId: string, limit: number = 5): Promise<ReportWithRelations[]> {
+  static async getRecentReports(
+    userId: string,
+    organizationId?: string,
+    limit: number = 5,
+  ): Promise<ReportWithRelations[]> {
+    const whereClause: any = {
+      OR: [
+        { createdBy: userId },
+        { isPublic: true },
+        {
+          permissions: {
+            some: {
+              userId: userId,
+              permissionType: {
+                in: ["VIEW", "EDIT", "ADMIN"],
+              },
+            },
+          },
+        },
+      ],
+    };
+
+    // Add organization filter if provided
+    if (organizationId) {
+      const hasAccess = await MembershipService.hasUserAccess(
+        organizationId,
+        userId,
+      );
+      if (!hasAccess) {
+        throw new Error("Access denied to organization");
+      }
+      whereClause.organizationId = organizationId;
+    }
+
     return db.report.findMany({
-      where: {
-        OR: [
-          { createdBy: userId },
-          { isPublic: true },
-          {
-            permissions: {
-              some: {
-                userId: userId,
-                permissionType: {
-                  in: ['VIEW', 'EDIT', 'ADMIN']
-                }
-              }
-            }
-          }
-        ]
-      },
+      where: whereClause,
       include: {
         template: {
           include: {
-            category: true
-          }
+            category: true,
+          },
         },
         permissions: true,
         exportJobs: {
-          orderBy: { createdAt: 'desc' },
-          take: 1
-        }
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
-      orderBy: { updatedAt: 'desc' },
-      take: limit
+      orderBy: { updatedAt: "desc" },
+      take: limit,
     });
   }
 
   // Get report statistics
-  static async getReportStats(userId: string) {
+  static async getReportStats(userId: string, organizationId?: string) {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-    const [
-      totalReports,
-      reportsThisMonth,
-      reportsLastMonth,
-      totalViews
-    ] = await Promise.all([
-      db.report.count({
-        where: { createdBy: userId }
-      }),
-      db.report.count({
-        where: {
-          createdBy: userId,
-          createdAt: { gte: startOfMonth }
-        }
-      }),
-      db.report.count({
-        where: {
-          createdBy: userId,
-          createdAt: {
-            gte: startOfLastMonth,
-            lte: endOfLastMonth
-          }
-        }
-      }),
-      // Note: viewCount field doesn't exist in the schema, so we return 0
-      Promise.resolve({ _sum: { viewCount: 0 } })
-    ]);
+    // Build base where clause
+    const baseWhere: any = { createdBy: userId };
+
+    // Add organization filter if provided
+    if (organizationId) {
+      const hasAccess = await MembershipService.hasUserAccess(
+        organizationId,
+        userId,
+      );
+      if (!hasAccess) {
+        throw new Error("Access denied to organization");
+      }
+      baseWhere.organizationId = organizationId;
+    }
+
+    const [totalReports, reportsThisMonth, reportsLastMonth, totalViews] =
+      await Promise.all([
+        db.report.count({
+          where: baseWhere,
+        }),
+        db.report.count({
+          where: {
+            ...baseWhere,
+            createdAt: { gte: startOfMonth },
+          },
+        }),
+        db.report.count({
+          where: {
+            ...baseWhere,
+            createdAt: {
+              gte: startOfLastMonth,
+              lte: endOfLastMonth,
+            },
+          },
+        }),
+        // Note: viewCount field doesn't exist in the schema, so we return 0
+        Promise.resolve({ _sum: { viewCount: 0 } }),
+      ]);
 
     return {
       totalReports,
       reportsCreatedThisMonth: reportsThisMonth,
       reportsCreatedLastMonth: reportsLastMonth,
       totalViews: totalViews._sum.viewCount || 0,
-      averageViews: totalReports > 0 ? Math.round((totalViews._sum.viewCount || 0) / totalReports) : 0
+      averageViews:
+        totalReports > 0
+          ? Math.round((totalViews._sum.viewCount || 0) / totalReports)
+          : 0,
     };
   }
 }

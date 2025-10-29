@@ -18,26 +18,26 @@ export default function SubscriptionDemo() {
       icon: Crown,
       title: "Premium Plans",
       description: "Multiple subscription tiers with different feature sets",
-      color: "text-yellow-600"
+      color: "text-yellow-600",
     },
     {
       icon: CreditCard,
       title: "Secure Payments",
       description: "Stripe-powered payment processing with webhooks",
-      color: "text-blue-600"
+      color: "text-blue-600",
     },
     {
       icon: Users,
       title: "Customer Portal",
       description: "Self-service billing management for customers",
-      color: "text-green-600"
+      color: "text-green-600",
     },
     {
       icon: Zap,
       title: "Real-time Updates",
       description: "Instant subscription status synchronization",
-      color: "text-purple-600"
-    }
+      color: "text-purple-600",
+    },
   ];
 
   return (
@@ -50,9 +50,12 @@ export default function SubscriptionDemo() {
               <CreditCard className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <CardTitle className="text-xl">Subscription Management System</CardTitle>
+              <CardTitle className="text-xl">
+                Subscription Management System
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Complete Stripe integration with multiple plans, webhooks, and billing portal
+                Complete Stripe integration with multiple plans, webhooks, and
+                billing portal
               </p>
             </div>
           </div>
@@ -62,11 +65,18 @@ export default function SubscriptionDemo() {
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Icon className={`h-5 w-5 ${feature.color} flex-shrink-0 mt-0.5`} />
+                <div
+                  key={index}
+                  className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                >
+                  <Icon
+                    className={`h-5 w-5 ${feature.color} flex-shrink-0 mt-0.5`}
+                  />
                   <div>
                     <div className="font-medium text-sm">{feature.title}</div>
-                    <div className="text-xs text-muted-foreground">{feature.description}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {feature.description}
+                    </div>
                   </div>
                 </div>
               );
@@ -91,14 +101,17 @@ export default function SubscriptionDemo() {
             <TabsContent value="pricing" className="mt-6">
               <div className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Choose Your Plan</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Choose Your Plan
+                  </h3>
                   <p className="text-sm text-muted-foreground">
                     Interactive pricing cards with Stripe checkout integration
                   </p>
                 </div>
                 <PricingCards />
                 <div className="text-xs text-muted-foreground text-center">
-                  💡 <strong>Demo Mode:</strong> Test with Stripe test cards (4242 4242 4242 4242)
+                  💡 <strong>Demo Mode:</strong> Test with Stripe test cards
+                  (4242 4242 4242 4242)
                 </div>
               </div>
             </TabsContent>
@@ -106,7 +119,9 @@ export default function SubscriptionDemo() {
             <TabsContent value="status" className="mt-6">
               <div className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Subscription Dashboard</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Subscription Dashboard
+                  </h3>
                   <p className="text-sm text-muted-foreground">
                     Real-time subscription status and billing management
                   </p>
@@ -120,12 +135,14 @@ export default function SubscriptionDemo() {
             <TabsContent value="features" className="mt-6">
               <div className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Plan-based Features</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Plan-based Features
+                  </h3>
                   <p className="text-sm text-muted-foreground">
                     Different features unlocked based on subscription tier
                   </p>
                 </div>
-                
+
                 <div className="grid gap-4 md:grid-cols-3">
                   {/* Free Plan Features */}
                   <Card className="border-gray-200">
@@ -147,7 +164,9 @@ export default function SubscriptionDemo() {
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                          <span className="text-muted-foreground">No priority support</span>
+                          <span className="text-muted-foreground">
+                            No priority support
+                          </span>
                         </div>
                       </div>
                     </CardContent>
@@ -184,7 +203,9 @@ export default function SubscriptionDemo() {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-sm">Enterprise</CardTitle>
-                        <Badge variant="outline" className="border-purple-300">Custom</Badge>
+                        <Badge variant="outline" className="border-purple-300">
+                          Custom
+                        </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-2">
@@ -238,11 +259,21 @@ export default function SubscriptionDemo() {
             <div className="space-y-2">
               <h4 className="font-medium">Files Created</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• <code>lib/stripe.ts</code> - Stripe configuration</li>
-                <li>• <code>lib/stripe-client.ts</code> - Frontend client</li>
-                <li>• <code>lib/subscription-service.ts</code> - Business logic</li>
-                <li>• <code>app/api/subscription/*</code> - API routes</li>
-                <li>• <code>components/pricing-cards.tsx</code> - Pricing UI</li>
+                <li>
+                  • <code>lib/stripe.ts</code> - Stripe configuration
+                </li>
+                <li>
+                  • <code>lib/stripe-client.ts</code> - Frontend client
+                </li>
+                <li>
+                  • <code>lib/subscription-service.ts</code> - Business logic
+                </li>
+                <li>
+                  • <code>app/api/subscription/*</code> - API routes
+                </li>
+                <li>
+                  • <code>components/pricing-cards.tsx</code> - Pricing UI
+                </li>
                 <li>• Prisma schema updated with UserSubscription</li>
               </ul>
             </div>

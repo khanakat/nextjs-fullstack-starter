@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/conditional-auth";
 import { db } from "@/lib/db";
 
 /**

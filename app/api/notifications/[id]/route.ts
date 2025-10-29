@@ -1,6 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { notificationStore } from '@/lib/notifications';
+import { NextRequest } from "next/server";
+import { ApiError } from "@/lib/api-utils";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
+import { logger } from "@/lib/logger";
+import { auth } from "@clerk/nextjs/server";
+import { notificationStore } from "@/lib/notifications";
+import { generateRequestId } from "@/lib/utils";
 
 interface RouteParams {
   params: {
@@ -11,34 +18,74 @@ interface RouteParams {
 /**
  * PATCH /api/notifications/[id] - Mark notification as read
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function PATCH(_request: NextRequest, { params }: RouteParams) {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to update notifications",
+        requestId,
       );
     }
 
     const { id } = params;
-    const success = await notificationStore.markAsRead(id, userId);
 
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Notification not found or access denied' },
-        { status: 404 }
+    if (!id) {
+      return StandardErrorResponse.badRequest(
+        "Notification ID is required",
+        "notifications",
+        { id },
+        requestId,
       );
     }
 
-    return NextResponse.json({ message: 'Notification marked as read' });
+    logger.info("Marking notification as read", "notifications", {
+      requestId,
+      userId,
+      notificationId: id,
+    });
 
+    const success = await notificationStore.markAsRead(id, userId);
+
+    if (!success) {
+      return StandardErrorResponse.notFound(
+        "Notification not found or access denied",
+        requestId,
+      );
+    }
+
+    return StandardSuccessResponse.updated({
+      message: "Notification marked as read",
+      notificationId: id,
+      requestId,
+    });
   } catch (error) {
-    console.error('Error marking notification as read:', error);
-    return NextResponse.json(
-      { error: 'Failed to update notification' },
-      { status: 500 }
+    logger.apiError(
+      "Error processing notification request",
+      "notification",
+      error,
+      {
+        requestId,
+        resourceId: params.id,
+        endpoint: "/api/notifications/:id",
+      },
+    );
+
+    if (error instanceof ApiError) {
+      return StandardErrorResponse.fromApiError(error, requestId);
+    }
+
+    return StandardErrorResponse.internal(
+      "Failed to process notification request",
+      process.env.NODE_ENV === "development"
+        ? {
+            originalError: error instanceof Error ? error.message : error,
+          }
+        : undefined,
+      requestId,
     );
   }
 }
@@ -46,34 +93,73 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 /**
  * DELETE /api/notifications/[id] - Delete notification
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to delete notifications",
+        requestId,
       );
     }
 
     const { id } = params;
-    const success = await notificationStore.deleteNotification(id, userId);
 
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Notification not found or access denied' },
-        { status: 404 }
+    if (!id) {
+      return StandardErrorResponse.badRequest(
+        "Notification ID is required",
+        "notifications",
+        { id },
+        requestId,
       );
     }
 
-    return NextResponse.json({ message: 'Notification deleted' });
+    logger.info("Deleting notification", "notifications", {
+      requestId,
+      userId,
+      notificationId: id,
+    });
 
+    const success = await notificationStore.deleteNotification(id, userId);
+
+    if (!success) {
+      return StandardErrorResponse.notFound(
+        "Notification not found or access denied",
+        requestId,
+      );
+    }
+
+    return StandardSuccessResponse.deleted(requestId, {
+      message: "Notification deleted",
+      notificationId: id,
+    });
   } catch (error) {
-    console.error('Error deleting notification:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete notification' },
-      { status: 500 }
+    logger.apiError(
+      "Error processing notification request",
+      "notification",
+      error,
+      {
+        requestId,
+        resourceId: params.id,
+        endpoint: "/api/notifications/:id",
+      },
+    );
+
+    if (error instanceof ApiError) {
+      return StandardErrorResponse.fromApiError(error, requestId);
+    }
+
+    return StandardErrorResponse.internal(
+      "Failed to process notification request",
+      process.env.NODE_ENV === "development"
+        ? {
+            originalError: error instanceof Error ? error.message : error,
+          }
+        : undefined,
+      requestId,
     );
   }
 }

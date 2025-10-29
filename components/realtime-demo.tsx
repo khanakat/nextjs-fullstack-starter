@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,24 +9,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Zap, 
-  Bell, 
-  Radio, 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Zap,
+  Bell,
+  Radio,
   MessageSquare,
-  Users,
   Activity,
   Wifi,
   Send,
-  Settings,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useNotifications, useRealtimeNotifications, useNotificationPreferences } from "@/hooks/use-notifications";
+import {
+  useNotifications,
+  useRealtimeNotifications,
+  useNotificationPreferences,
+} from "@/hooks/use-notifications";
 import NotificationCenter from "@/components/notification-center";
 
-export default function RealtimeDemo() {
+function RealtimeDemoContent() {
   const [activeTab, setActiveTab] = useState("notifications");
   const [testNotification, setTestNotification] = useState({
     title: "Test Notification",
@@ -34,21 +42,43 @@ export default function RealtimeDemo() {
     type: "info" as const,
     priority: "medium" as const,
   });
+  const [isClient, setIsClient] = useState(false);
 
-  // Notification hooks
-  const { 
-    notifications, 
-    unreadCount, 
+  // Ensure we're on the client side before using hooks
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Always call hooks - handle conditional logic inside the hooks themselves
+  const {
+    notifications,
+    unreadCount,
     createNotification,
-    loading: notificationsLoading 
+    loading: notificationsLoading,
   } = useNotifications();
-  
+
   const { connected, lastEvent } = useRealtimeNotifications();
-  const { 
-    preferences, 
-    updatePreferences, 
-    loading: preferencesLoading 
+  const {
+    preferences,
+    updatePreferences,
+    loading: preferencesLoading,
   } = useNotificationPreferences();
+
+  // Show loading state until client is ready
+  if (!isClient) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="text-muted-foreground">Loading realtime demo...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Demo features showcase
   const features = [
@@ -56,26 +86,26 @@ export default function RealtimeDemo() {
       icon: Bell,
       title: "Push Notifications",
       description: "Real-time in-app notifications with toast alerts",
-      color: "text-blue-600"
+      color: "text-blue-600",
     },
     {
       icon: Radio,
       title: "Server-Sent Events",
       description: "Live data streaming for instant updates",
-      color: "text-green-600"
+      color: "text-green-600",
     },
     {
       icon: MessageSquare,
       title: "Live Chat System",
       description: "WebSocket-powered real-time messaging",
-      color: "text-purple-600"
+      color: "text-purple-600",
     },
     {
       icon: Activity,
       title: "Activity Feeds",
       description: "Real-time activity streams and status updates",
-      color: "text-orange-600"
-    }
+      color: "text-orange-600",
+    },
   ];
 
   // Create test notification
@@ -106,14 +136,20 @@ export default function RealtimeDemo() {
                 <Zap className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <CardTitle className="text-xl">Real-time Features System</CardTitle>
+                <CardTitle className="text-xl">
+                  Real-time Features System
+                </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Live notifications, SSE streaming, and real-time data synchronization
+                  Live notifications, SSE streaming, and real-time data
+                  synchronization
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant={connected ? "default" : "destructive"} className="flex items-center gap-1">
+              <Badge
+                variant={connected ? "default" : "destructive"}
+                className="flex items-center gap-1"
+              >
                 <Wifi className="h-3 w-3" />
                 {connected ? "Connected" : "Disconnected"}
               </Badge>
@@ -126,11 +162,18 @@ export default function RealtimeDemo() {
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Icon className={`h-5 w-5 ${feature.color} flex-shrink-0 mt-0.5`} />
+                <div
+                  key={index}
+                  className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                >
+                  <Icon
+                    className={`h-5 w-5 ${feature.color} flex-shrink-0 mt-0.5`}
+                  />
                   <div>
                     <div className="font-medium text-sm">{feature.title}</div>
-                    <div className="text-xs text-muted-foreground">{feature.description}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {feature.description}
+                    </div>
                   </div>
                 </div>
               );
@@ -147,7 +190,9 @@ export default function RealtimeDemo() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div
+                className={`w-3 h-3 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`}
+              ></div>
               <div>
                 <div className="font-medium text-sm">SSE Connection</div>
                 <div className="text-xs text-muted-foreground">
@@ -155,7 +200,7 @@ export default function RealtimeDemo() {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <Bell className="h-5 w-5 text-blue-600" />
               <div>
@@ -196,16 +241,21 @@ export default function RealtimeDemo() {
             <TabsContent value="notifications" className="mt-6">
               <div className="space-y-6">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Notification Testing</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Notification Testing
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    Create test notifications to see real-time delivery in action
+                    Create test notifications to see real-time delivery in
+                    action
                   </p>
                 </div>
-                
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Create Test Notification</CardTitle>
+                      <CardTitle className="text-base">
+                        Create Test Notification
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
@@ -213,16 +263,26 @@ export default function RealtimeDemo() {
                         <Input
                           id="title"
                           value={testNotification.title}
-                          onChange={(e) => setTestNotification(prev => ({ ...prev, title: e.target.value }))}
+                          onChange={(e) =>
+                            setTestNotification((prev) => ({
+                              ...prev,
+                              title: e.target.value,
+                            }))
+                          }
                         />
                       </div>
-                      
+
                       <div>
                         <Label htmlFor="message">Message</Label>
                         <Textarea
                           id="message"
                           value={testNotification.message}
-                          onChange={(e) => setTestNotification(prev => ({ ...prev, message: e.target.value }))}
+                          onChange={(e) =>
+                            setTestNotification((prev) => ({
+                              ...prev,
+                              message: e.target.value,
+                            }))
+                          }
                           rows={3}
                         />
                       </div>
@@ -230,9 +290,14 @@ export default function RealtimeDemo() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label>Type</Label>
-                          <Select 
+                          <Select
                             value={testNotification.type}
-                            onValueChange={(value: string) => setTestNotification(prev => ({ ...prev, type: value as any }))}
+                            onValueChange={(value: string) =>
+                              setTestNotification((prev) => ({
+                                ...prev,
+                                type: value as any,
+                              }))
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -249,9 +314,14 @@ export default function RealtimeDemo() {
 
                         <div>
                           <Label>Priority</Label>
-                          <Select 
+                          <Select
                             value={testNotification.priority}
-                            onValueChange={(value: string) => setTestNotification(prev => ({ ...prev, priority: value as any }))}
+                            onValueChange={(value: string) =>
+                              setTestNotification((prev) => ({
+                                ...prev,
+                                priority: value as any,
+                              }))
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -266,10 +336,12 @@ export default function RealtimeDemo() {
                         </div>
                       </div>
 
-                      <Button 
-                        onClick={handleCreateNotification} 
+                      <Button
+                        onClick={handleCreateNotification}
                         className="w-full"
-                        disabled={!testNotification.title || !testNotification.message}
+                        disabled={
+                          !testNotification.title || !testNotification.message
+                        }
                       >
                         <Send className="h-4 w-4 mr-2" />
                         Send Test Notification
@@ -279,7 +351,9 @@ export default function RealtimeDemo() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Recent Notifications</CardTitle>
+                      <CardTitle className="text-base">
+                        Recent Notifications
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       {notificationsLoading ? (
@@ -294,9 +368,16 @@ export default function RealtimeDemo() {
                       ) : (
                         <div className="space-y-2 max-h-60 overflow-y-auto">
                           {notifications.slice(0, 5).map((notification) => (
-                            <div key={notification.id} className="p-2 bg-gray-50 rounded text-sm">
-                              <div className="font-medium">{notification.title}</div>
-                              <div className="text-muted-foreground text-xs">{notification.message}</div>
+                            <div
+                              key={notification.id}
+                              className="p-2 bg-gray-50 rounded text-sm"
+                            >
+                              <div className="font-medium">
+                                {notification.title}
+                              </div>
+                              <div className="text-muted-foreground text-xs">
+                                {notification.message}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -310,7 +391,9 @@ export default function RealtimeDemo() {
             <TabsContent value="preferences" className="mt-6">
               <div className="space-y-6">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Notification Preferences</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Notification Preferences
+                  </h3>
                   <p className="text-sm text-muted-foreground">
                     Customize how and when you receive notifications
                   </p>
@@ -324,30 +407,38 @@ export default function RealtimeDemo() {
                   <div className="grid gap-6 md:grid-cols-2">
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-base">Delivery Channels</CardTitle>
+                        <CardTitle className="text-base">
+                          Delivery Channels
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
                           <Label htmlFor="inApp">In-App Notifications</Label>
-                          <Switch 
+                          <Switch
                             id="inApp"
                             checked={preferences.channels.inApp}
-                            onCheckedChange={(checked: boolean) => 
+                            onCheckedChange={(checked: boolean) =>
                               handlePreferenceChange({
-                                channels: { ...preferences.channels, inApp: checked }
+                                channels: {
+                                  ...preferences.channels,
+                                  inApp: checked,
+                                },
                               })
                             }
                           />
                         </div>
-                        
+
                         <div className="flex items-center justify-between">
                           <Label htmlFor="email">Email Notifications</Label>
-                          <Switch 
+                          <Switch
                             id="email"
                             checked={preferences.channels.email}
-                            onCheckedChange={(checked: boolean) => 
+                            onCheckedChange={(checked: boolean) =>
                               handlePreferenceChange({
-                                channels: { ...preferences.channels, email: checked }
+                                channels: {
+                                  ...preferences.channels,
+                                  email: checked,
+                                },
                               })
                             }
                           />
@@ -355,12 +446,15 @@ export default function RealtimeDemo() {
 
                         <div className="flex items-center justify-between">
                           <Label htmlFor="push">Push Notifications</Label>
-                          <Switch 
+                          <Switch
                             id="push"
                             checked={preferences.channels.push}
-                            onCheckedChange={(checked: boolean) => 
+                            onCheckedChange={(checked: boolean) =>
                               handlePreferenceChange({
-                                channels: { ...preferences.channels, push: checked }
+                                channels: {
+                                  ...preferences.channels,
+                                  push: checked,
+                                },
                               })
                             }
                           />
@@ -375,12 +469,15 @@ export default function RealtimeDemo() {
                       <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
                           <Label htmlFor="security">Security Alerts</Label>
-                          <Switch 
+                          <Switch
                             id="security"
                             checked={preferences.categories.security}
-                            onCheckedChange={(checked: boolean) => 
+                            onCheckedChange={(checked: boolean) =>
                               handlePreferenceChange({
-                                categories: { ...preferences.categories, security: checked }
+                                categories: {
+                                  ...preferences.categories,
+                                  security: checked,
+                                },
                               })
                             }
                           />
@@ -388,12 +485,15 @@ export default function RealtimeDemo() {
 
                         <div className="flex items-center justify-between">
                           <Label htmlFor="updates">Product Updates</Label>
-                          <Switch 
+                          <Switch
                             id="updates"
                             checked={preferences.categories.updates}
-                            onCheckedChange={(checked: boolean) => 
+                            onCheckedChange={(checked: boolean) =>
                               handlePreferenceChange({
-                                categories: { ...preferences.categories, updates: checked }
+                                categories: {
+                                  ...preferences.categories,
+                                  updates: checked,
+                                },
                               })
                             }
                           />
@@ -401,12 +501,15 @@ export default function RealtimeDemo() {
 
                         <div className="flex items-center justify-between">
                           <Label htmlFor="billing">Billing & Payments</Label>
-                          <Switch 
+                          <Switch
                             id="billing"
                             checked={preferences.categories.billing}
-                            onCheckedChange={(checked: boolean) => 
+                            onCheckedChange={(checked: boolean) =>
                               handlePreferenceChange({
-                                categories: { ...preferences.categories, billing: checked }
+                                categories: {
+                                  ...preferences.categories,
+                                  billing: checked,
+                                },
                               })
                             }
                           />
@@ -414,12 +517,15 @@ export default function RealtimeDemo() {
 
                         <div className="flex items-center justify-between">
                           <Label htmlFor="marketing">Marketing</Label>
-                          <Switch 
+                          <Switch
                             id="marketing"
                             checked={preferences.categories.marketing}
-                            onCheckedChange={(checked: boolean) => 
+                            onCheckedChange={(checked: boolean) =>
                               handlePreferenceChange({
-                                categories: { ...preferences.categories, marketing: checked }
+                                categories: {
+                                  ...preferences.categories,
+                                  marketing: checked,
+                                },
                               })
                             }
                           />
@@ -439,7 +545,9 @@ export default function RealtimeDemo() {
             <TabsContent value="live-data" className="mt-6">
               <div className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Live Data Streaming</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Live Data Streaming
+                  </h3>
                   <p className="text-sm text-muted-foreground">
                     Real-time data updates using Server-Sent Events
                   </p>
@@ -456,8 +564,12 @@ export default function RealtimeDemo() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="p-4 border rounded-lg">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">SSE Connection</span>
-                          <Badge variant={connected ? "default" : "destructive"}>
+                          <span className="text-sm font-medium">
+                            SSE Connection
+                          </span>
+                          <Badge
+                            variant={connected ? "default" : "destructive"}
+                          >
                             {connected ? "Active" : "Inactive"}
                           </Badge>
                         </div>
@@ -468,9 +580,15 @@ export default function RealtimeDemo() {
 
                       <div className="p-4 border rounded-lg">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Last Event</span>
+                          <span className="text-sm font-medium">
+                            Last Event
+                          </span>
                           <Badge variant="outline">
-                            {lastEvent ? new Date(lastEvent.timestamp).toLocaleTimeString() : "None"}
+                            {lastEvent
+                              ? new Date(
+                                  lastEvent.timestamp,
+                                ).toLocaleTimeString()
+                              : "None"}
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -486,7 +604,9 @@ export default function RealtimeDemo() {
             <TabsContent value="chat" className="mt-6">
               <div className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Live Chat System</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Live Chat System
+                  </h3>
                   <p className="text-sm text-muted-foreground">
                     WebSocket-powered real-time messaging (Coming Soon)
                   </p>
@@ -495,10 +615,13 @@ export default function RealtimeDemo() {
                 <Card>
                   <CardContent className="p-8 text-center">
                     <MessageSquare className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                    <h4 className="text-lg font-medium mb-2">Chat Feature Coming Soon</h4>
+                    <h4 className="text-lg font-medium mb-2">
+                      Chat Feature Coming Soon
+                    </h4>
                     <p className="text-sm text-muted-foreground mb-4">
-                      WebSocket-based real-time chat system with typing indicators, 
-                      presence status, and message delivery confirmations.
+                      WebSocket-based real-time chat system with typing
+                      indicators, presence status, and message delivery
+                      confirmations.
                     </p>
                     <Badge variant="outline">In Development</Badge>
                   </CardContent>
@@ -519,7 +642,9 @@ export default function RealtimeDemo() {
             <div className="space-y-2">
               <h4 className="font-medium">Features Included</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Real-time notification system with multiple priorities</li>
+                <li>
+                  • Real-time notification system with multiple priorities
+                </li>
                 <li>• Server-Sent Events (SSE) for live data streaming</li>
                 <li>• In-app notification center with unread badges</li>
                 <li>• User preference management for notification channels</li>
@@ -530,11 +655,22 @@ export default function RealtimeDemo() {
             <div className="space-y-2">
               <h4 className="font-medium">Files Created</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• <code>lib/notifications.ts</code> - Core notification system</li>
-                <li>• <code>hooks/use-notifications.ts</code> - React hooks</li>
-                <li>• <code>app/api/notifications/*</code> - API routes</li>
-                <li>• <code>components/notification-center.tsx</code> - UI component</li>
-                <li>• <code>components/realtime-demo.tsx</code> - Demo interface</li>
+                <li>
+                  • <code>lib/notifications.ts</code> - Core notification system
+                </li>
+                <li>
+                  • <code>hooks/use-notifications.ts</code> - React hooks
+                </li>
+                <li>
+                  • <code>app/api/notifications/*</code> - API routes
+                </li>
+                <li>
+                  • <code>components/notification-center.tsx</code> - UI
+                  component
+                </li>
+                <li>
+                  • <code>components/realtime-demo.tsx</code> - Demo interface
+                </li>
               </ul>
             </div>
           </div>
@@ -542,4 +678,48 @@ export default function RealtimeDemo() {
       </Card>
     </div>
   );
+}
+
+// Error boundary wrapper component
+export default function RealtimeDemo() {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error('RealtimeDemo error:', error);
+      setHasError(true);
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+  if (hasError) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center space-y-4">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
+              <h3 className="text-lg font-semibold">Something went wrong</h3>
+              <p className="text-muted-foreground">
+                There was an error loading the realtime demo. Please try refreshing the page.
+              </p>
+              <Button onClick={() => setHasError(false)}>
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  try {
+    return <RealtimeDemoContent />;
+  } catch (error) {
+    console.error('RealtimeDemo render error:', error);
+    setHasError(true);
+    return null;
+  }
 }

@@ -14,11 +14,7 @@ interface FileUploadProps {
   endpoint: keyof typeof ourFileRouter;
 }
 
-export const FileUpload = ({
-  onChange,
-  value,
-  endpoint
-}: FileUploadProps) => {
+export const FileUpload = ({ onChange, value, endpoint }: FileUploadProps) => {
   const fileType = value?.split(".").pop();
 
   if (value && fileType !== "pdf") {
@@ -38,14 +34,14 @@ export const FileUpload = ({
           <X className="h-4 w-4" />
         </button>
       </div>
-    )
+    );
   }
 
   if (value && fileType === "pdf") {
     return (
       <div className="relative flex items-center p-2 mt-2 rounded-md bg-background/10">
         <FileIcon className="h-10 w-10 fill-indigo-200 stroke-indigo-400" />
-        <a 
+        <a
           href={value}
           target="_blank"
           rel="noopener noreferrer"
@@ -61,7 +57,7 @@ export const FileUpload = ({
           <X className="h-4 w-4" />
         </button>
       </div>
-    )
+    );
   }
 
   return (
@@ -74,5 +70,5 @@ export const FileUpload = ({
         console.error(error);
       }}
     />
-  )
-}
+  );
+};

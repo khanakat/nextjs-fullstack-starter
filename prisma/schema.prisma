@@ -48,6 +48,7 @@ model User {
   location  String?
   website   String?
   hashedPassword String? // For NextAuth users
+  role      String   @default("VIEWER") // Basic role for permissions (ADMIN, OWNER, MANAGER, MEMBER, VIEWER)
   
   // Profile fields
   createdAt DateTime @default(now())
@@ -61,6 +62,20 @@ model User {
   followers Follow[] @relation("UserFollowers")
   subscription UserSubscription?
   notifications Notification[]
+  
+  // Organization relations
+  organizationMemberships OrganizationMember[]
+  organizationInvites     OrganizationInvite[]
+  createdOrganizations    Organization[] @relation("OrganizationCreator")
+  
+  // Audit logs
+  auditLogs               AuditLog[]
+  
+  // Security relations
+  mfaDevices              MFADevice[] @relation("UserMFADevices")
+  securityRoles           UserSecurityRole[] @relation("UserSecurityRoles")
+  securityAuditLogs       SecurityAuditLog[] @relation("UserSecurityAuditLogs")
+  securityEvents          SecurityEvent[] @relation("UserSecurityEvents")
   
   @@map("users")
 }
@@ -279,6 +294,158 @@ model UserSubscription {
 }
 
 // ============================================================================
+// MULTI-TENANCY SYSTEM MODELS
+// ============================================================================
+
+// Organization model for multi-tenancy support
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  imageUrl    String?  @map("image_url")
+  website     String?
+  
+  // Settings
+  settings    String   @default("{}") // JSON string for organization settings
+  
+  // Billing
+  plan        String   @default("free") // free, pro, enterprise
+  maxMembers  Int      @default(5) @map("max_members")
+  
+  // Metadata
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  createdById String   @map("created_by_id")
+  createdBy   User     @relation("OrganizationCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  
+  members     OrganizationMember[]
+  invites     OrganizationInvite[]
+  
+  // Organization-scoped data
+  reports     Report[]
+  auditLogs   AuditLog[]
+  analyticsDashboards AnalyticsDashboard[]
+  analyticsQueries    AnalyticsQuery[]
+  analyticsMetrics    AnalyticsMetric[]
+  workflows           Workflow[]
+  workflowTemplates   WorkflowTemplate[]
+  integrations        Integration[]
+  collaborationSessions CollaborationSession[]
+  collaborativeDocuments CollaborativeDocument[]
+  
+  // Security relations
+  securityRoles       SecurityRole[] @relation("OrganizationSecurityRoles")
+  securityAuditLogs   SecurityAuditLog[] @relation("OrganizationSecurityAuditLogs")
+  securityEvents      SecurityEvent[] @relation("OrganizationSecurityEvents")
+  complianceReports   ComplianceReport[] @relation("OrganizationComplianceReports")
+  securityPolicies    SecurityPolicy[] @relation("OrganizationSecurityPolicies")
+  
+  @@map("organizations")
+}
+
+// Organization member model for user-organization relationships
+model OrganizationMember {
+  id             String   @id @default(cuid())
+  role           String   @default("member") // owner, admin, member, viewer
+  permissions    String   @default("{}") // JSON string for custom permissions
+  
+  // Metadata
+  joinedAt       DateTime @default(now()) @map("joined_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  userId         String   @map("user_id")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String   @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, organizationId])
+  @@map("organization_members")
+}
+
+// Organization invite model for pending invitations
+model OrganizationInvite {
+  id             String    @id @default(cuid())
+  email          String
+  role           String    @default("member") // admin, member, viewer
+  token          String    @unique
+  status         String    @default("pending") // pending, accepted, expired, revoked
+  
+  // Metadata
+  createdAt      DateTime  @default(now()) @map("created_at")
+  expiresAt      DateTime  @map("expires_at")
+  acceptedAt     DateTime? @map("accepted_at")
+  
+  // Relations
+  invitedById    String    @map("invited_by_id")
+  invitedBy      User      @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+  organizationId String    @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@unique([email, organizationId])
+  @@map("organization_invites")
+}
+
+// ============================================================================
+// AUDIT LOGS & ACTIVITY TRACKING MODELS
+// ============================================================================
+
+// Audit log model for comprehensive activity tracking and compliance
+model AuditLog {
+  id             String   @id @default(cuid())
+  
+  // Action details
+  action         String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, EXPORT, etc.
+  resource       String   // User, Organization, Report, etc.
+  resourceId     String?  @map("resource_id") // ID of the affected resource
+  
+  // Context information
+  userId         String?  @map("user_id") // User who performed the action (null for system actions)
+  organizationId String?  @map("organization_id") // Organization context
+  sessionId      String?  @map("session_id") // Session identifier
+  
+  // Request details
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  endpoint       String?  // API endpoint or page accessed
+  method         String?  // HTTP method (GET, POST, etc.)
+  
+  // Change tracking
+  oldValues      String?  @map("old_values") // JSON string of previous values
+  newValues      String?  @map("new_values") // JSON string of new values
+  metadata       String   @default("{}") // Additional context as JSON
+  
+  // Status and categorization
+  status         String   @default("success") // success, failure, warning
+  severity       String   @default("info") // critical, high, medium, low, info
+  category       String   @default("general") // security, data, system, user, etc.
+  
+  // Compliance and retention
+  retentionDate  DateTime? @map("retention_date") // When this log can be deleted
+  isArchived     Boolean  @default(false) @map("is_archived")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
+  // Indexes for performance
+  @@index([userId])
+  @@index([organizationId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@index([category])
+  @@index([severity])
+  @@map("audit_logs")
+}
+
+// ============================================================================
 // REPORTS SYSTEM MODELS
 // ============================================================================
 
@@ -332,11 +499,15 @@ model Report {
   isPublic    Boolean  @default(false) @map("is_public")
   status      String   @default("draft") // draft, published, archived
   
+  // Multi-tenancy support
+  organizationId String? @map("organization_id")
+  
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   
   // Relations
   template    Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   exportJobs  ExportJob[]
   permissions ReportPermission[]
   
@@ -351,8 +522,11 @@ model ExportJob {
   format       String    // pdf, excel
   status       String    @default("pending") // pending, processing, completed, failed
   downloadUrl  String?   @map("download_url")
+  filePath     String?   @map("file_path") // Local file path for storage
+  fileSize     Int?      @map("file_size") // File size in bytes
   options      String    @default("{}") // JSON string for export options
   errorMessage String?   @map("error_message")
+  expiresAt    DateTime? @map("expires_at") // File expiration date
   
   createdAt    DateTime  @default(now()) @map("created_at")
   completedAt  DateTime? @map("completed_at")
@@ -377,4 +551,1537 @@ model ReportPermission {
   
   @@unique([reportId, userId])
   @@map("report_permissions")
+}
+
+// ============================================================================
+// ADVANCED ANALYTICS & REPORTING SYSTEM MODELS
+// ============================================================================
+
+// Analytics dashboards for business intelligence
+model AnalyticsDashboard {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  layout         String   @default("{}") // JSON string for dashboard layout configuration
+  settings       String   @default("{}") // JSON string for dashboard settings (refresh rate, filters, etc.)
+  isPublic       Boolean  @default(false) @map("is_public")
+  isTemplate     Boolean  @default(false) @map("is_template")
+  tags           String   @default("[]") // JSON array of tags for categorization
+  
+  // Access control
+  createdBy      String   @map("created_by")
+  organizationId String?  @map("organization_id")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  lastViewedAt   DateTime? @map("last_viewed_at")
+  viewCount      Int      @default(0) @map("view_count")
+  
+  // Relations
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  widgets        DashboardWidget[]
+  permissions    DashboardPermission[]
+  shares         DashboardShare[]
+  
+  @@map("analytics_dashboards")
+}
+
+// Dashboard widgets for modular analytics components
+model DashboardWidget {
+  id             String   @id @default(cuid())
+  dashboardId    String   @map("dashboard_id")
+  type           String   // chart, kpi, table, text, filter, etc.
+  title          String
+  description    String?
+  
+  // Layout and positioning
+  position       String   @default("{}") // JSON string for widget position (x, y, width, height)
+  config         String   @default("{}") // JSON string for widget configuration
+  dataSource     String   @default("{}") // JSON string for data source configuration
+  
+  // Styling and behavior
+  style          String   @default("{}") // JSON string for custom styling
+  refreshRate    Int?     @map("refresh_rate") // Auto-refresh interval in seconds
+  isVisible      Boolean  @default(true) @map("is_visible")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  dashboard      AnalyticsDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  
+  @@map("dashboard_widgets")
+}
+
+// Saved analytics queries for reusable data analysis
+model AnalyticsQuery {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  query          String   // SQL query or query configuration as JSON
+  queryType      String   @default("sql") // sql, aggregation, custom
+  parameters     String   @default("{}") // JSON string for query parameters
+  
+  // Performance and caching
+  cacheEnabled   Boolean  @default(true) @map("cache_enabled")
+  cacheTtl       Int      @default(300) @map("cache_ttl") // Cache TTL in seconds
+  executionTime  Int?     @map("execution_time") // Last execution time in milliseconds
+  
+  // Access control
+  createdBy      String   @map("created_by")
+  organizationId String?  @map("organization_id")
+  isPublic       Boolean  @default(false) @map("is_public")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  lastExecutedAt DateTime? @map("last_executed_at")
+  executionCount Int      @default(0) @map("execution_count")
+  
+  // Relations
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@map("analytics_queries")
+}
+
+// Dashboard permissions for access control
+model DashboardPermission {
+  id             String   @id @default(cuid())
+  dashboardId    String   @map("dashboard_id")
+  userId         String   @map("user_id")
+  permissionType String   @map("permission_type") // view, edit, admin
+  
+  grantedAt      DateTime @default(now()) @map("granted_at")
+  grantedBy      String   @map("granted_by")
+  
+  // Relations
+  dashboard      AnalyticsDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  
+  @@unique([dashboardId, userId])
+  @@map("dashboard_permissions")
+}
+
+// Dashboard sharing for external access
+model DashboardShare {
+  id             String    @id @default(cuid())
+  dashboardId    String    @map("dashboard_id")
+  shareToken     String    @unique @map("share_token")
+  shareType      String    @default("view") // view, embed
+  isActive       Boolean   @default(true) @map("is_active")
+  
+  // Access control
+  password       String?   // Optional password protection
+  allowedDomains String?   @map("allowed_domains") // JSON array of allowed domains
+  maxViews       Int?      @map("max_views") // Maximum number of views
+  currentViews   Int       @default(0) @map("current_views")
+  
+  // Expiration
+  expiresAt      DateTime? @map("expires_at")
+  
+  // Metadata
+  createdBy      String    @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  lastAccessedAt DateTime? @map("last_accessed_at")
+  
+  // Relations
+  dashboard      AnalyticsDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  
+  @@map("dashboard_shares")
+}
+
+// Analytics metrics for tracking system performance and usage
+model AnalyticsMetric {
+  id             String   @id @default(cuid())
+  name           String
+  category       String   // system, business, user, performance
+  value          Float
+  unit           String?  // percentage, count, bytes, milliseconds, etc.
+  dimensions     String   @default("{}") // JSON string for metric dimensions
+  
+  // Context
+  organizationId String?  @map("organization_id")
+  userId         String?  @map("user_id")
+  resourceId     String?  @map("resource_id") // ID of related resource
+  resourceType   String?  @map("resource_type") // Type of related resource
+  
+  // Metadata
+  timestamp      DateTime @default(now())
+  source         String?  // Source system or component that generated the metric
+  
+  // Relations
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Indexes for performance
+  @@index([name])
+  @@index([category])
+  @@index([timestamp])
+  @@index([organizationId])
+  @@map("analytics_metrics")
+}
+
+// ============================================================================
+// WORKFLOW & PROCESS MANAGEMENT SYSTEM MODELS
+// ============================================================================
+
+// Workflow model for defining business processes
+model Workflow {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  version        String   @default("1.0")
+  status         String   @default("draft") // draft, active, inactive, archived
+  
+  // Workflow configuration
+  definition     String   @default("{}") // JSON string for workflow definition (nodes, edges, etc.)
+  settings       String   @default("{}") // JSON string for workflow settings
+  variables      String   @default("{}") // JSON string for workflow variables
+  
+  // Access control
+  createdBy      String   @map("created_by")
+  organizationId String?  @map("organization_id")
+  isTemplate     Boolean  @default(false) @map("is_template")
+  isPublic       Boolean  @default(false) @map("is_public")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  publishedAt    DateTime? @map("published_at")
+  
+  // Statistics
+  executionCount Int      @default(0) @map("execution_count")
+  successRate    Float?   @map("success_rate")
+  avgDuration    Int?     @map("avg_duration") // Average execution time in seconds
+  
+  // Relations
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  steps          WorkflowStep[]
+  instances      WorkflowInstance[]
+  templates      WorkflowTemplate[]
+  permissions    WorkflowPermission[]
+  
+  @@map("workflows")
+}
+
+// Workflow step model for individual workflow components
+model WorkflowStep {
+  id             String   @id @default(cuid())
+  workflowId     String   @map("workflow_id")
+  stepType       String   // start, task, approval, condition, notification, webhook, end
+  name           String
+  description    String?
+  
+  // Step configuration
+  config         String   @default("{}") // JSON string for step-specific configuration
+  conditions     String   @default("{}") // JSON string for step execution conditions
+  position       String   @default("{}") // JSON string for visual position (x, y)
+  
+  // Flow control
+  nextSteps      String   @default("[]") // JSON array of next step IDs
+  previousSteps  String   @default("[]") // JSON array of previous step IDs
+  
+  // Assignment and routing
+  assignmentType String   @default("manual") // manual, automatic, role_based, rule_based
+  assignmentRule String   @default("{}") // JSON string for assignment rules
+  
+  // SLA and timing
+  slaHours       Int?     @map("sla_hours") // SLA in hours
+  escalationRule String   @default("{}") @map("escalation_rule") // JSON string for escalation rules
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  workflow       Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  tasks          WorkflowTask[]
+  
+  @@map("workflow_steps")
+}
+
+// Workflow instance model for workflow executions
+model WorkflowInstance {
+  id             String   @id @default(cuid())
+  workflowId     String   @map("workflow_id")
+  status         String   @default("running") // running, completed, failed, cancelled, paused
+  currentStepId  String?  @map("current_step_id")
+  
+  // Execution context
+  data           String   @default("{}") // JSON string for instance data
+  variables      String   @default("{}") // JSON string for runtime variables
+  context        String   @default("{}") // JSON string for execution context
+  
+  // Triggering information
+  triggeredBy    String?  @map("triggered_by") // User ID who triggered the workflow
+  triggerType    String   @default("manual") // manual, scheduled, webhook, event
+  triggerData    String   @default("{}") @map("trigger_data") // JSON string for trigger context
+  
+  // Timing and performance
+  startedAt      DateTime @default(now()) @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  pausedAt       DateTime? @map("paused_at")
+  duration       Int?     // Execution duration in seconds
+  
+  // Error handling
+  errorMessage   String?  @map("error_message")
+  errorStep      String?  @map("error_step") // Step ID where error occurred
+  retryCount     Int      @default(0) @map("retry_count")
+  
+  // Priority and SLA
+  priority       String   @default("normal") // low, normal, high, urgent
+  slaDeadline    DateTime? @map("sla_deadline")
+  
+  // Relations
+  workflow       Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  tasks          WorkflowTask[]
+  
+  @@map("workflow_instances")
+}
+
+// Workflow task model for individual work items
+model WorkflowTask {
+  id             String   @id @default(cuid())
+  instanceId     String   @map("instance_id")
+  stepId         String   @map("step_id")
+  name           String
+  description    String?
+  
+  // Task details
+  taskType       String   @default("manual") // manual, approval, review, form, automated
+  status         String   @default("pending") // pending, in_progress, completed, rejected, cancelled
+  priority       String   @default("normal") // low, normal, high, urgent
+  
+  // Assignment
+  assigneeId     String?  @map("assignee_id") // User ID of assigned user
+  assignedBy     String?  @map("assigned_by") // User ID who assigned the task
+  assignmentType String   @default("manual") // manual, automatic, role_based
+  
+  // Task data
+  formData       String   @default("{}") @map("form_data") // JSON string for form data
+  attachments    String   @default("[]") // JSON array of attachment URLs
+  comments       String   @default("[]") // JSON array of task comments
+  
+  // Timing
+  createdAt      DateTime @default(now()) @map("created_at")
+  assignedAt     DateTime? @map("assigned_at")
+  startedAt      DateTime? @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  dueDate        DateTime? @map("due_date")
+  
+  // SLA tracking
+  slaHours       Int?     @map("sla_hours")
+  isOverdue      Boolean  @default(false) @map("is_overdue")
+  escalatedAt    DateTime? @map("escalated_at")
+  
+  // Completion details
+  outcome        String?  // approved, rejected, completed, etc.
+  completionNote String?  @map("completion_note")
+  
+  // Relations
+  instance       WorkflowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  step           WorkflowStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  
+  @@map("workflow_tasks")
+}
+
+// Workflow template model for predefined workflows
+model WorkflowTemplate {
+  id             String   @id @default(cuid())
+  workflowId     String?  @map("workflow_id") // Reference to base workflow (optional)
+  name           String
+  description    String?
+  category       String   // hr, finance, operations, approval, etc.
+  
+  // Template configuration
+  template       String   @default("{}") // JSON string for template definition
+  variables      String   @default("{}") // JSON string for template variables
+  settings       String   @default("{}") // JSON string for template settings
+  
+  // Template metadata
+  isBuiltIn      Boolean  @default(false) @map("is_built_in") // System-provided templates
+  isPublic       Boolean  @default(false) @map("is_public")
+  tags           String   @default("[]") // JSON array of tags
+  
+  // Usage statistics
+  usageCount     Int      @default(0) @map("usage_count")
+  rating         Float?   // Average user rating
+  
+  // Access control
+  createdBy      String?  @map("created_by")
+  organizationId String?  @map("organization_id")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  workflow       Workflow? @relation(fields: [workflowId], references: [id], onDelete: SetNull)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@map("workflow_templates")
+}
+
+// Workflow permission model for access control
+model WorkflowPermission {
+  id             String   @id @default(cuid())
+  workflowId     String   @map("workflow_id")
+  userId         String   @map("user_id")
+  permissionType String   @map("permission_type") // view, edit, execute, admin
+  
+  // Permission details
+  grantedBy      String   @map("granted_by")
+  grantedAt      DateTime @default(now()) @map("granted_at")
+  expiresAt      DateTime? @map("expires_at")
+  
+  // Relations
+  workflow       Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  
+  @@unique([workflowId, userId])
+  @@map("workflow_permissions")
+}
+
+// ============================================================================
+// INTEGRATION HUB SYSTEM MODELS
+// ============================================================================
+
+// Integration model for external service connections
+model Integration {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  provider       String   // slack, salesforce, jira, google_drive, stripe, etc.
+  type           String   // communication, crm, project_management, storage, analytics, payment, email, webhook
+  category       String   // productivity, business, developer, marketing, etc.
+  
+  // Configuration
+  config         String   @default("{}") // JSON string for integration-specific configuration
+  settings       String   @default("{}") // JSON string for user-defined settings
+  
+  // Status and health
+  status         String   @default("inactive") // inactive, active, error, suspended
+  isEnabled      Boolean  @default(true) @map("is_enabled")
+  lastSync       DateTime? @map("last_sync")
+  lastError      String?  @map("last_error")
+  
+  // Access control
+  organizationId String   @map("organization_id")
+  createdBy      String   @map("created_by")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  connections    IntegrationConnection[]
+  webhooks       IntegrationWebhook[]
+  logs           IntegrationLog[]
+  
+  @@map("integrations")
+}
+
+// Integration connection model for storing credentials and connection details
+model IntegrationConnection {
+  id             String   @id @default(cuid())
+  integrationId  String   @map("integration_id")
+  
+  // Connection details
+  connectionName String   @map("connection_name")
+  connectionType String   @default("oauth") // oauth, api_key, basic_auth, custom
+  
+  // Credentials (encrypted)
+  credentials    String   @default("{}") // JSON string for encrypted credentials
+  refreshToken   String?  @map("refresh_token") // For OAuth refresh
+  tokenExpiry    DateTime? @map("token_expiry")
+  
+  // Connection settings
+  settings       String   @default("{}") // JSON string for connection-specific settings
+  scopes         String   @default("[]") // JSON array of OAuth scopes
+  
+  // Health monitoring
+  status         String   @default("connected") // connected, disconnected, expired, error
+  lastConnected  DateTime? @map("last_connected")
+  lastError      String?  @map("last_error")
+  retryCount     Int      @default(0) @map("retry_count")
+  
+  // Rate limiting
+  rateLimitRemaining Int?  @map("rate_limit_remaining")
+  rateLimitReset     DateTime? @map("rate_limit_reset")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  integration    Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  
+  @@unique([integrationId, connectionName])
+  @@map("integration_connections")
+}
+
+// Integration webhook model for webhook management
+model IntegrationWebhook {
+  id             String   @id @default(cuid())
+  integrationId  String   @map("integration_id")
+  
+  // Webhook details
+  name           String
+  url            String
+  method         String   @default("POST") // POST, PUT, PATCH
+  
+  // Event configuration
+  events         String   @default("[]") // JSON array of subscribed events
+  filters        String   @default("{}") // JSON string for event filtering
+  
+  // Security
+  secret         String?  // Webhook signature secret
+  headers        String   @default("{}") // JSON string for custom headers
+  
+  // Retry and reliability
+  retryPolicy    String   @default("{}") @map("retry_policy") // JSON string for retry configuration
+  timeout        Int      @default(30) // Timeout in seconds
+  
+  // Status and monitoring
+  status         String   @default("active") // active, inactive, failed
+  isEnabled      Boolean  @default(true) @map("is_enabled")
+  lastTriggered  DateTime? @map("last_triggered")
+  lastError      String?  @map("last_error")
+  successCount   Int      @default(0) @map("success_count")
+  failureCount   Int      @default(0) @map("failure_count")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  integration    Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  logs           IntegrationLog[]
+  
+  @@map("integration_webhooks")
+}
+
+// Integration log model for activity tracking and debugging
+model IntegrationLog {
+  id             String   @id @default(cuid())
+  integrationId  String   @map("integration_id")
+  webhookId      String?  @map("webhook_id") // Optional webhook reference
+  
+  // Action details
+  action         String   // sync, webhook_trigger, api_call, auth_refresh, etc.
+  method         String?  // HTTP method for API calls
+  endpoint       String?  // API endpoint or webhook URL
+  
+  // Request/Response data
+  requestData    String?  @map("request_data") // JSON string of request payload
+  responseData   String?  @map("response_data") // JSON string of response data
+  requestHeaders String?  @map("request_headers") // JSON string of request headers
+  responseHeaders String? @map("response_headers") // JSON string of response headers
+  
+  // Status and timing
+  status         String   // success, error, timeout, rate_limited
+  statusCode     Int?     @map("status_code") // HTTP status code
+  duration       Int?     // Request duration in milliseconds
+  
+  // Error details
+  errorMessage   String?  @map("error_message")
+  errorCode      String?  @map("error_code")
+  errorDetails   String?  @map("error_details") // JSON string for detailed error info
+  
+  // Context
+  userId         String?  @map("user_id") // User who triggered the action
+  sessionId      String?  @map("session_id")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  
+  // Metadata
+  timestamp      DateTime @default(now())
+  
+  // Relations
+  integration    Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  webhook        IntegrationWebhook? @relation(fields: [webhookId], references: [id], onDelete: SetNull)
+  
+  @@index([integrationId, timestamp])
+  @@index([status, timestamp])
+  @@map("integration_logs")
+}
+
+// Integration template model for predefined integration configurations
+model IntegrationTemplate {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  provider       String   // slack, salesforce, jira, etc.
+  type           String   // communication, crm, project_management, etc.
+  category       String   // productivity, business, developer, etc.
+  
+  // Template configuration
+  template       String   @default("{}") // JSON string for template definition
+  defaultConfig  String   @default("{}") @map("default_config") // JSON string for default configuration
+  requiredScopes String   @default("[]") @map("required_scopes") // JSON array of required OAuth scopes
+  
+  // Template metadata
+  isBuiltIn      Boolean  @default(false) @map("is_built_in") // System-provided templates
+  isPublic       Boolean  @default(true) @map("is_public")
+  tags           String   @default("[]") // JSON array of tags
+  version        String   @default("1.0.0")
+  
+  // Documentation
+  setupGuide     String?  @map("setup_guide") // Markdown setup instructions
+  apiDocs        String?  @map("api_docs") // API documentation URL
+  supportUrl     String?  @map("support_url") // Support documentation URL
+  
+  // Usage statistics
+  usageCount     Int      @default(0) @map("usage_count")
+  rating         Float?   // Average user rating
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  @@map("integration_templates")
+}
+
+// ============================================================================
+// REAL-TIME COLLABORATION SYSTEM MODELS
+// ============================================================================
+
+// Collaboration session model for managing real-time collaboration sessions
+model CollaborationSession {
+  id             String   @id @default(cuid())
+  sessionId      String   @unique @map("session_id") // Unique session identifier
+  type           String   // workflow, analytics, report, integration, document
+  resourceId     String   @map("resource_id") // ID of the resource being collaborated on
+  resourceType   String   @map("resource_type") // Type of resource (workflow, dashboard, etc.)
+  
+  // Session metadata
+  title          String?  // Human-readable session title
+  description    String?  // Session description
+  metadata       String   @default("{}") // JSON string for session-specific data
+  
+  // Session state
+  status         String   @default("active") // active, paused, ended
+  isLocked       Boolean  @default(false) @map("is_locked") // Prevent new participants
+  maxParticipants Int?    @map("max_participants") // Limit concurrent users
+  
+  // Access control
+  organizationId String   @map("organization_id")
+  createdBy      String   @map("created_by")
+  
+  // Timing
+  startedAt      DateTime @default(now()) @map("started_at")
+  endedAt        DateTime? @map("ended_at")
+  lastActivity   DateTime @default(now()) @map("last_activity")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  events         CollaborationEvent[]
+  participants   CollaborationParticipant[]
+  
+  @@index([organizationId, type])
+  @@index([resourceId, resourceType])
+  @@map("collaboration_sessions")
+}
+
+// Collaboration event model for tracking all collaboration activities
+model CollaborationEvent {
+  id             String   @id @default(cuid())
+  sessionId      String   @map("session_id")
+  
+  // Event details
+  type           String   // document_change, cursor_update, user_joined, user_left, comment_added, etc.
+  action         String?  // Specific action within the event type
+  
+  // Event data
+  data           String   @default("{}") // JSON string containing event-specific data
+  metadata       String   @default("{}") // JSON string for additional metadata
+  
+  // User context
+  userId         String   @map("user_id")
+  userName       String?  @map("user_name") // Cached user name for performance
+  
+  // Document context (for document events)
+  documentId     String?  @map("document_id")
+  documentType   String?  @map("document_type")
+  version        Int?     // Document version for conflict resolution
+  
+  // Position context (for cursor/selection events)
+  position       String?  // JSON string for cursor/selection position
+  
+  // Timing
+  timestamp      DateTime @default(now())
+  
+  // Relations
+  session        CollaborationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId, timestamp])
+  @@index([userId, timestamp])
+  @@index([type, timestamp])
+  @@map("collaboration_events")
+}
+
+// User presence model for tracking online status and location
+model UserPresence {
+  id             String   @id @default(cuid())
+  userId         String   @unique @map("user_id")
+  
+  // Presence status
+  status         String   @default("offline") // online, offline, away, busy
+  location       String?  // Current page/section (e.g., "workflow:123", "analytics:dashboard")
+  activity       String?  // Current activity description
+  
+  // Connection details
+  socketId       String?  @map("socket_id") // Current WebSocket connection ID
+  sessionCount   Int      @default(0) @map("session_count") // Number of active sessions
+  
+  // Device/browser info
+  deviceType     String?  @map("device_type") // desktop, mobile, tablet
+  browserInfo    String?  @map("browser_info") // Browser and version info
+  ipAddress      String?  @map("ip_address")
+  
+  // Timing
+  lastSeen       DateTime @default(now()) @map("last_seen")
+  onlineSince    DateTime? @map("online_since")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  @@index([status, lastSeen])
+  @@map("user_presence")
+}
+
+// Collaboration participant model for session membership
+model CollaborationParticipant {
+  id             String   @id @default(cuid())
+  sessionId      String   @map("session_id")
+  userId         String   @map("user_id")
+  
+  // Participant details
+  role           String   @default("participant") // owner, moderator, participant, observer
+  permissions    String   @default("{}") // JSON string for participant-specific permissions
+  
+  // Participation status
+  status         String   @default("active") // active, inactive, kicked, left
+  isOnline       Boolean  @default(true) @map("is_online")
+  
+  // Activity tracking
+  joinedAt       DateTime @default(now()) @map("joined_at")
+  leftAt         DateTime? @map("left_at")
+  lastActivity   DateTime @default(now()) @map("last_activity")
+  
+  // Contribution metrics
+  eventCount     Int      @default(0) @map("event_count") // Number of events contributed
+  duration       Int      @default(0) // Total participation time in seconds
+  
+  // Relations
+  session        CollaborationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@unique([sessionId, userId])
+  @@index([userId, status])
+  @@map("collaboration_participants")
+}
+
+// Collaborative document model for document versioning and content management
+model CollaborativeDocument {
+  id             String   @id @default(cuid())
+  documentId     String   @unique @map("document_id") // External document identifier
+  type           String   // workflow, report, dashboard, integration_config, etc.
+  
+  // Document content
+  content        String   @default("{}") // JSON string containing document content
+  schema         String   @default("{}") // JSON string defining document structure
+  
+  // Versioning
+  version        Int      @default(1) // Current version number
+  checksum       String?  // Content checksum for integrity verification
+  
+  // Collaboration state
+  isLocked       Boolean  @default(false) @map("is_locked") // Prevent editing
+  lockedBy       String?  @map("locked_by") // User ID who locked the document
+  lockedAt       DateTime? @map("locked_at")
+  
+  // Access control
+  organizationId String   @map("organization_id")
+  createdBy      String   @map("created_by")
+  
+  // Metadata
+  title          String?  // Document title
+  description    String?  // Document description
+  tags           String   @default("[]") // JSON array of tags
+  metadata       String   @default("{}") // JSON string for document-specific metadata
+  
+  // Timing
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  lastEditedAt   DateTime @default(now()) @map("last_edited_at")
+  lastEditedBy   String?  @map("last_edited_by")
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  versions       DocumentVersion[]
+  comments       DocumentComment[]
+  
+  @@index([organizationId, type])
+  @@index([documentId, version])
+  @@map("collaborative_documents")
+}
+
+// Document version model for version history and change tracking
+model DocumentVersion {
+  id             String   @id @default(cuid())
+  documentId     String   @map("document_id")
+  
+  // Version details
+  version        Int      // Version number
+  title          String?  // Version title/description
+  
+  // Content and changes
+  content        String   // JSON string of document content at this version
+  changes        String   @default("{}") // JSON string describing changes from previous version
+  changesSummary String?  @map("changes_summary") // Human-readable summary of changes
+  
+  // Change metadata
+  changeType     String   @default("edit") // create, edit, merge, revert
+  linesAdded     Int      @default(0) @map("lines_added")
+  linesRemoved   Int      @default(0) @map("lines_removed")
+  
+  // Author information
+  authorId       String   @map("author_id")
+  authorName     String?  @map("author_name") // Cached for performance
+  
+  // Collaboration context
+  sessionId      String?  @map("session_id") // Associated collaboration session
+  mergeConflicts String?  @map("merge_conflicts") // JSON string of resolved conflicts
+  
+  // Timing
+  createdAt      DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  document       CollaborativeDocument @relation(fields: [documentId], references: [documentId], onDelete: Cascade)
+  
+  @@unique([documentId, version])
+  @@index([documentId, createdAt])
+  @@index([authorId, createdAt])
+  @@map("document_versions")
+}
+
+// Document comment model for threaded discussions and annotations
+model DocumentComment {
+  id             String   @id @default(cuid())
+  documentId     String   @map("document_id")
+  
+  // Comment content
+  content        String   // Comment text content
+  contentType    String   @default("text") // text, markdown, html
+  
+  // Position and context
+  position       String?  // JSON string for comment position/anchor
+  selection      String?  // JSON string for text selection context
+  elementId      String?  @map("element_id") // Specific element being commented on
+  
+  // Threading
+  threadId       String?  @map("thread_id") // Root comment ID for threading
+  parentId       String?  @map("parent_id") // Direct parent comment ID
+  depth          Int      @default(0) // Comment nesting depth
+  
+  // Comment metadata
+  isResolved     Boolean  @default(false) @map("is_resolved")
+  resolvedBy     String?  @map("resolved_by")
+  resolvedAt     DateTime? @map("resolved_at")
+  
+  // Reactions and engagement
+  reactions      String   @default("{}") // JSON string for emoji reactions
+  mentions       String   @default("[]") // JSON array of mentioned user IDs
+  
+  // Author information
+  authorId       String   @map("author_id")
+  authorName     String?  @map("author_name") // Cached for performance
+  
+  // Collaboration context
+  sessionId      String?  @map("session_id") // Associated collaboration session
+  version        Int?     // Document version when comment was made
+  
+  // Timing
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  document       CollaborativeDocument @relation(fields: [documentId], references: [documentId], onDelete: Cascade)
+  replies        DocumentComment[] @relation("CommentReplies")
+  parent         DocumentComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  
+  @@index([documentId, createdAt])
+  @@index([threadId, depth])
+  @@index([authorId, createdAt])
+  @@map("document_comments")
+}
+
+// ============================================================================
+// MOBILE-FIRST FEATURES MODELS
+// ============================================================================
+
+// Push subscription model for Web Push API notifications
+model PushSubscription {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  organizationId String?  @map("organization_id")
+  
+  // Push subscription details
+  endpoint       String   @unique // Push service endpoint URL
+  p256dh         String   // Public key for encryption
+  auth           String   // Authentication secret
+  
+  // Device information
+  deviceId       String?  @map("device_id") // Device fingerprint
+  deviceType     String?  @map("device_type") // mobile, tablet, desktop
+  browserName    String?  @map("browser_name")
+  browserVersion String?  @map("browser_version")
+  platform       String?  // iOS, Android, Windows, etc.
+  userAgent      String?  @map("user_agent")
+  
+  // Subscription status
+  isActive       Boolean  @default(true) @map("is_active")
+  subscribedAt   DateTime @default(now()) @map("subscribed_at")
+  unsubscribedAt DateTime? @map("unsubscribed_at")
+  lastUsed       DateTime @default(now()) @map("last_used")
+  
+  // Notification tracking
+  notificationsSent Int   @default(0) @map("notifications_sent")
+  lastNotificationAt DateTime? @map("last_notification_at")
+  failureCount   Int      @default(0) @map("failure_count")
+  lastFailureAt  DateTime? @map("last_failure_at")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  device         DeviceInfo? @relation(fields: [deviceId], references: [deviceId], onDelete: SetNull)
+  
+  @@index([userId, isActive])
+  @@index([organizationId, isActive])
+  @@index([deviceId, isActive])
+  @@map("push_subscriptions")
+}
+
+// Offline action model for queuing actions when offline
+model OfflineAction {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  
+  // Action details
+  action         String   // CREATE_WORKFLOW, UPDATE_TASK, etc.
+  data           String   // JSON string containing action data
+  
+  // Timing and priority
+  timestamp      DateTime // When the action was originally performed
+  priority       String   @default("medium") // low, medium, high
+  
+  // Sync status
+  synced         Boolean  @default(false)
+  syncedAt       DateTime? @map("synced_at")
+  retryCount     Int      @default(0) @map("retry_count")
+  maxRetries     Int      @default(3) @map("max_retries")
+  lastError      String?  @map("last_error")
+  
+  // Device context
+  deviceId       String?  @map("device_id")
+  sessionId      String?  @map("session_id")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  @@index([userId, synced])
+  @@index([priority, timestamp])
+  @@index([deviceId, synced])
+  @@map("offline_actions")
+}
+
+// Device information model for mobile device management
+model DeviceInfo {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  deviceId       String   @map("device_id") // Device fingerprint
+  
+  // Device characteristics
+  deviceType     String   // mobile, tablet, desktop
+  platform       String   // iOS, Android, Windows, macOS, Linux
+  browserName    String   @map("browser_name")
+  browserVersion String   @map("browser_version")
+  
+  // Screen and display
+  screenWidth    Int      @map("screen_width")
+  screenHeight   Int      @map("screen_height")
+  pixelRatio     Float?   @map("pixel_ratio")
+  colorDepth     Int?     @map("color_depth")
+  
+  // Device capabilities (JSON string)
+  capabilities   String   @default("{}") // pushNotifications, serviceWorker, indexedDB, etc.
+  
+  // Network and location
+  userAgent      String   @map("user_agent")
+  timezone       String?
+  language       String?
+  
+  // Status and activity
+  isActive       Boolean  @default(true) @map("is_active")
+  lastSeen       DateTime @default(now()) @map("last_seen")
+  sessionCount   Int      @default(0) @map("session_count")
+  
+  // Performance metrics
+  avgLoadTime    Float?   @map("avg_load_time") // Average page load time in ms
+  connectionType String?  @map("connection_type") // 4g, wifi, ethernet, etc.
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  pushSubscriptions PushSubscription[]
+  mobileSessions    MobileSession[]
+  
+  @@unique([userId, deviceId])
+  @@unique([deviceId])
+  @@index([userId, isActive])
+  @@index([deviceType, lastSeen])
+  @@map("device_info")
+}
+
+// Mobile session model for tracking mobile app sessions
+model MobileSession {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  deviceId       String   @map("device_id")
+  
+  // Session details
+  sessionId      String   @unique @map("session_id") // Unique session identifier
+  startTime      DateTime @default(now()) @map("start_time")
+  endTime        DateTime? @map("end_time")
+  duration       Int?     // Session duration in seconds
+  
+  // Session context
+  appVersion     String?  @map("app_version")
+  buildNumber    String?  @map("build_number")
+  installId      String?  @map("install_id") // App installation ID
+  
+  // Activity tracking
+  pageViews      Int      @default(0) @map("page_views")
+  interactions   Int      @default(0) // Taps, swipes, etc.
+  apiCalls       Int      @default(0) @map("api_calls")
+  offlineActions Int      @default(0) @map("offline_actions")
+  
+  // Performance metrics
+  crashCount     Int      @default(0) @map("crash_count")
+  errorCount     Int      @default(0) @map("error_count")
+  avgResponseTime Float?  @map("avg_response_time")
+  
+  // Network usage
+  bytesDownloaded Int?    @map("bytes_downloaded")
+  bytesUploaded  Int?     @map("bytes_uploaded")
+  requestCount   Int      @default(0) @map("request_count")
+  
+  // Battery and resources
+  batteryLevel   Float?   @map("battery_level") // Battery level at session start
+  memoryUsage    Float?   @map("memory_usage") // Memory usage in MB
+  
+  // Location and context
+  location       String?  // Last known location/page
+  referrer       String?  // How the session was started
+  
+  // Status
+  isActive       Boolean  @default(true) @map("is_active")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  device         DeviceInfo @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+  
+  @@index([userId, startTime])
+  @@index([deviceId, isActive])
+  @@index([sessionId])
+  @@map("mobile_sessions")
+}
+
+// Notification preferences model for managing user notification settings
+model NotificationPreferences {
+  id             String   @id @default(cuid())
+  userId         String   @unique @map("user_id")
+  
+  // Global notification settings
+  pushEnabled    Boolean  @default(true) @map("push_enabled")
+  emailEnabled   Boolean  @default(true) @map("email_enabled")
+  smsEnabled     Boolean  @default(false) @map("sms_enabled")
+  
+  // Notification type preferences
+  taskAssignments Boolean @default(true) @map("task_assignments")
+  workflowUpdates Boolean @default(true) @map("workflow_updates")
+  systemAlerts   Boolean  @default(true) @map("system_alerts")
+  reminders      Boolean  @default(true)
+  marketing      Boolean  @default(false)
+  
+  // Quiet hours settings
+  quietHoursEnabled Boolean @default(false) @map("quiet_hours_enabled")
+  quietHoursStart   String  @default("22:00") @map("quiet_hours_start") // HH:MM format
+  quietHoursEnd     String  @default("08:00") @map("quiet_hours_end") // HH:MM format
+  quietHoursTimezone String? @map("quiet_hours_timezone")
+  
+  // Delivery preferences
+  deliveryMethod String  @default("push") // push, email, sms, all
+  frequency      String  @default("immediate") // immediate, hourly, daily, weekly
+  batchNotifications Boolean @default(false) @map("batch_notifications")
+  
+  // Device-specific settings
+  mobileEnabled  Boolean @default(true) @map("mobile_enabled")
+  desktopEnabled Boolean @default(true) @map("desktop_enabled")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  @@map("notification_preferences")
+}
+
+// Notification event model for tracking notification delivery and engagement
+model NotificationEvent {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  
+  // Notification details
+  notificationId String?  @map("notification_id") // Reference to Notification model
+  type           String   // push, email, sms
+  category       String   // task, workflow, system, reminder, marketing
+  
+  // Content
+  title          String
+  message        String?
+  payload        String?  // JSON string for additional data
+  
+  // Delivery details
+  endpoint       String?  // Push endpoint or email address
+  deviceId       String?  @map("device_id")
+  
+  // Status tracking
+  status         String   @default("pending") // pending, sent, delivered, failed, clicked, dismissed
+  sentAt         DateTime? @map("sent_at")
+  deliveredAt    DateTime? @map("delivered_at")
+  clickedAt      DateTime? @map("clicked_at")
+  dismissedAt    DateTime? @map("dismissed_at")
+  
+  // Error handling
+  errorCode      String?  @map("error_code")
+  errorMessage   String?  @map("error_message")
+  retryCount     Int      @default(0) @map("retry_count")
+  
+  // Engagement metrics
+  engagementScore Float?  @map("engagement_score")
+  actionTaken    String?  @map("action_taken") // clicked, dismissed, ignored
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  @@index([userId, type, status])
+  @@index([deviceId, sentAt])
+  @@index([category, status])
+  @@map("notification_events")
+}
+
+// ============================================================================
+// ADVANCED SECURITY & COMPLIANCE MODELS
+// ============================================================================
+
+// Multi-Factor Authentication Device model
+model MFADevice {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  
+  // Device details
+  type           String   // totp, sms, backup_codes
+  name           String?  // User-friendly device name
+  secret         String?  // TOTP secret (encrypted)
+  phoneNumber    String?  @map("phone_number") // For SMS MFA
+  
+  // Backup codes (JSON array of encrypted codes)
+  backupCodes    String?  @map("backup_codes")
+  usedBackupCodes String? @map("used_backup_codes") // JSON array of used codes
+  
+  // Status and verification
+  verified       Boolean  @default(false)
+  enabled        Boolean  @default(true)
+  lastUsed       DateTime? @map("last_used")
+  
+  // Security metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user           User     @relation("UserMFADevices", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, type])
+  @@index([userId, enabled])
+  @@map("mfa_devices")
+}
+
+// Security Role model for advanced RBAC
+model SecurityRole {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  
+  // Role hierarchy and scope
+  level          Int      @default(0) // Higher number = more permissions
+  scope          String   @default("organization") // system, organization, project
+  organizationId String?  @map("organization_id") // null for system-wide roles
+  
+  // Role configuration
+  isSystem       Boolean  @default(false) @map("is_system") // System roles cannot be deleted
+  isDefault      Boolean  @default(false) @map("is_default") // Default role for new users
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization? @relation("OrganizationSecurityRoles", fields: [organizationId], references: [id], onDelete: Cascade)
+  permissions    SecurityPermission[]
+  userRoles      UserSecurityRole[]
+  
+  @@unique([name, organizationId])
+  @@index([scope, level])
+  @@map("security_roles")
+}
+
+// Security Permission model for fine-grained access control
+model SecurityPermission {
+  id             String   @id @default(cuid())
+  roleId         String   @map("role_id")
+  
+  // Permission details
+  resource       String   // users, organizations, workflows, analytics, etc.
+  action         String   // create, read, update, delete, execute, admin
+  
+  // Conditional access (JSON string for complex conditions)
+  conditions     String?  @default("{}") // IP restrictions, time-based, etc.
+  
+  // Permission scope
+  resourceId     String?  @map("resource_id") // Specific resource ID (optional)
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  role           SecurityRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  @@unique([roleId, resource, action, resourceId])
+  @@index([resource, action])
+  @@map("security_permissions")
+}
+
+// User Security Role assignment model
+model UserSecurityRole {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  roleId         String   @map("role_id")
+  
+  // Assignment details
+  assignedBy     String?  @map("assigned_by") // User ID who assigned the role
+  assignedAt     DateTime @default(now()) @map("assigned_at")
+  expiresAt      DateTime? @map("expires_at") // Optional role expiration
+  
+  // Status
+  isActive       Boolean  @default(true) @map("is_active")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user           User     @relation("UserSecurityRoles", fields: [userId], references: [id], onDelete: Cascade)
+  role           SecurityRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, roleId])
+  @@index([userId, isActive])
+  @@index([roleId, isActive])
+  @@map("user_security_roles")
+}
+
+// Security Audit Log model for comprehensive activity tracking
+model SecurityAuditLog {
+  id             String   @id @default(cuid())
+  
+  // Action details
+  action         String   // LOGIN, LOGOUT, MFA_SETUP, ROLE_CHANGE, DATA_ACCESS, etc.
+  resource       String   // User, Role, Permission, Data, etc.
+  resourceId     String?  @map("resource_id")
+  
+  // User and context
+  userId         String?  @map("user_id")
+  organizationId String?  @map("organization_id")
+  sessionId      String?  @map("session_id")
+  
+  // Request details
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  endpoint       String?
+  method         String?
+  
+  // Security context
+  riskScore      Float?   @map("risk_score") // 0-100 risk assessment
+  anomalyFlags   String?  @map("anomaly_flags") // JSON array of detected anomalies
+  
+  // Result and metadata
+  success        Boolean  @default(true)
+  errorCode      String?  @map("error_code")
+  errorMessage   String?  @map("error_message")
+  metadata       String?  @default("{}") // JSON string for additional data
+  
+  // Compliance tracking
+  complianceFlags String? @map("compliance_flags") // JSON array of compliance requirements
+  retentionUntil DateTime? @map("retention_until") // Data retention policy
+  
+  // Metadata
+  timestamp      DateTime @default(now())
+  
+  // Relations
+  user           User?    @relation("UserSecurityAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization? @relation("OrganizationSecurityAuditLogs", fields: [organizationId], references: [id], onDelete: SetNull)
+  
+  @@index([userId, timestamp])
+  @@index([organizationId, timestamp])
+  @@index([action, timestamp])
+  @@index([riskScore, timestamp])
+  @@map("security_audit_logs")
+}
+
+// Security Event model for real-time monitoring
+model SecurityEvent {
+  id             String   @id @default(cuid())
+  
+  // Event classification
+  type           String   // SUSPICIOUS_LOGIN, BRUTE_FORCE, DATA_BREACH, etc.
+  severity       String   @default("medium") // low, medium, high, critical
+  category       String   // authentication, authorization, data_access, system
+  
+  // Event details
+  title          String
+  description    String?
+  
+  // Context
+  userId         String?  @map("user_id")
+  organizationId String?  @map("organization_id")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  
+  // Detection and response
+  detectedBy     String   @map("detected_by") // system, user, external
+  riskScore      Float    @default(0) @map("risk_score")
+  
+  // Status and resolution
+  status         String   @default("open") // open, investigating, resolved, false_positive
+  resolvedBy     String?  @map("resolved_by") // User ID who resolved
+  resolvedAt     DateTime? @map("resolved_at")
+  resolution     String?  // Resolution notes
+  
+  // Automated response
+  autoResponse   String?  @map("auto_response") // JSON string for automated actions taken
+  
+  // Metadata
+  metadata       String?  @default("{}") // JSON string for additional data
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user           User?    @relation("UserSecurityEvents", fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization? @relation("OrganizationSecurityEvents", fields: [organizationId], references: [id], onDelete: SetNull)
+  
+  @@index([type, severity, status])
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([riskScore, createdAt])
+  @@map("security_events")
+}
+
+// Compliance Report model for audit and regulatory reporting
+model ComplianceReport {
+  id             String   @id @default(cuid())
+  
+  // Report details
+  type           String   // SOC2, GDPR, HIPAA, PCI_DSS, CUSTOM
+  title          String
+  description    String?
+  
+  // Scope and period
+  organizationId String?  @map("organization_id")
+  periodStart    DateTime @map("period_start")
+  periodEnd      DateTime @map("period_end")
+  
+  // Report data (JSON string containing the report data)
+  data           String   @default("{}")
+  
+  // Status and generation
+  status         String   @default("generating") // generating, completed, failed
+  generatedBy    String?  @map("generated_by") // User ID who generated
+  generatedAt    DateTime? @map("generated_at")
+  
+  // Compliance scoring
+  complianceScore Float?  @map("compliance_score") // 0-100 compliance percentage
+  findings       String?  @default("[]") // JSON array of compliance findings
+  recommendations String? @default("[]") // JSON array of recommendations
+  
+  // File and export
+  fileUrl        String?  @map("file_url") // URL to generated report file
+  fileSize       Int?     @map("file_size")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization? @relation("OrganizationComplianceReports", fields: [organizationId], references: [id], onDelete: SetNull)
+  
+  @@index([type, organizationId])
+  @@index([status, generatedAt])
+  @@index([complianceScore, createdAt])
+  @@map("compliance_reports")
+}
+
+// Encrypted Field model for field-level encryption
+model EncryptedField {
+  id             String   @id @default(cuid())
+  
+  // Entity reference
+  entityType     String   @map("entity_type") // User, Organization, etc.
+  entityId       String   @map("entity_id")
+  fieldName      String   @map("field_name")
+  
+  // Encryption details
+  encryptedValue String   @map("encrypted_value")
+  keyId          String   @map("key_id") // Reference to encryption key
+  algorithm      String   @default("AES-256-GCM")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  @@unique([entityType, entityId, fieldName])
+  @@index([entityType, entityId])
+  @@index([keyId])
+  @@map("encrypted_fields")
+}
+
+// Security Policy model for configurable security rules
+model SecurityPolicy {
+  id             String   @id @default(cuid())
+  
+  // Policy details
+  name           String
+  description    String?
+  type           String   // PASSWORD, SESSION, MFA, ACCESS, DATA_RETENTION
+  
+  // Scope
+  organizationId String?  @map("organization_id")
+  scope          String   @default("organization") // system, organization, user
+  
+  // Policy rules (JSON string containing policy configuration)
+  rules          String   @default("{}")
+  
+  // Enforcement
+  enforcement    String   @default("enforced") // disabled, warning, enforced
+  priority       Int      @default(0) // Higher priority policies override lower ones
+  
+  // Status
+  isActive       Boolean  @default(true) @map("is_active")
+  
+  // Metadata
+  createdBy      String?  @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization? @relation("OrganizationSecurityPolicies", fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@unique([name, organizationId])
+  @@index([type, isActive])
+  @@index([organizationId, enforcement])
+  @@map("security_policies")
+}
+
+// API Rate Limit model for tracking API usage and limits
+model ApiRateLimit {
+  id             String   @id @default(cuid())
+  
+  // Identifier (can be user ID, IP address, API key, etc.)
+  identifier     String
+  identifierType String   @map("identifier_type") // user, ip, api_key, organization
+  
+  // Rate limit details
+  endpoint       String?  // Specific endpoint or * for all
+  method         String?  // HTTP method or * for all
+  
+  // Limits and usage
+  requestCount   Int      @default(0) @map("request_count")
+  requestLimit   Int      @map("request_limit")
+  windowStart    DateTime @map("window_start")
+  windowEnd      DateTime @map("window_end")
+  
+  // Status
+  isBlocked      Boolean  @default(false) @map("is_blocked")
+  blockedUntil   DateTime? @map("blocked_until")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  @@unique([identifier, identifierType, endpoint, method, windowStart])
+  @@index([identifier, identifierType])
+  @@index([isBlocked, blockedUntil])
+  @@map("api_rate_limits")
+}
+
+// Security Scan Result model for vulnerability tracking
+model SecurityScanResult {
+  id             String   @id @default(cuid())
+  
+  // Scan details
+  scanType       String   @map("scan_type") // dependency, code, infrastructure, penetration
+  scanId         String   @map("scan_id") // Unique scan identifier
+  
+  // Target information
+  target         String   // What was scanned (package, file, endpoint, etc.)
+  targetVersion  String?  @map("target_version")
+  
+  // Vulnerability details
+  vulnerabilityId String? @map("vulnerability_id") // CVE ID or similar
+  severity       String   // low, medium, high, critical
+  title          String
+  description    String?
+  
+  // Fix information
+  fixAvailable   Boolean  @default(false) @map("fix_available")
+  fixVersion     String?  @map("fix_version")
+  fixDescription String?  @map("fix_description")
+  
+  // Status
+  status         String   @default("open") // open, acknowledged, fixed, false_positive
+  acknowledgedBy String?  @map("acknowledged_by")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  fixedAt        DateTime? @map("fixed_at")
+  
+  // Metadata
+  metadata       String?  @default("{}") // JSON string for additional data
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  @@index([scanType, severity, status])
+  @@index([vulnerabilityId, status])
+  @@index([target, status])
+  @@map("security_scan_results")
 }

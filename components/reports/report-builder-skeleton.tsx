@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export function ReportBuilderSkeleton() {
   return (
@@ -12,7 +12,7 @@ export function ReportBuilderSkeleton() {
           <Skeleton className="h-6 w-32 mb-2" />
           <Skeleton className="h-4 w-48" />
         </div>
-        
+
         <div className="flex-1 p-4">
           <div className="grid gap-3">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -47,7 +47,7 @@ export function ReportBuilderSkeleton() {
 
         {/* Canvas Skeleton */}
         <div className="flex-1 overflow-auto bg-gray-100">
-          <div className="min-h-full p-8" style={{ minWidth: '1200px' }}>
+          <div className="min-h-full p-8" style={{ minWidth: "1200px" }}>
             <div className="grid grid-cols-12 gap-4 min-h-[800px] bg-white rounded-lg p-6 shadow-sm">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="col-span-6">

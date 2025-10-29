@@ -18,17 +18,19 @@ Make the **Next.js Fullstack Starter** truly yours! This guide covers theming, b
 ### **Update App Metadata**
 
 **Root Layout (`app/layout.tsx`):**
+
 ```tsx
 export const metadata: Metadata = {
-  title: 'Your App Name',
-  description: 'Your amazing app description',
-  keywords: ['your', 'keywords', 'here'],
-  authors: [{ name: 'Your Name' }],
-  creator: 'Your Company',
-}
+  title: "Your App Name",
+  description: "Your amazing app description",
+  keywords: ["your", "keywords", "here"],
+  authors: [{ name: "Your Name" }],
+  creator: "Your Company",
+};
 ```
 
 **Package.json:**
+
 ```json
 {
   "name": "your-app-name",
@@ -41,6 +43,7 @@ export const metadata: Metadata = {
 ### **Logo & Favicon**
 
 **Replace these files in `/public`:**
+
 ```
 public/
 ├── favicon.ico          # Browser tab icon (32x32)
@@ -51,9 +54,10 @@ public/
 ```
 
 **Update Logo Component:**
+
 ```tsx
 // components/logo.tsx
-import Image from 'next/image'
+import Image from "next/image";
 
 export function Logo({ className }: { className?: string }) {
   return (
@@ -64,7 +68,7 @@ export function Logo({ className }: { className?: string }) {
       height={40}
       className={className}
     />
-  )
+  );
 }
 ```
 
@@ -75,59 +79,61 @@ export function Logo({ className }: { className?: string }) {
 ### **TailwindCSS Configuration**
 
 **Edit `tailwind.config.ts`:**
+
 ```ts
-import type { Config } from 'tailwindcss'
+import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  darkMode: 'class',
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
         // Your brand colors
         brand: {
-          50: '#f0f9ff',
-          100: '#e0f2fe', 
-          500: '#0ea5e9',  // Primary brand color
-          600: '#0284c7',
-          900: '#0c4a6e',
+          50: "#f0f9ff",
+          100: "#e0f2fe",
+          500: "#0ea5e9", // Primary brand color
+          600: "#0284c7",
+          900: "#0c4a6e",
         },
         // Custom semantic colors
         primary: {
-          DEFAULT: '#0ea5e9',
-          foreground: '#ffffff',
+          DEFAULT: "#0ea5e9",
+          foreground: "#ffffff",
         },
         secondary: {
-          DEFAULT: '#64748b',
-          foreground: '#ffffff',
+          DEFAULT: "#64748b",
+          foreground: "#ffffff",
         },
         // Override shadcn/ui colors
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         // ... add more custom colors
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'Inter', 'sans-serif'],
-        heading: ['var(--font-cal)', 'Cal Sans', 'sans-serif'],
+        sans: ["var(--font-inter)", "Inter", "sans-serif"],
+        heading: ["var(--font-cal)", "Cal Sans", "sans-serif"],
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
-}
+  plugins: [require("tailwindcss-animate")],
+};
 
-export default config
+export default config;
 ```
 
 ### **CSS Variables**
 
 **Update `app/globals.css`:**
+
 ```css
 @tailwind base;
-@tailwind components;  
+@tailwind components;
 @tailwind utilities;
 
 @layer base {
@@ -135,7 +141,7 @@ export default config
     /* Light theme colors */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-    --primary: 199 89% 48%;        /* Your brand blue */
+    --primary: 199 89% 48%; /* Your brand blue */
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -146,7 +152,7 @@ export default config
     /* Dark theme colors */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-    --primary: 199 89% 48%;        /* Same brand blue */
+    --primary: 199 89% 48%; /* Same brand blue */
     --primary-foreground: 222.2 84% 4.9%;
     /* Add more dark theme colors */
   }
@@ -154,7 +160,11 @@ export default config
 
 /* Custom component styles */
 .gradient-brand {
-  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary)) 0%,
+    hsl(var(--secondary)) 100%
+  );
 }
 ```
 
@@ -165,53 +175,54 @@ export default config
 ### **Custom Fonts**
 
 **Install fonts:**
+
 ```bash
 npm install @next/font
 ```
 
 **Configure in `app/layout.tsx`:**
+
 ```tsx
-import { Inter, Cal_Sans } from 'next/font/google'
-import localFont from 'next/font/local'
+import { Inter, Cal_Sans } from "next/font/google";
+import localFont from "next/font/local";
 
 // Google Fonts
 const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-})
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 const calSans = Cal_Sans({
-  subsets: ['latin'],
-  variable: '--font-cal',
-})
+  subsets: ["latin"],
+  variable: "--font-cal",
+});
 
 // Local font
 const customFont = localFont({
-  src: '../public/fonts/custom-font.woff2',
-  variable: '--font-custom',
-})
+  src: "../public/fonts/custom-font.woff2",
+  variable: "--font-custom",
+});
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <html 
-      lang="en" 
+    <html
+      lang="en"
       className={`${inter.variable} ${calSans.variable} ${customFont.variable}`}
     >
-      <body className="font-sans">
-        {children}
-      </body>
+      <body className="font-sans">{children}</body>
     </html>
-  )
+  );
 }
 ```
 
 ### **Typography Scale**
 
 **Add to `tailwind.config.ts`:**
+
 ```ts
 theme: {
   extend: {
@@ -241,8 +252,9 @@ theme: {
 ### **Button Variants**
 
 **Extend `components/ui/button.tsx`:**
+
 ```tsx
-import { cva, type VariantProps } from 'class-variance-authority'
+import { cva, type VariantProps } from "class-variance-authority";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background",
@@ -250,14 +262,18 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline:
+          "border border-input hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "underline-offset-4 hover:underline text-primary",
         // Your custom variants
         gradient: "gradient-brand text-white hover:opacity-90",
-        rounded: "rounded-full bg-primary text-primary-foreground hover:bg-primary/90",
+        rounded:
+          "rounded-full bg-primary text-primary-foreground hover:bg-primary/90",
         neon: "bg-gradient-to-r from-pink-500 to-violet-500 text-white hover:from-pink-600 hover:to-violet-600 shadow-lg shadow-pink-500/25",
       },
       size: {
@@ -274,56 +290,54 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 ```
 
 ### **Custom Card Component**
 
 **Create `components/ui/custom-card.tsx`:**
+
 ```tsx
-import { cn } from '@/lib/utils'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface CustomCardProps {
-  title: string
-  children: React.ReactNode
-  icon?: React.ReactNode
-  gradient?: boolean
-  className?: string
+  title: string;
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+  gradient?: boolean;
+  className?: string;
 }
 
-export function CustomCard({ 
-  title, 
-  children, 
-  icon, 
-  gradient = false, 
-  className 
+export function CustomCard({
+  title,
+  children,
+  icon,
+  gradient = false,
+  className,
 }: CustomCardProps) {
   return (
-    <Card className={cn(
-      "transition-all duration-200 hover:shadow-lg hover:scale-[1.02]",
-      gradient && "gradient-brand text-white border-0",
-      className
-    )}>
+    <Card
+      className={cn(
+        "transition-all duration-200 hover:shadow-lg hover:scale-[1.02]",
+        gradient && "gradient-brand text-white border-0",
+        className,
+      )}
+    >
       <CardHeader className="flex flex-row items-center space-y-0 pb-2">
         {icon && (
-          <div className="mr-2 p-2 rounded-lg bg-primary/10">
-            {icon}
-          </div>
+          <div className="mr-2 p-2 rounded-lg bg-primary/10">{icon}</div>
         )}
-        <CardTitle className={cn(
-          "text-lg font-semibold",
-          gradient && "text-white"
-        )}>
+        <CardTitle
+          className={cn("text-lg font-semibold", gradient && "text-white")}
+        >
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        {children}
-      </CardContent>
+      <CardContent>{children}</CardContent>
     </Card>
-  )
+  );
 }
 ```
 
@@ -334,78 +348,85 @@ export function CustomCard({
 ### **Enhanced Theme Provider**
 
 **Create `components/theme-provider.tsx`:**
+
 ```tsx
-'use client'
+"use client";
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = 'light' | 'dark' | 'system'
-type AccentColor = 'blue' | 'green' | 'purple' | 'orange' | 'red'
+type Theme = "light" | "dark" | "system";
+type AccentColor = "blue" | "green" | "purple" | "orange" | "red";
 
 interface ThemeContextType {
-  theme: Theme
-  accentColor: AccentColor
-  setTheme: (theme: Theme) => void
-  setAccentColor: (color: AccentColor) => void
+  theme: Theme;
+  accentColor: AccentColor;
+  setTheme: (theme: Theme) => void;
+  setAccentColor: (color: AccentColor) => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('system')
-  const [accentColor, setAccentColor] = useState<AccentColor>('blue')
+  const [theme, setTheme] = useState<Theme>("system");
+  const [accentColor, setAccentColor] = useState<AccentColor>("blue");
 
   useEffect(() => {
     // Apply theme to document
-    const root = window.document.documentElement
-    root.classList.remove('light', 'dark')
-    
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      root.classList.add(systemTheme)
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark");
+
+    if (theme === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+        .matches
+        ? "dark"
+        : "light";
+      root.classList.add(systemTheme);
     } else {
-      root.classList.add(theme)
+      root.classList.add(theme);
     }
 
     // Apply accent color
-    root.setAttribute('data-accent', accentColor)
-  }, [theme, accentColor])
+    root.setAttribute("data-accent", accentColor);
+  }, [theme, accentColor]);
 
   return (
-    <ThemeContext.Provider value={{ theme, accentColor, setTheme, setAccentColor }}>
+    <ThemeContext.Provider
+      value={{ theme, accentColor, setTheme, setAccentColor }}
+    >
       {children}
     </ThemeContext.Provider>
-  )
+  );
 }
 
 export const useTheme = () => {
-  const context = useContext(ThemeContext)
+  const context = useContext(ThemeContext);
   if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider')
+    throw new Error("useTheme must be used within a ThemeProvider");
   }
-  return context
-}
+  return context;
+};
 ```
 
 ### **Theme Selector Component**
 
 **Create `components/theme-selector.tsx`:**
-```tsx
-'use client'
 
-import { useTheme } from '@/components/theme-provider'
-import { Button } from '@/components/ui/button'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu'
-import { Moon, Sun, Palette } from 'lucide-react'
+```tsx
+"use client";
+
+import { useTheme } from "@/components/theme-provider";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Moon, Sun, Palette } from "lucide-react";
 
 export function ThemeSelector() {
-  const { theme, accentColor, setTheme, setAccentColor } = useTheme()
+  const { theme, accentColor, setTheme, setAccentColor } = useTheme();
 
   return (
     <DropdownMenu>
@@ -417,18 +438,18 @@ export function ThemeSelector() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme('light')}>
+        <DropdownMenuItem onClick={() => setTheme("light")}>
           Light
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>
+        <DropdownMenuItem onClick={() => setTheme("dark")}>
           Dark
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
+        <DropdownMenuItem onClick={() => setTheme("system")}>
           System
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {['blue', 'green', 'purple', 'orange', 'red'].map((color) => (
-          <DropdownMenuItem 
+        {["blue", "green", "purple", "orange", "red"].map((color) => (
+          <DropdownMenuItem
             key={color}
             onClick={() => setAccentColor(color as any)}
             className="flex items-center gap-2"
@@ -439,7 +460,7 @@ export function ThemeSelector() {
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 ```
 
@@ -450,6 +471,7 @@ export function ThemeSelector() {
 ### **Add Your Models**
 
 **Edit `prisma/schema.prisma`:**
+
 ```prisma
 // Your custom models
 model Product {
@@ -462,10 +484,10 @@ model Product {
   categoryId  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   // Relations
   orderItems  OrderItem[]
-  
+
   @@map("products")
 }
 
@@ -474,7 +496,7 @@ model Category {
   name     String    @unique
   slug     String    @unique
   products Product[]
-  
+
   @@map("categories")
 }
 
@@ -484,10 +506,10 @@ model Order {
   status    OrderStatus @default(PENDING)
   total     Decimal     @db.Decimal(10, 2)
   createdAt DateTime    @default(now())
-  
+
   // Relations
   items     OrderItem[]
-  
+
   @@map("orders")
 }
 
@@ -497,11 +519,11 @@ model OrderItem {
   productId String
   quantity  Int
   price     Decimal @db.Decimal(10, 2)
-  
+
   // Relations
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
-  
+
   @@map("order_items")
 }
 
@@ -534,10 +556,11 @@ npm run db:seed
 ### **Add API Routes**
 
 **Create `app/api/products/route.ts`:**
+
 ```tsx
-import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs'
-import { prisma } from '@/lib/prisma'
+import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
@@ -546,41 +569,41 @@ export async function GET() {
         category: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
-    })
-    
-    return NextResponse.json(products)
+    });
+
+    return NextResponse.json(products);
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to fetch products' },
-      { status: 500 }
-    )
+      { error: "Failed to fetch products" },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(request: Request) {
-  const { userId } = auth()
-  
+  const { userId } = auth();
+
   if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
+
   try {
-    const data = await request.json()
+    const data = await request.json();
     const product = await prisma.product.create({
       data,
       include: {
         category: true,
       },
-    })
-    
-    return NextResponse.json(product, { status: 201 })
+    });
+
+    return NextResponse.json(product, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to create product' },
-      { status: 500 }
-    )
+      { error: "Failed to create product" },
+      { status: 500 },
+    );
   }
 }
 ```
@@ -588,58 +611,61 @@ export async function POST(request: Request) {
 ### **Custom Hooks**
 
 **Create `hooks/use-products.ts`:**
-```tsx
-'use client'
 
-import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+```tsx
+"use client";
+
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Product {
-  id: string
-  name: string
-  description?: string
-  price: number
-  image?: string
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  image?: string;
   category: {
-    id: string
-    name: string
-  }
+    id: string;
+    name: string;
+  };
 }
 
 export function useProducts() {
   return useQuery({
-    queryKey: ['products'],
+    queryKey: ["products"],
     queryFn: async (): Promise<Product[]> => {
-      const response = await fetch('/api/products')
+      const response = await fetch("/api/products");
       if (!response.ok) {
-        throw new Error('Failed to fetch products')
+        throw new Error("Failed to fetch products");
       }
-      return response.json()
+      return response.json();
     },
-  })
+  });
 }
 
 export function useCreateProduct() {
-  const queryClient = useQueryClient()
-  
+  const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async (data: Omit<Product, 'id' | 'category'> & { categoryId: string }) => {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+    mutationFn: async (
+      data: Omit<Product, "id" | "category"> & { categoryId: string },
+    ) => {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-      })
-      
+      });
+
       if (!response.ok) {
-        throw new Error('Failed to create product')
+        throw new Error("Failed to create product");
       }
-      
-      return response.json()
+
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     },
-  })
+  });
 }
 ```
 
@@ -650,6 +676,7 @@ export function useCreateProduct() {
 ### **Breakpoint System**
 
 **Add custom breakpoints to `tailwind.config.ts`:**
+
 ```ts
 theme: {
   screens: {
@@ -673,17 +700,17 @@ theme: {
 // Mobile-first responsive component
 function ResponsiveCard() {
   return (
-    <div className="
+    <div
+      className="
       w-full p-4 
       sm:w-1/2 sm:p-6 
       lg:w-1/3 lg:p-8
       xl:w-1/4
-    ">
-      <Card className="h-full">
-        {/* Card content */}
-      </Card>
+    "
+    >
+      <Card className="h-full">{/* Card content */}</Card>
     </div>
-  )
+  );
 }
 ```
 
@@ -693,12 +720,12 @@ function ResponsiveCard() {
 
 Ready to take customization further? Explore these areas:
 
-| Area | Description | Difficulty |
-|------|-------------|------------|
-| **[Animation System](./examples/animations.md)** | Add smooth transitions | Medium |
-| **[PWA Features](./examples/pwa.md)** | Offline functionality | Hard |
-| **[Internationalization](./examples/i18n.md)** | Multi-language support | Medium |
-| **[Advanced Theming](./examples/advanced-theming.md)** | Complex theme system | Hard |
+| Area                                                   | Description            | Difficulty |
+| ------------------------------------------------------ | ---------------------- | ---------- |
+| **[Animation System](./examples/animations.md)**       | Add smooth transitions | Medium     |
+| **[PWA Features](./examples/pwa.md)**                  | Offline functionality  | Hard       |
+| **[Internationalization](./examples/i18n.md)**         | Multi-language support | Medium     |
+| **[Advanced Theming](./examples/advanced-theming.md)** | Complex theme system   | Hard       |
 
 ---
 

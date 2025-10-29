@@ -1,19 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { debounce } from "@/lib/utils";
 
 /**
  * Hook for managing local storage with type safety
  */
 export function useLocalStorage<T>(
   key: string,
-  initialValue: T
+  initialValue: T,
 ): [T, (value: T | ((val: T) => T)) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     if (typeof window === "undefined") {
       return initialValue;
     }
-    
+
     try {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
@@ -25,9 +24,10 @@ export function useLocalStorage<T>(
 
   const setValue = (value: T | ((val: T) => T)) => {
     try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      
+
       if (typeof window !== "undefined") {
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
@@ -44,13 +44,13 @@ export function useLocalStorage<T>(
  */
 export function useSessionStorage<T>(
   key: string,
-  initialValue: T
+  initialValue: T,
 ): [T, (value: T | ((val: T) => T)) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     if (typeof window === "undefined") {
       return initialValue;
     }
-    
+
     try {
       const item = window.sessionStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
@@ -62,9 +62,10 @@ export function useSessionStorage<T>(
 
   const setValue = (value: T | ((val: T) => T)) => {
     try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      
+
       if (typeof window !== "undefined") {
         window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
       }
@@ -104,8 +105,8 @@ export function useUrlParams() {
 
   const updateParams = useCallback(
     (updates: Record<string, string | number | boolean | null>) => {
-      const params = new URLSearchParams(searchParams.toString());
-      
+      const params = new URLSearchParams(searchParams?.toString() || "");
+
       Object.entries(updates).forEach(([key, value]) => {
         if (value === null || value === undefined || value === "") {
           params.delete(key);
@@ -113,23 +114,23 @@ export function useUrlParams() {
           params.set(key, String(value));
         }
       });
-      
+
       const newUrl = `${window.location.pathname}?${params.toString()}`;
       router.push(newUrl);
     },
-    [router, searchParams]
+    [router, searchParams],
   );
 
   const getParam = useCallback(
     (key: string): string | null => {
-      return searchParams.get(key);
+      return searchParams?.get(key) || null;
     },
-    [searchParams]
+    [searchParams],
   );
 
   const getAllParams = useCallback(() => {
     const params: Record<string, string> = {};
-    searchParams.forEach((value, key) => {
+    searchParams?.forEach((value, key) => {
       params[key] = value;
     });
     return params;
@@ -144,23 +145,26 @@ export function useUrlParams() {
 export function useClipboard(timeout = 2000) {
   const [copied, setCopied] = useState(false);
 
-  const copy = useCallback(async (text: string) => {
-    if (!navigator?.clipboard) {
-      console.warn("Clipboard not supported");
-      return false;
-    }
+  const copy = useCallback(
+    async (text: string) => {
+      if (!navigator?.clipboard) {
+        console.warn("Clipboard not supported");
+        return false;
+      }
 
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), timeout);
-      return true;
-    } catch (error) {
-      console.error("Failed to copy to clipboard:", error);
-      setCopied(false);
-      return false;
-    }
-  }, [timeout]);
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), timeout);
+        return true;
+      } catch (error) {
+        console.error("Failed to copy to clipboard:", error);
+        setCopied(false);
+        return false;
+      }
+    },
+    [timeout],
+  );
 
   return { copied, copy };
 }
@@ -172,20 +176,24 @@ export function useLoading(initialState = false) {
   const [loading, setLoading] = useState(initialState);
   const [error, setError] = useState<string | null>(null);
 
-  const execute = useCallback(async <T>(asyncFn: () => Promise<T>): Promise<T | null> => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await asyncFn();
-      return result;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred";
-      setError(errorMessage);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const execute = useCallback(
+    async <T>(asyncFn: () => Promise<T>): Promise<T | null> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await asyncFn();
+        return result;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "An error occurred";
+        setError(errorMessage);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   return { loading, error, execute, setError, setLoading };
 }
@@ -205,7 +213,7 @@ export function useIntersectionObserver(
     root?: Element | null;
     rootMargin?: string;
     freezeOnceVisible?: boolean;
-  } = {}
+  } = {},
 ) {
   const [entry, setEntry] = useState<IntersectionObserverEntry>();
 
@@ -237,11 +245,11 @@ export function useIntersectionObserver(
  */
 export function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T>();
-  
+
   useEffect(() => {
     ref.current = value;
   });
-  
+
   return ref.current;
 }
 
@@ -250,7 +258,7 @@ export function usePrevious<T>(value: T): T | undefined {
  */
 export function useOnClickOutside(
   ref: React.RefObject<HTMLElement>,
-  handler: (event: Event) => void
+  handler: (event: Event) => void,
 ) {
   useEffect(() => {
     const listener = (event: Event) => {
@@ -320,10 +328,12 @@ export function useWindowSize() {
 /**
  * Hook for toggle functionality
  */
-export function useToggle(initialValue = false): [boolean, () => void, (value: boolean) => void] {
+export function useToggle(
+  initialValue = false,
+): [boolean, () => void, (value: boolean) => void] {
   const [value, setValue] = useState(initialValue);
 
-  const toggle = useCallback(() => setValue(v => !v), []);
+  const toggle = useCallback(() => setValue((v) => !v), []);
   const setToggle = useCallback((value: boolean) => setValue(value), []);
 
   return [value, toggle, setToggle];
@@ -345,11 +355,10 @@ export function useIsMounted() {
 /**
  * Hook for async operations with cleanup
  */
-export function useAsync<T>(
-  asyncFunction: () => Promise<T>,
-  immediate = true
-) {
-  const [status, setStatus] = useState<"idle" | "pending" | "success" | "error">("idle");
+export function useAsync<T>(asyncFunction: () => Promise<T>, immediate = true) {
+  const [status, setStatus] = useState<
+    "idle" | "pending" | "success" | "error"
+  >("idle");
   const [value, setValue] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
 

@@ -2,30 +2,54 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 /**
- * Utility function to merge Tailwind CSS classes
- * Combines clsx and tailwind-merge for optimal class handling
+ * Combines class names using clsx and tailwind-merge
+ * @param inputs - Class values to combine
+ * @returns Combined class string with Tailwind conflicts resolved
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Format a date to a human-readable string
+ * Format a date to a readable string
+ * @param date - Date object or string to format
+ * @returns Formatted date string (e.g., "January 1, 2024")
  */
-export function formatDate(
-  date: Date | string | number,
-  options: Intl.DateTimeFormatOptions = {}
-): string {
+export function formatDate(date: Date | string): string {
   return new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
     month: "long",
     day: "numeric",
-    ...options,
+    year: "numeric",
   }).format(new Date(date));
 }
 
 /**
+ * Format a date to a relative time string (e.g., "2 hours ago")
+ * @param date - Date object or string to format
+ * @returns Relative time string
+ */
+export function formatRelativeTime(date: Date | string): string {
+  const now = new Date();
+  const targetDate = new Date(date);
+  const diffInSeconds = Math.floor(
+    (now.getTime() - targetDate.getTime()) / 1000,
+  );
+
+  if (diffInSeconds < 60) return "just now";
+  if (diffInSeconds < 3600)
+    return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400)
+    return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 2592000)
+    return `${Math.floor(diffInSeconds / 86400)} days ago`;
+
+  return formatDate(targetDate);
+}
+
+/**
  * Generate a random string of specified length
+ * @param length - Length of the random string to generate
+ * @returns Random alphanumeric string
  */
 export function generateRandomString(length: number): string {
   const characters =
@@ -38,25 +62,34 @@ export function generateRandomString(length: number): string {
 }
 
 /**
- * Debounce function to limit the rate at which a function can fire
+ * Debounce function to delay the execution of a function
+ * @param func - Function to debounce
+ * @param wait - Delay in milliseconds
+ * @returns Debounced function
  */
+// import { debounce } from "@/lib/utils/type-helpers";
+
+// Implementación local de debounce
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
+  let timeout: NodeJS.Timeout | null = null;
   return function (...args: Parameters<T>) {
-    clearTimeout(timeout);
+    if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(null, args), wait);
   };
 }
 
 /**
  * Throttle function to limit the execution of a function
+ * @param func - Function to throttle
+ * @param limit - Time limit in milliseconds
+ * @returns Throttled function
  */
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
-  limit: number
+  limit: number,
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean;
   return function (...args: Parameters<T>) {
@@ -70,67 +103,140 @@ export function throttle<T extends (...args: any[]) => any>(
 
 /**
  * Capitalize the first letter of a string
+ * @param str - String to capitalize
+ * @returns String with first letter capitalized
  */
 export function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 /**
- * Convert a string to kebab-case
+ * Convert a string to a URL-friendly slug
+ * @param str - String to convert to slug
+ * @returns URL-friendly slug string
  */
-export function toKebabCase(str: string): string {
+export function generateSlug(str: string): string {
   return str
-    .replace(/([a-z])([A-Z])/g, "$1-$2")
-    .replace(/[\s_]+/g, "-")
-    .toLowerCase();
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "") // Remove special characters
+    .replace(/[\s_-]+/g, "-") // Replace spaces and underscores with hyphens
+    .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
 }
 
 /**
- * Convert a string to camelCase
+ * Truncate a string to a specified length
+ * @param str - String to truncate
+ * @param length - Maximum length of the string
+ * @returns Truncated string with ellipsis if needed
  */
-export function toCamelCase(str: string): string {
-  return str
-    .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ""))
-    .replace(/^[A-Z]/, (c) => c.toLowerCase());
+export function truncate(str: string, length: number): string {
+  if (str.length <= length) return str;
+  return str.slice(0, length) + "...";
 }
 
 /**
- * Truncate text with ellipsis
+ * Format a number as currency
+ * @param amount - Number to format as currency
+ * @param currency - Currency code (default: "USD")
+ * @returns Formatted currency string
  */
-export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, maxLength - 3)  }...`;
+export function formatCurrency(
+  amount: number,
+  currency: string = "USD",
+): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  }).format(amount);
 }
 
 /**
- * Format bytes to human readable string
+ * Format a number with commas
+ * @param num - Number to format
+ * @returns Formatted number string with commas
  */
-export function formatBytes(bytes: number, decimals: number = 2): string {
-  if (bytes === 0) return "0 Bytes";
-
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))  } ${  sizes[i]}`;
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat("en-US").format(num);
 }
 
 /**
- * Sleep function for async operations
+ * Check if a string is a valid email
+ * @param email - Email string to validate
+ * @returns True if email is valid, false otherwise
+ */
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * Check if a string is a valid URL
+ * @param url - URL string to validate
+ * @returns True if URL is valid, false otherwise
+ */
+export function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Generate a random color in hex format
+ * @returns Random hex color string (e.g., "#ff5733")
+ */
+export function generateRandomColor(): string {
+  return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+}
+
+/**
+ * Sleep for a specified number of milliseconds
+ * @param ms - Number of milliseconds to sleep
+ * @returns Promise that resolves after the specified time
  */
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
- * Check if a value is empty (null, undefined, empty string, empty array, empty object)
+ * Deep clone an object using JSON serialization
+ * @param obj - Object to clone
+ * @returns Deep cloned object
  */
-export function isEmpty(value: any): boolean {
-  if (value == null) return true;
-  if (typeof value === "string") return value.trim() === "";
-  if (Array.isArray(value)) return value.length === 0;
-  if (typeof value === "object") return Object.keys(value).length === 0;
-  return false;
+export function deepClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+/**
+ * Check if two objects are equal (shallow comparison)
+ * @param obj1 - First object to compare
+ * @param obj2 - Second object to compare
+ * @returns True if objects are equal, false otherwise
+ */
+export function isEqual(obj1: any, obj2: any): boolean {
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+
+  if (keys1.length !== keys2.length) {
+    return false;
+  }
+
+  for (let key of keys1) {
+    if (obj1[key] !== obj2[key]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Generate a unique request ID for tracking API requests
+ * @returns Unique request ID string
+ */
+export function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }

@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 
 import { UploadDropzone } from "@/lib/uploadthing";
-import { Button } from "@/components/ui/button";
 
 interface ImageUploadProps {
   value: string;

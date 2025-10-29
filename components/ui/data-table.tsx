@@ -28,29 +28,29 @@ export interface DataTableColumn<T> {
 export interface DataTableProps<TData> {
   columns: DataTableColumn<TData>[];
   data: TData[];
-  
+
   // Pagination props
   pageSize?: number;
   currentPage?: number;
   totalItems?: number;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
-  
+
   // Search and filter
   searchKey?: keyof TData;
   searchPlaceholder?: string;
   onSearch?: (searchTerm: string) => void;
-  
+
   // Empty state
   emptyTitle?: string;
   emptySubtitle?: string;
   emptyAction?: React.ReactNode;
-  
+
   // Actions
   onCreate?: () => void;
   createLabel?: string;
   onExport?: () => void;
-  
+
   // Customization
   className?: string;
   showPagination?: boolean;
@@ -62,29 +62,29 @@ export interface DataTableProps<TData> {
 export function DataTable<TData>({
   columns,
   data,
-  
+
   // Pagination
   pageSize = 10,
   currentPage = 1,
   totalItems,
   onPageChange,
   onPageSizeChange,
-  
+
   // Search and filter
   searchKey,
   searchPlaceholder = "Search...",
   onSearch,
-  
+
   // Empty state
   emptyTitle = "No data found",
   emptySubtitle = "There are no items to display at the moment.",
   emptyAction,
-  
+
   // Actions
   onCreate,
   createLabel = "Create New",
   onExport,
-  
+
   // Customization
   className,
   showPagination = true,
@@ -95,13 +95,13 @@ export function DataTable<TData>({
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{
     key: keyof TData | null;
-    direction: 'asc' | 'desc';
-  }>({ key: null, direction: 'asc' });
+    direction: "asc" | "desc";
+  }>({ key: null, direction: "asc" });
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
     if (!searchTerm || !searchKey) return data;
-    
+
     return data.filter((item) => {
       const value = item[searchKey];
       return String(value).toLowerCase().includes(searchTerm.toLowerCase());
@@ -117,10 +117,10 @@ export function DataTable<TData>({
       const bValue = b[sortConfig.key!];
 
       if (aValue < bValue) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
+        return sortConfig.direction === "asc" ? -1 : 1;
       }
       if (aValue > bValue) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
+        return sortConfig.direction === "asc" ? 1 : -1;
       }
       return 0;
     });
@@ -132,7 +132,7 @@ export function DataTable<TData>({
       // Server-side pagination - return all data
       return sortedData;
     }
-    
+
     // Client-side pagination
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
@@ -140,10 +140,10 @@ export function DataTable<TData>({
   }, [sortedData, currentPage, pageSize, onPageChange]);
 
   // Calculate pagination values
-  const totalPages = totalItems 
+  const totalPages = totalItems
     ? Math.ceil(totalItems / pageSize)
     : Math.ceil(sortedData.length / pageSize);
-  
+
   const actualTotalItems = totalItems || sortedData.length;
 
   // Handle search
@@ -156,9 +156,9 @@ export function DataTable<TData>({
 
   // Handle sorting
   const handleSort = (key: keyof TData) => {
-    setSortConfig(prev => ({
+    setSortConfig((prev) => ({
       key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
   };
 
@@ -208,8 +208,8 @@ export function DataTable<TData>({
           <TableHeader>
             <TableRow>
               {columns.map((column) => (
-                <TableHead 
-                  key={String(column.key)} 
+                <TableHead
+                  key={String(column.key)}
                   className={`font-medium ${column.className || ""}`}
                 >
                   {column.sortable ? (
@@ -231,7 +231,10 @@ export function DataTable<TData>({
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   Loading...
                 </TableCell>
               </TableRow>
@@ -239,14 +242,13 @@ export function DataTable<TData>({
               paginatedData.map((row, rowIndex) => (
                 <TableRow key={rowIndex} className="hover:bg-muted/50">
                   {columns.map((column) => (
-                    <TableCell 
-                      key={String(column.key)} 
+                    <TableCell
+                      key={String(column.key)}
                       className={column.className}
                     >
-                      {column.render 
+                      {column.render
                         ? column.render(row[column.key], row, rowIndex)
-                        : String(row[column.key] ?? '')
-                      }
+                        : String(row[column.key] ?? "")}
                     </TableCell>
                   ))}
                 </TableRow>

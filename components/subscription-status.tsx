@@ -26,14 +26,14 @@ export default function SubscriptionStatus() {
 
   const fetchSubscriptionStatus = async () => {
     try {
-      const response = await fetch('/api/subscription');
-      
+      const response = await fetch("/api/subscription");
+
       if (response.ok) {
         const data = await response.json();
         setSubscription(data.subscription);
       }
     } catch (error) {
-      console.error('Failed to fetch subscription status:', error);
+      console.error("Failed to fetch subscription status:", error);
     } finally {
       setIsLoading(false);
     }
@@ -41,10 +41,10 @@ export default function SubscriptionStatus() {
 
   const handleManageBilling = async () => {
     setIsManaging(true);
-    
+
     try {
-      const response = await fetch('/api/subscription/billing-portal', {
-        method: 'POST',
+      const response = await fetch("/api/subscription/billing-portal", {
+        method: "POST",
       });
 
       const { url } = await response.json();
@@ -52,11 +52,11 @@ export default function SubscriptionStatus() {
       if (response.ok && url) {
         window.location.href = url;
       } else {
-        throw new Error('Failed to create billing portal session');
+        throw new Error("Failed to create billing portal session");
       }
     } catch (error) {
-      console.error('Billing portal error:', error);
-      toast.error('Failed to access billing portal');
+      console.error("Billing portal error:", error);
+      toast.error("Failed to access billing portal");
     } finally {
       setIsManaging(false);
     }
@@ -64,26 +64,26 @@ export default function SubscriptionStatus() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'trialing':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'past_due':
-      case 'unpaid':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'canceled':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case "active":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "trialing":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "past_due":
+      case "unpaid":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "canceled":
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active':
+      case "active":
         return <Crown className="h-4 w-4" />;
-      case 'past_due':
-      case 'unpaid':
+      case "past_due":
+      case "unpaid":
         return <AlertCircle className="h-4 w-4" />;
       default:
         return <CreditCard className="h-4 w-4" />;
@@ -119,7 +119,8 @@ export default function SubscriptionStatus() {
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground text-center">
-            You're currently on the free plan. Upgrade to unlock premium features.
+            You're currently on the free plan. Upgrade to unlock premium
+            features.
           </p>
         </CardContent>
       </Card>
@@ -136,19 +137,21 @@ export default function SubscriptionStatus() {
           onClick={handleManageBilling}
           disabled={isManaging}
         >
-          {isManaging ? 'Loading...' : 'Manage Billing'}
+          {isManaging ? "Loading..." : "Manage Billing"}
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Plan and Status */}
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-medium capitalize">{subscription.plan} Plan</div>
+            <div className="font-medium capitalize">
+              {subscription.plan} Plan
+            </div>
             <div className="text-sm text-muted-foreground">
               Subscription ID: {subscription.id.slice(-8)}
             </div>
           </div>
-          <Badge 
+          <Badge
             className={`flex items-center gap-1 ${getStatusColor(subscription.status)}`}
           >
             {getStatusIcon(subscription.status)}
@@ -160,7 +163,7 @@ export default function SubscriptionStatus() {
         <div className="flex items-center gap-2 text-sm">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <span className="text-muted-foreground">
-            {subscription.cancelAtPeriodEnd ? 'Expires on' : 'Renews on'}:
+            {subscription.cancelAtPeriodEnd ? "Expires on" : "Renews on"}:
           </span>
           <span className="font-medium">
             {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
@@ -176,7 +179,8 @@ export default function SubscriptionStatus() {
                 Subscription Canceled
               </div>
               <div className="text-yellow-700">
-                Your subscription will end on {new Date(subscription.currentPeriodEnd).toLocaleDateString()}.
+                Your subscription will end on{" "}
+                {new Date(subscription.currentPeriodEnd).toLocaleDateString()}.
                 You can reactivate it anytime before then.
               </div>
             </div>
@@ -184,25 +188,27 @@ export default function SubscriptionStatus() {
         )}
 
         {/* Status Messages */}
-        {subscription.status === 'past_due' && (
+        {subscription.status === "past_due" && (
           <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
             <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
               <div className="font-medium text-red-800">Payment Past Due</div>
               <div className="text-red-700">
-                Please update your payment method to continue using premium features.
+                Please update your payment method to continue using premium
+                features.
               </div>
             </div>
           </div>
         )}
 
-        {subscription.status === 'trialing' && (
+        {subscription.status === "trialing" && (
           <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
             <CreditCard className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
               <div className="font-medium text-blue-800">Free Trial Active</div>
               <div className="text-blue-700">
-                Your trial ends on {new Date(subscription.currentPeriodEnd).toLocaleDateString()}.
+                Your trial ends on{" "}
+                {new Date(subscription.currentPeriodEnd).toLocaleDateString()}.
                 Add a payment method to continue after the trial.
               </div>
             </div>

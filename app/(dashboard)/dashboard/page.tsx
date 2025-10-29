@@ -1,22 +1,17 @@
 import { commonMetadata } from "@/lib/seo";
-import UploadDemo from "@/components/upload-demo";
-import EmailDemo from "@/components/email-demo";
-import SubscriptionDemo from "@/components/subscription-demo";
-import SEODemo from "@/components/seo-demo";
-import RealtimeDemo from "@/components/realtime-demo";
 import { initialProfile } from "@/lib/initial-profile";
 import { Container } from "@/components/ui/container";
-import { 
+import {
   Activity,
-  Upload, 
-  Mail, 
-  CreditCard, 
+  Upload,
+  Mail,
+  CreditCard,
   Search,
   Zap,
   CheckCircle,
   Clock,
   Users,
-  BarChart3
+  BarChart3,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +22,7 @@ export const metadata = commonMetadata.dashboard();
 
 export default async function DashboardPage() {
   const profile = await initialProfile();
-  
+
   // initialProfile handles authentication and redirects if needed
   // profile is guaranteed to exist at this point
 
@@ -38,48 +33,48 @@ export default async function DashboardPage() {
       icon: Upload,
       href: "/upload",
       status: "Complete",
-      color: "text-green-600"
+      color: "text-green-600",
     },
     {
-      title: "Email System", 
+      title: "Email System",
       description: "Resend integration with React Email templates",
       icon: Mail,
       href: "/email",
       status: "Complete",
-      color: "text-blue-600"
+      color: "text-blue-600",
     },
     {
       title: "Payment System",
       description: "Stripe integration with subscriptions & webhooks",
       icon: CreditCard,
-      href: "/payments", 
+      href: "/payments",
       status: "Complete",
-      color: "text-purple-600"
+      color: "text-purple-600",
     },
     {
       title: "SEO System",
       description: "Dynamic metadata and structured data",
       icon: Search,
       href: "/seo",
-      status: "Complete", 
-      color: "text-orange-600"
+      status: "Complete",
+      color: "text-orange-600",
     },
     {
       title: "Real-time Features",
       description: "Notifications, SSE streaming & live updates",
       icon: Zap,
-      href: "/realtime",
+      href: "/showcase/features/realtime",
       status: "Complete",
-      color: "text-yellow-600"
+      color: "text-yellow-600",
     },
     {
       title: "Pagination System",
       description: "Reusable pagination components & data tables",
       icon: BarChart3,
-      href: "/pagination",
+      href: "/showcase/features/pagination",
       status: "Complete",
-      color: "text-indigo-600"
-    }
+      color: "text-indigo-600",
+    },
   ];
 
   const stats = [
@@ -87,26 +82,26 @@ export default async function DashboardPage() {
       title: "Features Implemented",
       value: "6",
       icon: CheckCircle,
-      change: "+100%"
+      change: "+100%",
     },
     {
       title: "Active Users",
       value: "1,234",
       icon: Users,
-      change: "+12%"
+      change: "+12%",
     },
     {
       title: "Response Time",
-      value: "45ms", 
+      value: "45ms",
       icon: Clock,
-      change: "-5ms"
+      change: "-5ms",
     },
     {
       title: "Uptime",
       value: "99.9%",
       icon: Activity,
-      change: "+0.1%"
-    }
+      change: "+0.1%",
+    },
   ];
 
   return (
@@ -115,16 +110,24 @@ export default async function DashboardPage() {
         {/* Header with User Info */}
         <div>
           <h1 className="text-3xl font-bold">
-            Welcome back{profile && typeof profile === 'object' && 'name' in profile ? `, ${profile.name}` : ''}!
+            Welcome back
+            {profile && typeof profile === "object" && "name" in profile
+              ? `, ${profile.name}`
+              : ""}
+            !
           </h1>
           <p className="text-muted-foreground mt-2">
-            Your fullstack template dashboard is ready. All systems are operational.
+            Your fullstack template dashboard is ready. All systems are
+            operational.
           </p>
-          {profile && typeof profile === 'object' && 'subscription' in profile && profile.subscription && (
-            <Badge variant="outline" className="mt-2">
-              {profile.subscription.plan} Plan
-            </Badge>
-          )}
+          {profile &&
+            typeof profile === "object" &&
+            "subscription" in profile &&
+            profile.subscription && (
+              <Badge variant="outline" className="mt-2">
+                {profile.subscription.plan} Plan
+              </Badge>
+            )}
         </div>
 
         {/* Stats Grid */}
@@ -142,7 +145,8 @@ export default async function DashboardPage() {
                 <CardContent>
                   <div className="text-2xl font-bold">{stat.value}</div>
                   <p className="text-xs text-muted-foreground">
-                    <span className="text-green-600">{stat.change}</span> from last month
+                    <span className="text-green-600">{stat.change}</span> from
+                    last month
                   </p>
                 </CardContent>
               </Card>
@@ -166,10 +170,14 @@ export default async function DashboardPage() {
                   <Link key={index} href={feature.href}>
                     <div className="p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
                       <div className="flex items-start gap-3">
-                        <Icon className={`h-5 w-5 ${feature.color} flex-shrink-0 mt-0.5`} />
+                        <Icon
+                          className={`h-5 w-5 ${feature.color} flex-shrink-0 mt-0.5`}
+                        />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <h3 className="font-medium text-sm">{feature.title}</h3>
+                            <h3 className="font-medium text-sm">
+                              {feature.title}
+                            </h3>
                             <Badge variant="outline" className="text-xs">
                               {feature.status}
                             </Badge>
@@ -195,29 +203,29 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <Link 
-                  href="/upload" 
+                <Link
+                  href="/upload"
                   className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <Upload className="h-4 w-4 text-blue-600" />
                   <span className="text-sm">Upload Files</span>
                 </Link>
-                <Link 
-                  href="/email" 
+                <Link
+                  href="/email"
                   className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <Mail className="h-4 w-4 text-green-600" />
                   <span className="text-sm">Send Email</span>
                 </Link>
-                <Link 
-                  href="/payments" 
+                <Link
+                  href="/payments"
                   className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <CreditCard className="h-4 w-4 text-purple-600" />
                   <span className="text-sm">Manage Subscription</span>
                 </Link>
-                <Link 
-                  href="/realtime" 
+                <Link
+                  href="/showcase/features/realtime"
                   className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <Zap className="h-4 w-4 text-yellow-600" />

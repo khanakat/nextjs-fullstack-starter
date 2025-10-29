@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { logger } from "@/lib/logger";
 import { ImageUpload } from "@/components/image-upload";
 import { FileUpload } from "@/components/file-upload";
 import { Button } from "@/components/ui/button";
@@ -16,8 +17,8 @@ export default function UploadDemo() {
   const handleSave = () => {
     if (imageUrl || fileUrl) {
       toast.success("Files uploaded successfully!");
-      console.log("Image URL:", imageUrl);
-      console.log("File URL:", fileUrl);
+      logger.info("Image uploaded successfully", "UPLOAD", { imageUrl });
+      logger.info("File uploaded successfully", "UPLOAD", { fileUrl });
     } else {
       toast.error("Please upload at least one file");
     }
@@ -36,24 +37,23 @@ export default function UploadDemo() {
           {/* Image Upload */}
           <div>
             <h3 className="text-lg font-medium mb-3">Image Upload</h3>
-            <ImageUpload 
-              value={imageUrl} 
-              onChange={setImageUrl} 
-            />
+            <ImageUpload value={imageUrl} onChange={setImageUrl} />
           </div>
 
           {/* File Upload */}
           <div>
-            <h3 className="text-lg font-medium mb-3">File Upload (Images, PDFs, Text)</h3>
-            <FileUpload 
+            <h3 className="text-lg font-medium mb-3">
+              File Upload (Images, PDFs, Text)
+            </h3>
+            <FileUpload
               endpoint="fileUploader"
-              value={fileUrl} 
-              onChange={(url) => setFileUrl(url || "")} 
+              value={fileUrl}
+              onChange={(url) => setFileUrl(url || "")}
             />
           </div>
 
           {/* Display uploaded files */}
-          {(imageUrl || fileUrl) ? (
+          {imageUrl || fileUrl ? (
             <div className="p-4 bg-muted rounded-lg">
               <h4 className="font-medium mb-2">Uploaded Files:</h4>
               {imageUrl && (

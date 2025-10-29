@@ -1,11 +1,11 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
   ChevronsRight,
-  MoreHorizontal 
+  MoreHorizontal,
 } from "lucide-react";
 
 export interface PaginationProps {
@@ -83,7 +83,7 @@ export function Pagination({
           <p className="text-sm text-muted-foreground">
             Showing {startItem} to {endItem} of {totalItems} results
           </p>
-          
+
           {/* Page size selector */}
           {showPageSizeSelector && onPageSizeChange && (
             <div className="flex items-center gap-2">
@@ -136,16 +136,9 @@ export function Pagination({
             size="sm"
             onClick={() => typeof page === "number" && onPageChange(page)}
             disabled={page === "..."}
-            className={cn(
-              "h-9 w-9 p-0",
-              page === "..." && "cursor-default"
-            )}
+            className={cn("h-9 w-9 p-0", page === "..." && "cursor-default")}
           >
-            {page === "..." ? (
-              <MoreHorizontal className="h-4 w-4" />
-            ) : (
-              page
-            )}
+            {page === "..." ? <MoreHorizontal className="h-4 w-4" /> : page}
           </Button>
         ))}
 

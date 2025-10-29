@@ -3,7 +3,8 @@ import SubscriptionDemo from "@/components/subscription-demo";
 
 export const metadata: Metadata = {
   title: "Payments | Fullstack Template",
-  description: "Stripe payment integration with subscriptions and secure checkout."
+  description:
+    "Stripe payment integration with subscriptions and secure checkout.",
 };
 
 export default function PaymentsPage() {
@@ -13,10 +14,11 @@ export default function PaymentsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Payment System</h1>
           <p className="text-muted-foreground mt-2">
-            Secure payments with Stripe integration, subscriptions, and webhook handling.
+            Secure payments with Stripe integration, subscriptions, and webhook
+            handling.
           </p>
         </div>
-        
+
         <SubscriptionDemo />
       </div>
     </div>

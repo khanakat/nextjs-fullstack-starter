@@ -1,291 +1,243 @@
-// Enhanced logging utility
-type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+/**
+ * Structured logger utility for production-ready logging
+ * Replaces console.log statements with proper logging levels and formatting
+ */
+
+export enum LogLevel {
+  DEBUG = "debug",
+  INFO = "info",
+  WARN = "warn",
+  ERROR = "error",
+}
 
 interface LogEntry {
-  level: LogLevel
-  message: string
-  timestamp: Date
-  context?: Record<string, any>
-  error?: Error
-  userId?: string
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  context?: string;
+  data?: any;
+  error?: Error;
 }
 
 class Logger {
-  private isDevelopment = process.env.NODE_ENV === 'development'
-  private logs: LogEntry[] = []
-  private maxLogs = 1000
+  private isDevelopment = process.env.NODE_ENV === "development";
 
-  private createEntry(
+  private formatMessage(entry: LogEntry): string {
+    const { timestamp, level, message, context, data } = entry;
+    const contextStr = context ? `[${context}]` : "";
+    const dataStr = data ? ` ${JSON.stringify(data)}` : "";
+    return `${timestamp} ${level.toUpperCase()} ${contextStr} ${message}${dataStr}`;
+  }
+
+  private createLogEntry(
     level: LogLevel,
     message: string,
-    context?: Record<string, any>,
-    error?: Error
+    context?: string,
+    data?: any,
+    error?: Error,
   ): LogEntry {
     return {
+      timestamp: new Date().toISOString(),
       level,
       message,
-      timestamp: new Date(),
       context,
+      data,
       error,
-      userId: this.getCurrentUserId(),
+    };
+  }
+
+  private shouldLog(level: LogLevel): boolean {
+    // In production, only log warnings and errors
+    if (!this.isDevelopment) {
+      return level === LogLevel.WARN || level === LogLevel.ERROR;
+    }
+    return true;
+  }
+
+  private logToConsole(entry: LogEntry): void {
+    if (!this.shouldLog(entry.level)) return;
+
+    const formattedMessage = this.formatMessage(entry);
+
+    switch (entry.level) {
+      case LogLevel.DEBUG:
+        console.debug(formattedMessage, entry.data || "");
+        break;
+      case LogLevel.INFO:
+        console.info(formattedMessage, entry.data || "");
+        break;
+      case LogLevel.WARN:
+        console.warn(formattedMessage, entry.data || "");
+        break;
+      case LogLevel.ERROR:
+        console.error(formattedMessage, entry.error || entry.data || "");
+        break;
     }
   }
 
-  private getCurrentUserId(): string | undefined {
-    // Get user ID from Clerk or other auth provider
-    if (typeof window !== 'undefined') {
-      // This would be replaced with actual auth check
-      return localStorage.getItem('user_id') || undefined
-    }
-    return undefined
+  debug(message: string, context?: string, data?: any): void {
+    const entry = this.createLogEntry(LogLevel.DEBUG, message, context, data);
+    this.logToConsole(entry);
   }
 
-  private addLog(entry: LogEntry) {
-    this.logs.push(entry)
-    
-    // Keep only the last maxLogs entries
-    if (this.logs.length > this.maxLogs) {
-      this.logs = this.logs.slice(-this.maxLogs)
-    }
-
-    // In development, also log to console
-    if (this.isDevelopment) {
-      const { level, message, context, error } = entry
-      const consoleMethod = console[level] || console.log
-      
-      if (context || error) {
-        consoleMethod(message, { context, error })
-      } else {
-        consoleMethod(message)
-      }
-    }
-
-    // In production, send critical errors to monitoring service
-    if (!this.isDevelopment && entry.level === 'error') {
-      this.sendToMonitoring(entry)
-    }
+  info(message: string, context?: string, data?: any): void {
+    const entry = this.createLogEntry(LogLevel.INFO, message, context, data);
+    this.logToConsole(entry);
   }
 
-  private async sendToMonitoring(entry: LogEntry) {
-    try {
-      // Send to your monitoring service (Sentry, LogRocket, etc.)
-      await fetch('/api/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry),
-      })
-    } catch (error) {
-      console.error('Failed to send log to monitoring service:', error)
+  warn(message: string, context?: string, data?: any): void {
+    const entry = this.createLogEntry(LogLevel.WARN, message, context, data);
+    this.logToConsole(entry);
+  }
+
+  error(message: string, context?: string | any, error?: Error | any): void {
+    // Handle both old and new signatures
+    if (typeof context === "object" && context !== null && !error) {
+      // New signature: error(message, data)
+      const entry = this.createLogEntry(
+        LogLevel.ERROR,
+        message,
+        undefined,
+        context,
+      );
+      this.logToConsole(entry);
+    } else {
+      // Old signature: error(message, context, error)
+      const entry = this.createLogEntry(
+        LogLevel.ERROR,
+        message,
+        typeof context === "string" ? context : undefined,
+        undefined,
+        error,
+      );
+      this.logToConsole(entry);
     }
   }
 
-  debug(message: string, context?: Record<string, any>) {
-    if (this.isDevelopment) {
-      this.addLog(this.createEntry('debug', message, context))
+  // Convenience methods for common use cases
+  apiRequest(method: string, url: string, data?: any): void {
+    this.debug(`API Request: ${method} ${url}`, "API", data);
+  }
+
+  apiResponse(method: string, url: string, status: number, data?: any): void {
+    const level = status >= 400 ? LogLevel.ERROR : LogLevel.DEBUG;
+    const message = `API Response: ${method} ${url} - ${status}`;
+
+    if (level === LogLevel.ERROR) {
+      this.error(message, "API", data);
+    } else {
+      this.debug(message, "API", data);
     }
   }
 
-  info(message: string, context?: Record<string, any>) {
-    this.addLog(this.createEntry('info', message, context))
+  userAction(action: string, userId?: string, data?: any): void {
+    this.info(`User Action: ${action}`, "USER", { userId, ...data });
   }
 
-  warn(message: string, context?: Record<string, any>) {
-    this.addLog(this.createEntry('warn', message, context))
+  performance(operation: string, duration: number, context?: string): void {
+    this.debug(
+      `Performance: ${operation} took ${duration}ms`,
+      context || "PERF",
+    );
   }
 
-  error(message: string, error?: Error, context?: Record<string, any>) {
-    this.addLog(this.createEntry('error', message, context, error))
+  // Error-specific logging methods
+  clientError(message: string, error: any, context?: string): void {
+    const errorData = {
+      message: error?.message || "Unknown error",
+      stack: error?.stack,
+      code: error?.code,
+      severity: error?.severity,
+      timestamp: error?.timestamp,
+      url: typeof window !== "undefined" ? window.location.href : undefined,
+      userAgent:
+        typeof window !== "undefined" ? navigator.userAgent : undefined,
+    };
+
+    this.error(`Client Error: ${message}`, context || "CLIENT", errorData);
   }
 
-  // Performance logging
-  time(label: string) {
-    if (this.isDevelopment && console.time) {
-      console.time(label)
-    }
+  apiError(message: string, context: string, error: any, data?: any): void {
+    const errorData = {
+      message: error?.message || "Unknown API error",
+      status: error?.status || error?.response?.status,
+      code: error?.code,
+      stack: error?.stack,
+      ...data,
+    };
+
+    this.error(`API Error: ${message}`, context || "API", errorData);
   }
 
-  timeEnd(label: string) {
-    if (this.isDevelopment && console.timeEnd) {
-      console.timeEnd(label)
-    }
+  componentError(
+    message: string,
+    error: Error,
+    componentName?: string,
+    errorInfo?: any,
+  ): void {
+    const errorData = {
+      message: error.message,
+      stack: error.stack,
+      componentName,
+      componentStack: errorInfo?.componentStack,
+      errorBoundary: errorInfo?.errorBoundary,
+      props: errorInfo?.props,
+      state: errorInfo?.state,
+    };
+
+    this.error(`Component Error: ${message}`, "COMPONENT", errorData);
   }
 
-  // Get logs for debugging
-  getLogs(): LogEntry[] {
-    return [...this.logs]
+  validationError(
+    message: string,
+    errors: any[],
+    field?: string,
+    context?: string,
+  ): void {
+    const errorData = {
+      field,
+      errors,
+      count: errors?.length || 0,
+    };
+
+    this.warn(
+      `Validation Error: ${message}`,
+      context || "VALIDATION",
+      errorData,
+    );
   }
 
-  // Clear logs
-  clearLogs() {
-    this.logs = []
-  }
+  securityEvent(
+    event: string,
+    severity: "low" | "medium" | "high" | "critical",
+    data?: any,
+  ): void {
+    const eventData = {
+      severity,
+      timestamp: new Date().toISOString(),
+      ip: data?.ip,
+      userAgent: data?.userAgent,
+      userId: data?.userId,
+      sessionId: data?.sessionId,
+      ...data,
+    };
 
-  // API interaction logging
-  logApiCall(method: string, url: string, status?: number, duration?: number) {
-    const level: LogLevel = status && status >= 400 ? 'error' : 'info'
-    this.addLog(
-      this.createEntry(level, `API ${method} ${url}`, {
-        method,
-        url,
-        status,
-        duration,
-      })
-    )
-  }
-
-  // User action logging
-  logUserAction(action: string, context?: Record<string, any>) {
-    this.info(`User action: ${action}`, context)
-  }
-
-  // Page view logging
-  logPageView(path: string, title?: string) {
-    this.info(`Page view: ${path}`, { path, title })
+    const level =
+      severity === "critical" || severity === "high"
+        ? LogLevel.ERROR
+        : LogLevel.WARN;
+    const entry = this.createLogEntry(
+      level,
+      `Security Event: ${event}`,
+      "SECURITY",
+      eventData,
+    );
+    this.logToConsole(entry);
   }
 }
 
 // Export singleton instance
-export const logger = new Logger()
+export const logger = new Logger();
 
-// Performance monitoring utilities
-export const performance = {
-  // Measure function execution time
-  measure: <T extends (...args: any[]) => any>(
-    fn: T,
-    name?: string
-  ): T => {
-    return ((...args) => {
-      const label = name || fn.name || 'function'
-      const start = Date.now()
-      
-      try {
-        const result = fn(...args)
-        
-        // Handle both sync and async functions
-        if (result instanceof Promise) {
-          return result.finally(() => {
-            const duration = Date.now() - start
-            logger.debug(`${label} completed in ${duration}ms`)
-          })
-        }
-        
-        const duration = Date.now() - start
-        logger.debug(`${label} completed in ${duration}ms`)
-        return result
-      } catch (error) {
-        const duration = Date.now() - start
-        logger.error(`${label} failed after ${duration}ms`, error as Error)
-        throw error
-      }
-    }) as T
-  },
-
-  // Mark performance milestones
-  mark: (name: string) => {
-    if (typeof window !== 'undefined' && window.performance?.mark) {
-      window.performance.mark(name)
-    }
-    logger.debug(`Performance mark: ${name}`)
-  },
-
-  // Measure between marks
-  measureBetween: (startMark: string, endMark: string, name?: string) => {
-    if (typeof window !== 'undefined' && window.performance?.measure) {
-      const measureName = name || `${startMark}-${endMark}`
-      window.performance.measure(measureName, startMark, endMark)
-      
-      const entries = window.performance.getEntriesByName(measureName)
-      const lastEntry = entries[entries.length - 1]
-      
-      if (lastEntry) {
-        logger.debug(`Performance measure: ${measureName} = ${lastEntry.duration}ms`)
-        return lastEntry.duration
-      }
-    }
-    return 0
-  },
-}
-
-// Error boundary utilities
-export const errorUtils = {
-  // Capture error details
-  captureError: (error: Error, context?: Record<string, any>) => {
-    const errorInfo = {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      context,
-      url: typeof window !== 'undefined' ? window.location.href : undefined,
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-      timestamp: new Date().toISOString(),
-    }
-
-    logger.error('Uncaught error', error, errorInfo)
-    return errorInfo
-  },
-
-  // Create error report
-  createErrorReport: (error: Error, context?: Record<string, any>) => {
-    return {
-      error: errorUtils.captureError(error, context),
-      logs: logger.getLogs().slice(-10), // Last 10 log entries
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-      timestamp: new Date().toISOString(),
-    }
-  },
-}
-
-// Development tools
-export const devTools = {
-  // Log component renders
-  logRender: (componentName: string, props?: Record<string, any>) => {
-    if (process.env.NODE_ENV === 'development') {
-      logger.debug(`Render: ${componentName}`, { props })
-    }
-  },
-
-  // Debug helper
-  debug: (label: string, data: any) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.group(`🐛 Debug: ${label}`)
-      console.log(data)
-      console.trace()
-      console.groupEnd()
-    }
-  },
-
-  // Performance inspector
-  inspectPerformance: () => {
-    if (typeof window !== 'undefined' && window.performance) {
-      const navigation = window.performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
-      const paint = window.performance.getEntriesByType('paint')
-      
-      logger.info('Performance metrics', {
-        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
-        loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
-        firstPaint: paint.find(p => p.name === 'first-paint')?.startTime,
-        firstContentfulPaint: paint.find(p => p.name === 'first-contentful-paint')?.startTime,
-      })
-    }
-  },
-}
-
-// Global error handlers (call this in your main app file)
-export const setupGlobalErrorHandlers = () => {
-  if (typeof window !== 'undefined') {
-    // Catch unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
-      logger.error('Unhandled promise rejection', event.reason)
-      event.preventDefault() // Prevent console logging
-    })
-
-    // Catch global errors
-    window.addEventListener('error', (event) => {
-      logger.error('Global error', event.error, {
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-      })
-    })
-  }
-}
+// Export default for easier imports
+export default logger;

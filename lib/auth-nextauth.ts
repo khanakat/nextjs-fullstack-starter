@@ -1,6 +1,6 @@
 /**
  * NextAuth Configuration
- * 
+ *
  * Alternative authentication setup using NextAuth.js
  * To use this instead of Clerk, update your middleware.ts and API routes
  */
@@ -12,6 +12,9 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import { db } from "./db";
+
+// Disable NextAuth in Edge Runtime for now
+export const runtime = "nodejs";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
@@ -63,7 +66,7 @@ export const authOptions: NextAuthOptions = {
 
         const isCorrectPassword = await compare(
           credentials.password,
-          user.hashedPassword
+          user.hashedPassword,
         );
 
         if (!isCorrectPassword) {
@@ -112,7 +115,7 @@ export { getServerSession } from "next-auth/next";
 export const getCurrentUser = async () => {
   const { getServerSession } = await import("next-auth/next");
   const session = await getServerSession(authOptions);
-  
+
   if (!session?.user || !("id" in session.user)) {
     return null;
   }
@@ -149,13 +152,13 @@ export const getCurrentUser = async () => {
  */
 export const isCurrentUserAdmin = async (): Promise<boolean> => {
   const user = await getCurrentUser();
-  
+
   if (!user) {
     return false;
   }
 
   // Implement your admin logic here
   const adminEmails = process.env.ADMIN_EMAILS?.split(",") || [];
-  
+
   return adminEmails.includes(user.email);
 };

@@ -1,12 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { z } from 'zod';
-import { ReportStatus } from '@/lib/types/reports';
+import { NextRequest } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+
+import { z } from "zod";
+import { ReportStatus } from "@/lib/types/reports";
+import { ReportService } from "@/lib/services/report-service";
+import { ApiError } from "@/lib/api-utils";
+import { logger } from "@/lib/logger";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
 
 // Validation schemas
 const createReportSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(255),
+  title: z.string().min(1, "Title is required").max(255),
   description: z.string().optional(),
   templateId: z.string().optional(),
   config: z.object({
@@ -20,182 +27,144 @@ const createReportSchema = z.object({
       grid: z.object({
         columns: z.number(),
         rows: z.number(),
-        gap: z.number()
-      })
+        gap: z.number(),
+      }),
     }),
     styling: z.object({
-      theme: z.enum(['light', 'dark']),
+      theme: z.enum(["light", "dark"]),
       primaryColor: z.string(),
       secondaryColor: z.string(),
       fontFamily: z.string(),
-      fontSize: z.number()
-    })
+      fontSize: z.number(),
+    }),
   }),
-  isPublic: z.boolean().default(false)
+  isPublic: z.boolean().default(false),
 });
 
-const updateReportSchema = createReportSchema.partial();
-
 // GET /api/reports - List reports with pagination and filters
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
+  const requestId = crypto.randomUUID();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return StandardErrorResponse.unauthorized(
+        "Authentication required",
+        requestId,
+      );
     }
 
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || '';
-    const status = searchParams.get('status') as ReportStatus;
-    const templateId = searchParams.get('templateId') || '';
-    const skip = (page - 1) * limit;
+    const { searchParams } = new URL(_request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") as ReportStatus;
+    const templateId = searchParams.get("templateId") || "";
+    const organizationId =
+      searchParams.get("organizationId") ||
+      _request.headers.get("x-organization-id") ||
+      undefined;
 
-    // Build where clause
-    const where: any = {
-      OR: [
-        { createdBy: userId },
-        { isPublic: true },
-        {
-          permissions: {
-            some: {
-              userId: userId,
-              permission: {
-                in: ['VIEW', 'EDIT', 'ADMIN']
-              }
-            }
-          }
-        }
-      ]
+    const filters = {
+      search: search || undefined,
+      status: status || undefined,
+      templateId: templateId || undefined,
     };
 
-    if (search) {
-      where.AND = where.AND || [];
-      where.AND.push({
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
-        ]
-      });
-    }
-
-    if (status) {
-      where.AND = where.AND || [];
-      where.AND.push({ status });
-    }
-
-    if (templateId) {
-      where.AND = where.AND || [];
-      where.AND.push({ templateId });
-    }
-
-    // Get reports with relations
-    const [reports, total] = await Promise.all([
-      db.report.findMany({
-        where,
-        include: {
-          template: {
-            include: {
-              category: true
-            }
-          },
-          permissions: true,
-          exportJobs: {
-            orderBy: { createdAt: 'desc' },
-            take: 3
-          }
-        },
-        orderBy: { updatedAt: 'desc' },
-        skip,
-        take: limit
-      }),
-      db.report.count({ where })
-    ]);
-
-    return NextResponse.json({
-      reports,
-      total,
+    const result = await ReportService.getReports(
+      userId,
+      organizationId,
+      filters,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+    );
+
+    return StandardSuccessResponse.create(result, {
+      pagination: {
+        page,
+        limit,
+        total: result.total || 0,
+        totalPages: Math.ceil((result.total || 0) / limit),
+      },
     });
   } catch (error) {
-    console.error('Error fetching reports:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    logger.apiError("Error processing report request", "report", error, {
+      requestId,
+      endpoint: "GET /api/reports",
+    });
+
+    if (error instanceof ApiError) {
+      return StandardErrorResponse.fromApiError(error, requestId);
+    }
+
+    return StandardErrorResponse.internal(
+      "Failed to process report request",
+      process.env.NODE_ENV === "development"
+        ? {
+            originalError: error instanceof Error ? error.message : error,
+          }
+        : undefined,
+      requestId,
     );
   }
 }
 
 // POST /api/reports - Create a new report
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
+  const requestId = crypto.randomUUID();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const validatedData = createReportSchema.parse(body);
-
-    // Verify template exists if provided
-    if (validatedData.templateId) {
-      const template = await db.template.findUnique({
-        where: { id: validatedData.templateId }
-      });
-      
-      if (!template) {
-        return NextResponse.json(
-          { error: 'Template not found' },
-          { status: 404 }
-        );
-      }
-
-      // Check if user has access to template
-      if (!template.isPublic && template.createdBy !== userId) {
-        return NextResponse.json(
-          { error: 'Access denied to template' },
-          { status: 403 }
-        );
-      }
-    }
-
-    // Create report
-    const report = await db.report.create({
-      data: {
-        name: validatedData.title,
-        description: validatedData.description,
-        templateId: validatedData.templateId,
-        config: JSON.stringify(validatedData.config),
-        isPublic: validatedData.isPublic,
-        status: ReportStatus.DRAFT,
-        createdBy: userId
-      },
-      include: {
-        template: {
-          include: {
-            category: true
-          }
-        },
-        permissions: true
-      }
-    });
-
-    return NextResponse.json(report, { status: 201 });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
+      return StandardErrorResponse.unauthorized(
+        "Authentication required",
+        requestId,
       );
     }
 
-    console.error('Error creating report:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    const body = await _request.json();
+    const validatedData = createReportSchema.parse(body);
+    const organizationId =
+      _request.headers.get("x-organization-id") || undefined;
+
+    const report = await ReportService.createReport(
+      userId,
+      validatedData,
+      organizationId,
+    );
+
+    return StandardSuccessResponse.create(
+      { report },
+      { message: "Report created successfully" },
+      201,
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return StandardErrorResponse.badRequest(
+        "Validation error",
+        "validation",
+        { validationErrors: error.errors },
+        requestId,
+      );
+    }
+
+    logger.apiError("Error creating report", "report", error, {
+      requestId,
+      endpoint: "POST /api/reports",
+    });
+
+    if (error instanceof ApiError) {
+      return StandardErrorResponse.fromApiError(error, requestId);
+    }
+
+    return StandardErrorResponse.internal(
+      "Failed to create report",
+      process.env.NODE_ENV === "development"
+        ? {
+            originalError: error instanceof Error ? error.message : error,
+          }
+        : undefined,
+      requestId,
     );
   }
 }

@@ -20,11 +20,7 @@ export const publicRoutes = [
  * These routes will redirect logged in users to /dashboard
  * @type {string[]}
  */
-export const authRoutes = [
-  "/sign-in",
-  "/sign-up",
-  "/sso-callback",
-];
+export const authRoutes = ["/sign-in", "/sign-up", "/sso-callback"];
 
 /**
  * An array of routes that require authentication
@@ -35,7 +31,7 @@ export const protectedRoutes = [
   "/dashboard",
   "/dashboard/(.*)",
   "/admin",
-  "/admin/(.*)", 
+  "/admin/(.*)",
   "/profile",
   "/profile/(.*)",
   "/settings",
@@ -63,7 +59,7 @@ export const DEFAULT_LOGIN_REDIRECT = "/dashboard";
  * @returns {boolean}
  */
 export function isPublicRoute(pathname: string): boolean {
-  return publicRoutes.some(route => {
+  return publicRoutes.some((route) => {
     if (route.includes("(.*)")) {
       const baseRoute = route.replace("(.*)", "");
       return pathname.startsWith(baseRoute);
@@ -74,7 +70,7 @@ export function isPublicRoute(pathname: string): boolean {
 
 /**
  * Check if a route is an auth route
- * @param {string} pathname - The route pathname  
+ * @param {string} pathname - The route pathname
  * @returns {boolean}
  */
 export function isAuthRoute(pathname: string): boolean {
@@ -84,10 +80,10 @@ export function isAuthRoute(pathname: string): boolean {
 /**
  * Check if a route is protected
  * @param {string} pathname - The route pathname
- * @returns {boolean} 
+ * @returns {boolean}
  */
 export function isProtectedRoute(pathname: string): boolean {
-  return protectedRoutes.some(route => {
+  return protectedRoutes.some((route) => {
     if (route.includes("(.*)")) {
       const baseRoute = route.replace("(.*)", "");
       return pathname.startsWith(baseRoute);

@@ -7,15 +7,19 @@ A comprehensive pagination system with reusable components, hooks, and patterns 
 ## 📦 Components Included
 
 ### 1. **Pagination Component** (`components/ui/pagination.tsx`)
+
 Standalone pagination navigation component with full features:
+
 - First, previous, next, last page buttons
 - Page number indicators with ellipsis for large page counts
 - Page size selector
 - Item count information
 - Fully customizable styling
 
-### 2. **DataTable Component** (`components/ui/data-table.tsx`)  
+### 2. **DataTable Component** (`components/ui/data-table.tsx`)
+
 Complete data table with integrated pagination:
+
 - Built-in sorting, searching, and filtering
 - Client-side or server-side pagination
 - Empty states with custom actions
@@ -24,7 +28,9 @@ Complete data table with integrated pagination:
 - Responsive design
 
 ### 3. **usePagination Hook** (`hooks/use-pagination.ts`)
+
 React hook for managing pagination state:
+
 - Client-side pagination logic
 - URL-based server-side pagination
 - Page and page size management
@@ -74,18 +80,18 @@ interface User {
 
 const columns: DataTableColumn<User>[] = [
   {
-    key: 'name',
-    label: 'Name',
+    key: "name",
+    label: "Name",
     sortable: true,
   },
   {
-    key: 'email',
-    label: 'Email',
+    key: "email",
+    label: "Email",
     sortable: true,
   },
   {
-    key: 'status',
-    label: 'Status',
+    key: "status",
+    label: "Status",
     render: (value) => <Badge>{value}</Badge>,
   },
 ];
@@ -115,15 +121,15 @@ function UserTable({ users }: { users: User[] }) {
 
 ```tsx
 interface PaginationProps {
-  currentPage: number;               // Current active page
-  totalPages: number;                // Total number of pages
-  pageSize: number;                  // Items per page
-  totalItems: number;                // Total number of items
+  currentPage: number; // Current active page
+  totalPages: number; // Total number of pages
+  pageSize: number; // Items per page
+  totalItems: number; // Total number of items
   onPageChange: (page: number) => void;
   className?: string;
-  showInfo?: boolean;                // Show "Showing X to Y of Z results"
-  showPageSizeSelector?: boolean;    // Show page size dropdown
-  pageSizeOptions?: number[];        // Available page sizes [10, 20, 50, 100]
+  showInfo?: boolean; // Show "Showing X to Y of Z results"
+  showPageSizeSelector?: boolean; // Show page size dropdown
+  pageSizeOptions?: number[]; // Available page sizes [10, 20, 50, 100]
   onPageSizeChange?: (pageSize: number) => void;
 }
 ```
@@ -134,29 +140,29 @@ interface PaginationProps {
 interface DataTableProps<TData> {
   columns: DataTableColumn<TData>[];
   data: TData[];
-  
+
   // Pagination
   pageSize?: number;
   currentPage?: number;
   totalItems?: number;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
-  
+
   // Search and filter
   searchKey?: keyof TData;
   searchPlaceholder?: string;
   onSearch?: (searchTerm: string) => void;
-  
+
   // Empty state
   emptyTitle?: string;
   emptySubtitle?: string;
   emptyAction?: React.ReactNode;
-  
+
   // Actions
   onCreate?: () => void;
   createLabel?: string;
   onExport?: () => void;
-  
+
   // Customization
   className?: string;
   showPagination?: boolean;
@@ -170,11 +176,11 @@ interface DataTableProps<TData> {
 
 ```tsx
 interface DataTableColumn<T> {
-  key: keyof T;                      // Property key from data object
-  label: string;                     // Column header label
-  sortable?: boolean;                // Enable sorting for this column
+  key: keyof T; // Property key from data object
+  label: string; // Column header label
+  sortable?: boolean; // Enable sorting for this column
   render?: (value: any, record: T, index: number) => React.ReactNode;
-  className?: string;                // Custom CSS classes
+  className?: string; // Custom CSS classes
 }
 ```
 
@@ -187,7 +193,7 @@ Perfect for smaller datasets that can be loaded entirely:
 ```tsx
 function ClientPaginatedList() {
   const [allData, setAllData] = useState<Item[]>([]);
-  
+
   const pagination = usePagination({
     initialPage: 1,
     initialPageSize: 20,
@@ -197,7 +203,7 @@ function ClientPaginatedList() {
   // Get current page data
   const paginatedData = allData.slice(
     pagination.startIndex,
-    pagination.startIndex + pagination.pageSize
+    pagination.startIndex + pagination.pageSize,
   );
 
   return (
@@ -278,7 +284,7 @@ function URLPaginatedComponent() {
 
   // URL will automatically update with ?page=2&pageSize=20
   // Page refreshes will maintain pagination state
-  
+
   return (
     <Pagination
       currentPage={pagination.currentPage}
@@ -300,9 +306,9 @@ function URLPaginatedComponent() {
 <Pagination
   // ... props
   className="my-custom-pagination"
-  showInfo={false}              // Hide info text
-  showPageSizeSelector={true}   // Show page size dropdown
-  pageSizeOptions={[5, 10, 25, 50]}  // Custom page sizes
+  showInfo={false} // Hide info text
+  showPageSizeSelector={true} // Show page size dropdown
+  pageSizeOptions={[5, 10, 25, 50]} // Custom page sizes
 />
 ```
 
@@ -311,19 +317,19 @@ function URLPaginatedComponent() {
 ```tsx
 const columns: DataTableColumn<User>[] = [
   {
-    key: 'avatar',
-    label: '',
+    key: "avatar",
+    label: "",
     render: (_, user) => (
       <Avatar>
         <AvatarImage src={user.avatarUrl} />
         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
       </Avatar>
     ),
-    className: 'w-12',
+    className: "w-12",
   },
   {
-    key: 'name',
-    label: 'User',
+    key: "name",
+    label: "User",
     sortable: true,
     render: (name, user) => (
       <div>
@@ -333,17 +339,17 @@ const columns: DataTableColumn<User>[] = [
     ),
   },
   {
-    key: 'status',
-    label: 'Status',
+    key: "status",
+    label: "Status",
     render: (status) => (
-      <Badge variant={status === 'active' ? 'default' : 'secondary'}>
+      <Badge variant={status === "active" ? "default" : "secondary"}>
         {status}
       </Badge>
     ),
   },
   {
-    key: 'id',
-    label: 'Actions',
+    key: "id",
+    label: "Actions",
     render: (_, user) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -364,13 +370,18 @@ const columns: DataTableColumn<User>[] = [
 ## ⚡ Performance Tips
 
 ### 1. Memoize Column Definitions
+
 ```tsx
-const columns = useMemo(() => [
-  // column definitions
-], []);
+const columns = useMemo(
+  () => [
+    // column definitions
+  ],
+  [],
+);
 ```
 
 ### 2. Debounce Search Input
+
 ```tsx
 const [searchTerm, setSearchTerm] = useState("");
 const debouncedSearch = useDebounce(searchTerm, 300);
@@ -383,20 +394,23 @@ useEffect(() => {
 ```
 
 ### 3. Virtual Scrolling for Large Lists
+
 For very large datasets, consider implementing virtual scrolling:
+
 ```tsx
-import { FixedSizeList as List } from 'react-window';
+import { FixedSizeList as List } from "react-window";
 ```
 
 ## 🔗 Integration Examples
 
 ### With React Query
+
 ```tsx
 function DataWithQuery() {
   const [page, setPage] = useState(1);
-  
+
   const { data, isLoading } = useQuery({
-    queryKey: ['users', page],
+    queryKey: ["users", page],
     queryFn: () => fetchUsers({ page, pageSize: 20 }),
   });
 
@@ -413,14 +427,15 @@ function DataWithQuery() {
 ```
 
 ### With Form Filters
+
 ```tsx
 function FilteredDataTable() {
   const [filters, setFilters] = useState({
-    status: '',
-    role: '',
-    search: '',
+    status: "",
+    role: "",
+    search: "",
   });
-  
+
   const pagination = usePagination({
     initialPage: 1,
     initialPageSize: 20,
@@ -448,20 +463,25 @@ function FilteredDataTable() {
 ## 🛠 Best Practices
 
 ### 1. **Consistent Page Sizes**
+
 Use standard page sizes across your app (10, 20, 50, 100)
 
 ### 2. **Loading States**
+
 Always show loading indicators during data fetching
 
 ### 3. **Error Handling**
+
 Implement proper error boundaries for failed pagination requests
 
 ### 4. **Accessibility**
+
 - Use semantic HTML
 - Provide keyboard navigation
 - Include proper ARIA labels
 
 ### 5. **Mobile Responsive**
+
 - Stack pagination controls on mobile
 - Use appropriate touch targets
 - Consider infinite scroll for mobile
@@ -469,6 +489,7 @@ Implement proper error boundaries for failed pagination requests
 ## 📱 Mobile Considerations
 
 ### Responsive Pagination
+
 ```tsx
 <Pagination
   className="flex-col sm:flex-row gap-4 sm:gap-0"
@@ -477,6 +498,7 @@ Implement proper error boundaries for failed pagination requests
 ```
 
 ### Alternative Mobile Pattern - Infinite Scroll
+
 ```tsx
 function InfiniteScrollList() {
   const [items, setItems] = useState([]);
@@ -493,7 +515,9 @@ function InfiniteScrollList() {
       hasMore={hasMore}
       loader={<LoadingSpinner />}
     >
-      {items.map(item => <ItemCard key={item.id} item={item} />)}
+      {items.map((item) => (
+        <ItemCard key={item.id} item={item} />
+      ))}
     </InfiniteScroll>
   );
 }

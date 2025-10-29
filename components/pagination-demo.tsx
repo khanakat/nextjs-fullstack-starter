@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { usePagination } from "@/hooks/use-pagination";
-import { Eye, Edit, Trash2, Plus } from "lucide-react";
+import { Eye, Edit, Trash2 } from "lucide-react";
 
 // Mock data
 interface User {
@@ -15,29 +14,29 @@ interface User {
   name: string;
   email: string;
   role: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   lastLogin: string;
 }
 
 const generateMockUsers = (count: number): User[] => {
-  const roles = ['Admin', 'User', 'Moderator', 'Editor'];
-  const statuses: ('active' | 'inactive')[] = ['active', 'inactive'];
-  
+  const roles = ["Admin", "User", "Moderator", "Editor"];
+  const statuses: ("active" | "inactive")[] = ["active", "inactive"];
+
   return Array.from({ length: count }, (_, i) => ({
     id: i + 1,
     name: `User ${i + 1}`,
     email: `user${i + 1}@example.com`,
     role: roles[Math.floor(Math.random() * roles.length)],
     status: statuses[Math.floor(Math.random() * statuses.length)],
-    lastLogin: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+    lastLogin: new Date(
+      Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+    ).toLocaleDateString(),
   }));
 };
 
 const mockUsers = generateMockUsers(156); // Generate 156 users for pagination demo
 
 export function PaginationDemo() {
-  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
-  
   // Client-side pagination example
   const clientPagination = usePagination({
     initialPage: 1,
@@ -56,43 +55,39 @@ export function PaginationDemo() {
   // Define table columns
   const userColumns: DataTableColumn<User>[] = [
     {
-      key: 'name',
-      label: 'Name',
+      key: "name",
+      label: "Name",
       sortable: true,
-      render: (value, record) => (
-        <div className="font-medium">{value}</div>
-      ),
+      render: (value) => <div className="font-medium">{value}</div>,
     },
     {
-      key: 'email',
-      label: 'Email',
+      key: "email",
+      label: "Email",
       sortable: true,
     },
     {
-      key: 'role',
-      label: 'Role',
-      render: (value) => (
-        <Badge variant="outline">{value}</Badge>
-      ),
+      key: "role",
+      label: "Role",
+      render: (value) => <Badge variant="outline">{value}</Badge>,
     },
     {
-      key: 'status',
-      label: 'Status',
-      render: (value: 'active' | 'inactive') => (
-        <Badge variant={value === 'active' ? 'default' : 'secondary'}>
+      key: "status",
+      label: "Status",
+      render: (value: "active" | "inactive") => (
+        <Badge variant={value === "active" ? "default" : "secondary"}>
           {value}
         </Badge>
       ),
     },
     {
-      key: 'lastLogin',
-      label: 'Last Login',
+      key: "lastLogin",
+      label: "Last Login",
       sortable: true,
     },
     {
-      key: 'id',
-      label: 'Actions',
-      render: (_, record) => (
+      key: "id",
+      label: "Actions",
+      render: () => (
         <div className="flex items-center gap-2">
           <Button size="sm" variant="ghost">
             <Eye className="h-4 w-4" />
@@ -218,7 +213,7 @@ export function PaginationDemo() {
             <div>
               <h4 className="font-medium mb-2">1. Standalone Pagination</h4>
               <pre className="text-sm bg-muted p-3 rounded-md overflow-x-auto">
-{`import { Pagination } from "@/components/ui/pagination";
+                {`import { Pagination } from "@/components/ui/pagination";
 
 <Pagination
   currentPage={currentPage}
@@ -234,7 +229,7 @@ export function PaginationDemo() {
             <div>
               <h4 className="font-medium mb-2">2. DataTable with Pagination</h4>
               <pre className="text-sm bg-muted p-3 rounded-md overflow-x-auto">
-{`import { DataTable } from "@/components/ui/data-table";
+                {`import { DataTable } from "@/components/ui/data-table";
 
 <DataTable
   columns={columns}
@@ -251,7 +246,7 @@ export function PaginationDemo() {
             <div>
               <h4 className="font-medium mb-2">3. usePagination Hook</h4>
               <pre className="text-sm bg-muted p-3 rounded-md overflow-x-auto">
-{`import { usePagination } from "@/hooks/use-pagination";
+                {`import { usePagination } from "@/hooks/use-pagination";
 
 const pagination = usePagination({
   initialPage: 1,

@@ -1,47 +1,53 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Progress } from '@/components/ui/progress';
-import { 
-  Download, 
-  FileText, 
-  Calendar, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+
+import { Progress } from "@/components/ui/progress";
+import {
+  Download,
+  FileText,
+  Calendar,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   RefreshCw,
   Trash2,
   Search,
-  Filter,
   MoreHorizontal,
-  Play,
-  Pause,
   Square,
   FileSpreadsheet,
   Image,
-  Archive
-} from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { EmptyState } from '@/components/ui/empty-state';
-import { DataTable } from '@/components/ui/data-table';
+  Archive,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ExportJob {
   id: string;
   reportId: string;
   reportTitle: string;
-  format: 'pdf' | 'excel' | 'csv' | 'png';
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  format: "pdf" | "excel" | "csv" | "png";
+  status: "pending" | "processing" | "completed" | "failed" | "cancelled";
   progress: number;
   fileSize?: number;
   downloadUrl?: string;
@@ -62,41 +68,47 @@ interface ExportCenterProps {
 }
 
 const STATUS_CONFIG = {
-  pending: { 
-    label: 'Pending', 
-    color: 'bg-yellow-100 text-yellow-800', 
-    icon: Clock 
+  pending: {
+    label: "Pending",
+    color: "bg-yellow-100 text-yellow-800",
+    icon: Clock,
   },
-  processing: { 
-    label: 'Processing', 
-    color: 'bg-blue-100 text-blue-800', 
-    icon: RefreshCw 
+  processing: {
+    label: "Processing",
+    color: "bg-blue-100 text-blue-800",
+    icon: RefreshCw,
   },
-  completed: { 
-    label: 'Completed', 
-    color: 'bg-green-100 text-green-800', 
-    icon: CheckCircle 
+  completed: {
+    label: "Completed",
+    color: "bg-green-100 text-green-800",
+    icon: CheckCircle,
   },
-  failed: { 
-    label: 'Failed', 
-    color: 'bg-red-100 text-red-800', 
-    icon: XCircle 
+  failed: {
+    label: "Failed",
+    color: "bg-red-100 text-red-800",
+    icon: XCircle,
   },
-  cancelled: { 
-    label: 'Cancelled', 
-    color: 'bg-gray-100 text-gray-800', 
-    icon: Square 
-  }
+  cancelled: {
+    label: "Cancelled",
+    color: "bg-gray-100 text-gray-800",
+    icon: Square,
+  },
 };
 
 const FORMAT_CONFIG = {
-  pdf: { label: 'PDF', icon: FileText, color: 'text-red-600' },
-  excel: { label: 'Excel', icon: FileSpreadsheet, color: 'text-green-600' },
-  csv: { label: 'CSV', icon: FileText, color: 'text-blue-600' },
-  png: { label: 'PNG', icon: Image, color: 'text-purple-600' }
+  pdf: { label: "PDF", icon: FileText, color: "text-red-600" },
+  excel: { label: "Excel", icon: FileSpreadsheet, color: "text-green-600" },
+  csv: { label: "CSV", icon: FileText, color: "text-blue-600" },
+  png: { label: "PNG", icon: Image, color: "text-purple-600" },
 };
 
-function ExportJobCard({ job, onDownload, onCancel, onRetry, onDelete }: {
+function ExportJobCard({
+  job,
+  onDownload,
+  onCancel,
+  onRetry,
+  onDelete,
+}: {
   job: ExportJob;
   onDownload: (job: ExportJob) => void;
   onCancel: (job: ExportJob) => void;
@@ -109,8 +121,8 @@ function ExportJobCard({ job, onDownload, onCancel, onRetry, onDelete }: {
   const FormatIcon = formatConfig.icon;
 
   const formatFileSize = (bytes?: number) => {
-    if (!bytes) return '';
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    if (!bytes) return "";
+    const sizes = ["B", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
   };
@@ -124,12 +136,12 @@ function ExportJobCard({ job, onDownload, onCancel, onRetry, onDelete }: {
     const now = new Date();
     const expires = new Date(expiresAt);
     const diff = expires.getTime() - now.getTime();
-    
-    if (diff <= 0) return 'Expired';
-    
+
+    if (diff <= 0) return "Expired";
+
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) return `${hours}h ${minutes}m remaining`;
     return `${minutes}m remaining`;
   };
@@ -139,7 +151,14 @@ function ExportJobCard({ job, onDownload, onCancel, onRetry, onDelete }: {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className={cn("p-2 rounded-lg", formatConfig.color.replace('text-', 'bg-').replace('-600', '-50'))}>
+            <div
+              className={cn(
+                "p-2 rounded-lg",
+                formatConfig.color
+                  .replace("text-", "bg-")
+                  .replace("-600", "-50"),
+              )}
+            >
               <FormatIcon className={cn("h-4 w-4", formatConfig.color)} />
             </div>
             <div>
@@ -165,25 +184,28 @@ function ExportJobCard({ job, onDownload, onCancel, onRetry, onDelete }: {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {job.status === 'completed' && job.downloadUrl && (
+              {job.status === "completed" && job.downloadUrl && (
                 <DropdownMenuItem onClick={() => onDownload(job)}>
                   <Download className="h-4 w-4 mr-2" />
                   Download
                 </DropdownMenuItem>
               )}
-              {(job.status === 'pending' || job.status === 'processing') && (
+              {(job.status === "pending" || job.status === "processing") && (
                 <DropdownMenuItem onClick={() => onCancel(job)}>
                   <Square className="h-4 w-4 mr-2" />
                   Cancel
                 </DropdownMenuItem>
               )}
-              {job.status === 'failed' && (
+              {job.status === "failed" && (
                 <DropdownMenuItem onClick={() => onRetry(job)}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Retry
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={() => onDelete(job)} className="text-red-600">
+              <DropdownMenuItem
+                onClick={() => onDelete(job)}
+                className="text-red-600"
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
               </DropdownMenuItem>
@@ -195,7 +217,7 @@ function ExportJobCard({ job, onDownload, onCancel, onRetry, onDelete }: {
       <CardContent className="pt-0">
         <div className="space-y-3">
           {/* Progress Bar for Processing Jobs */}
-          {job.status === 'processing' && (
+          {job.status === "processing" && (
             <div className="space-y-1">
               <div className="flex justify-between text-sm">
                 <span>Processing...</span>
@@ -206,7 +228,7 @@ function ExportJobCard({ job, onDownload, onCancel, onRetry, onDelete }: {
           )}
 
           {/* Error Message */}
-          {job.status === 'failed' && job.errorMessage && (
+          {job.status === "failed" && job.errorMessage && (
             <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
               <AlertCircle className="h-4 w-4 inline mr-1" />
               {job.errorMessage}
@@ -219,7 +241,7 @@ function ExportJobCard({ job, onDownload, onCancel, onRetry, onDelete }: {
               <span className="text-muted-foreground">Created:</span>
               <div className="font-medium">{formatDate(job.createdAt)}</div>
             </div>
-            
+
             {job.completedAt && (
               <div>
                 <span className="text-muted-foreground">Completed:</span>
@@ -230,11 +252,13 @@ function ExportJobCard({ job, onDownload, onCancel, onRetry, onDelete }: {
             {job.fileSize && (
               <div>
                 <span className="text-muted-foreground">File Size:</span>
-                <div className="font-medium">{formatFileSize(job.fileSize)}</div>
+                <div className="font-medium">
+                  {formatFileSize(job.fileSize)}
+                </div>
               </div>
             )}
 
-            {job.expiresAt && job.status === 'completed' && (
+            {job.expiresAt && job.status === "completed" && (
               <div>
                 <span className="text-muted-foreground">Expires:</span>
                 <div className="font-medium text-orange-600">
@@ -256,29 +280,29 @@ function ExportJobCard({ job, onDownload, onCancel, onRetry, onDelete }: {
 
           {/* Action Button */}
           <div className="pt-2">
-            {job.status === 'completed' && job.downloadUrl ? (
-              <Button 
-                size="sm" 
+            {job.status === "completed" && job.downloadUrl ? (
+              <Button
+                size="sm"
                 className="w-full"
                 onClick={() => onDownload(job)}
               >
                 <Download className="h-4 w-4 mr-2" />
                 Download {formatConfig.label}
               </Button>
-            ) : job.status === 'failed' ? (
-              <Button 
-                size="sm" 
-                variant="outline" 
+            ) : job.status === "failed" ? (
+              <Button
+                size="sm"
+                variant="outline"
                 className="w-full"
                 onClick={() => onRetry(job)}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Retry Export
               </Button>
-            ) : job.status === 'processing' || job.status === 'pending' ? (
-              <Button 
-                size="sm" 
-                variant="outline" 
+            ) : job.status === "processing" || job.status === "pending" ? (
+              <Button
+                size="sm"
+                variant="outline"
                 className="w-full"
                 onClick={() => onCancel(job)}
               >
@@ -293,81 +317,85 @@ function ExportJobCard({ job, onDownload, onCancel, onRetry, onDelete }: {
   );
 }
 
-export function ExportCenter({ userId, initialStatus, initialFormat, initialDate }: ExportCenterProps) {
+export function ExportCenter({
+  userId,
+  initialStatus,
+  initialFormat,
+}: ExportCenterProps) {
   const [jobs, setJobs] = useState<ExportJob[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState(initialStatus || 'all');
-  const [formatFilter, setFormatFilter] = useState(initialFormat || 'all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState(initialStatus || "all");
+  const [formatFilter, setFormatFilter] = useState(initialFormat || "all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Mock data for demonstration
   useEffect(() => {
     const mockJobs: ExportJob[] = [
       {
-        id: '1',
-        reportId: 'report-1',
-        reportTitle: 'Monthly Sales Dashboard',
-        format: 'pdf',
-        status: 'completed',
+        id: "1",
+        reportId: "report-1",
+        reportTitle: "Monthly Sales Dashboard",
+        format: "pdf",
+        status: "completed",
         progress: 100,
         fileSize: 2048576, // 2MB
-        downloadUrl: '/api/exports/1/download',
-        createdAt: '2024-01-21T10:30:00Z',
-        completedAt: '2024-01-21T10:32:00Z',
-        expiresAt: '2024-01-28T10:32:00Z',
+        downloadUrl: "/api/exports/1/download",
+        createdAt: "2024-01-21T10:30:00Z",
+        completedAt: "2024-01-21T10:32:00Z",
+        expiresAt: "2024-01-28T10:32:00Z",
         isScheduled: false,
-        userId
+        userId,
       },
       {
-        id: '2',
-        reportId: 'report-2',
-        reportTitle: 'Financial Summary Report',
-        format: 'excel',
-        status: 'processing',
+        id: "2",
+        reportId: "report-2",
+        reportTitle: "Financial Summary Report",
+        format: "excel",
+        status: "processing",
         progress: 65,
-        createdAt: '2024-01-21T11:00:00Z',
+        createdAt: "2024-01-21T11:00:00Z",
         isScheduled: false,
-        userId
+        userId,
       },
       {
-        id: '3',
-        reportId: 'report-3',
-        reportTitle: 'Operational Efficiency Tracker',
-        format: 'csv',
-        status: 'failed',
+        id: "3",
+        reportId: "report-3",
+        reportTitle: "Operational Efficiency Tracker",
+        format: "csv",
+        status: "failed",
         progress: 0,
-        errorMessage: 'Data source connection timeout',
-        createdAt: '2024-01-21T09:45:00Z',
+        errorMessage: "Data source connection timeout",
+        createdAt: "2024-01-21T09:45:00Z",
         isScheduled: false,
-        userId
+        userId,
       },
       {
-        id: '4',
-        reportId: 'report-4',
-        reportTitle: 'Marketing Campaign Analysis',
-        format: 'png',
-        status: 'pending',
+        id: "4",
+        reportId: "report-4",
+        reportTitle: "Marketing Campaign Analysis",
+        format: "png",
+        status: "pending",
         progress: 0,
-        createdAt: '2024-01-21T11:15:00Z',
-        scheduledFor: '2024-01-21T12:00:00Z',
+        createdAt: "2024-01-21T11:15:00Z",
+        scheduledFor: "2024-01-21T12:00:00Z",
         isScheduled: true,
-        userId
+        userId,
       },
       {
-        id: '5',
-        reportId: 'report-5',
-        reportTitle: 'Weekly Performance Report',
-        format: 'pdf',
-        status: 'completed',
+        id: "5",
+        reportId: "report-5",
+        reportTitle: "Weekly Performance Report",
+        format: "pdf",
+        status: "completed",
         progress: 100,
         fileSize: 1536000, // 1.5MB
-        downloadUrl: '/api/exports/5/download',
-        createdAt: '2024-01-20T16:20:00Z',
-        completedAt: '2024-01-20T16:22:00Z',
-        expiresAt: '2024-01-27T16:22:00Z',
+        downloadUrl: "/api/exports/5/download",
+        createdAt: "2024-01-20T16:20:00Z",
+        completedAt: "2024-01-20T16:22:00Z",
+        expiresAt: "2024-01-27T16:22:00Z",
         isScheduled: false,
-        userId
-      }
+        userId,
+      },
     ];
 
     setJobs(mockJobs);
@@ -375,126 +403,139 @@ export function ExportCenter({ userId, initialStatus, initialFormat, initialDate
   }, [userId]);
 
   // Filter jobs
-  const filteredJobs = jobs.filter(job => {
-    const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
-    const matchesFormat = formatFilter === 'all' || job.format === formatFilter;
-    const matchesSearch = !searchQuery || 
+  const filteredJobs = jobs.filter((job) => {
+    const matchesStatus = statusFilter === "all" || job.status === statusFilter;
+    const matchesFormat = formatFilter === "all" || job.format === formatFilter;
+    const matchesSearch =
+      !searchQuery ||
       job.reportTitle.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     return matchesStatus && matchesFormat && matchesSearch;
   });
 
   // Group jobs by status for stats
-  const jobStats = jobs.reduce((acc, job) => {
-    acc[job.status] = (acc[job.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const jobStats = jobs.reduce(
+    (acc, job) => {
+      acc[job.status] = (acc[job.status] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   // Handle job actions
   const handleDownload = async (job: ExportJob) => {
     if (!job.downloadUrl) return;
-    
+
     try {
       // In a real app, this would trigger the download
-      window.open(job.downloadUrl, '_blank');
+      window.open(job.downloadUrl, "_blank");
       toast.success(`Downloading ${job.reportTitle}`);
     } catch (error) {
-      toast.error('Failed to download file');
+      toast.error("Failed to download file");
     }
   };
 
   const handleCancel = async (job: ExportJob) => {
     try {
       const response = await fetch(`/api/export-jobs/${job.id}/cancel`, {
-        method: 'POST',
+        method: "POST",
       });
 
-      if (!response.ok) throw new Error('Failed to cancel job');
+      if (!response.ok) throw new Error("Failed to cancel job");
 
-      setJobs(prev => prev.map(j => 
-        j.id === job.id 
-          ? { ...j, status: 'cancelled' as const }
-          : j
-      ));
+      setJobs((prev) =>
+        prev.map((j) =>
+          j.id === job.id ? { ...j, status: "cancelled" as const } : j,
+        ),
+      );
 
-      toast.success('Export job cancelled');
+      toast.success("Export job cancelled");
     } catch (error) {
-      toast.error('Failed to cancel job');
+      toast.error("Failed to cancel job");
     }
   };
 
   const handleRetry = async (job: ExportJob) => {
     try {
       const response = await fetch(`/api/export-jobs/${job.id}/retry`, {
-        method: 'POST',
+        method: "POST",
       });
 
-      if (!response.ok) throw new Error('Failed to retry job');
+      if (!response.ok) throw new Error("Failed to retry job");
 
-      setJobs(prev => prev.map(j => 
-        j.id === job.id 
-          ? { ...j, status: 'pending' as const, progress: 0, errorMessage: undefined }
-          : j
-      ));
+      setJobs((prev) =>
+        prev.map((j) =>
+          j.id === job.id
+            ? {
+                ...j,
+                status: "pending" as const,
+                progress: 0,
+                errorMessage: undefined,
+              }
+            : j,
+        ),
+      );
 
-      toast.success('Export job restarted');
+      toast.success("Export job restarted");
     } catch (error) {
-      toast.error('Failed to retry job');
+      toast.error("Failed to retry job");
     }
   };
 
   const handleDelete = async (job: ExportJob) => {
     try {
       const response = await fetch(`/api/export-jobs/${job.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
-      if (!response.ok) throw new Error('Failed to delete job');
+      if (!response.ok) throw new Error("Failed to delete job");
 
-      setJobs(prev => prev.filter(j => j.id !== job.id));
-      toast.success('Export job deleted');
+      setJobs((prev) => prev.filter((j) => j.id !== job.id));
+      toast.success("Export job deleted");
     } catch (error) {
-      toast.error('Failed to delete job');
+      toast.error("Failed to delete job");
     }
   };
 
   const handleBulkDownload = () => {
-    const completedJobs = filteredJobs.filter(job => 
-      job.status === 'completed' && job.downloadUrl
+    const completedJobs = filteredJobs.filter(
+      (job) => job.status === "completed" && job.downloadUrl,
     );
-    
+
     if (completedJobs.length === 0) {
-      toast.error('No completed exports to download');
+      toast.error("No completed exports to download");
       return;
     }
 
-    completedJobs.forEach(job => handleDownload(job));
+    completedJobs.forEach((job) => handleDownload(job));
     toast.success(`Downloading ${completedJobs.length} files`);
   };
 
   const handleClearCompleted = async () => {
     const completedJobIds = jobs
-      .filter(job => job.status === 'completed')
-      .map(job => job.id);
+      .filter((job) => job.status === "completed")
+      .map((job) => job.id);
 
     if (completedJobIds.length === 0) {
-      toast.error('No completed jobs to clear');
+      toast.error("No completed jobs to clear");
       return;
     }
 
     try {
-      const response = await fetch('/api/export-jobs/bulk-delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/export-jobs/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobIds: completedJobIds }),
       });
 
-      if (!response.ok) throw new Error('Failed to clear completed jobs');
+      if (!response.ok) throw new Error("Failed to clear completed jobs");
 
-      setJobs(prev => prev.filter(job => !completedJobIds.includes(job.id)));
+      setJobs((prev) =>
+        prev.filter((job) => !completedJobIds.includes(job.id)),
+      );
       toast.success(`Cleared ${completedJobIds.length} completed jobs`);
     } catch (error) {
-      toast.error('Failed to clear completed jobs');
+      toast.error("Failed to clear completed jobs");
     }
   };
 
@@ -509,17 +550,33 @@ export function ExportCenter({ userId, initialStatus, initialFormat, initialDate
         {Object.entries(STATUS_CONFIG).map(([status, config]) => {
           const count = jobStats[status] || 0;
           const Icon = config.icon;
-          
+
           return (
             <Card key={status}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className={cn("p-2 rounded-lg", config.color.replace('text-', 'bg-').replace('-800', '-100'))}>
-                    <Icon className={cn("h-4 w-4", config.color.replace('bg-', 'text-').replace('-100', '-600'))} />
+                  <div
+                    className={cn(
+                      "p-2 rounded-lg",
+                      config.color
+                        .replace("text-", "bg-")
+                        .replace("-800", "-100"),
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "h-4 w-4",
+                        config.color
+                          .replace("bg-", "text-")
+                          .replace("-100", "-600"),
+                      )}
+                    />
                   </div>
                   <div>
                     <div className="text-2xl font-bold">{count}</div>
-                    <div className="text-sm text-muted-foreground">{config.label}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {config.label}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -540,7 +597,7 @@ export function ExportCenter({ userId, initialStatus, initialFormat, initialDate
               className="pl-10 w-80"
             />
           </div>
-          
+
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="All Status" />
@@ -595,12 +652,12 @@ export function ExportCenter({ userId, initialStatus, initialFormat, initialDate
               icon={<Download className="h-12 w-12" />}
               title="No export jobs found"
               subtitle={
-                searchQuery 
+                searchQuery
                   ? `No exports match "${searchQuery}". Try adjusting your search terms.`
                   : "You haven't created any export jobs yet. Start by exporting a report."
               }
               action={
-                <Button onClick={() => window.location.href = '/reports'}>
+                <Button onClick={() => (window.location.href = "/reports")}>
                   <FileText className="h-4 w-4 mr-2" />
                   Go to Reports
                 </Button>
@@ -608,7 +665,7 @@ export function ExportCenter({ userId, initialStatus, initialFormat, initialDate
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredJobs.map(job => (
+              {filteredJobs.map((job) => (
                 <ExportJobCard
                   key={job.id}
                   job={job}
@@ -627,7 +684,8 @@ export function ExportCenter({ userId, initialStatus, initialFormat, initialDate
           <Card>
             <CardContent className="p-6">
               <div className="text-center text-muted-foreground">
-                List view implementation would go here using the DataTable component
+                List view implementation would go here using the DataTable
+                component
               </div>
             </CardContent>
           </Card>

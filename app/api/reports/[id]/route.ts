@@ -1,234 +1,206 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { z } from 'zod';
-import { ReportStatus } from '@/lib/types/reports';
+import { NextRequest } from "next/server";
+import { ApiError } from "@/lib/api-utils";
+import { logger } from "@/lib/logger";
+import { auth } from "@clerk/nextjs/server";
+
+import { z } from "zod";
+import { ReportStatus } from "@/lib/types/reports";
+import { ReportService } from "@/lib/services/report-service";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
 
 // Validation schema for updates
 const updateReportSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   description: z.string().optional(),
-  config: z.object({
-    title: z.string(),
-    description: z.string().optional(),
-    templateId: z.string().optional(),
-    filters: z.record(z.any()),
-    parameters: z.record(z.any()),
-    layout: z.object({
-      components: z.array(z.any()),
-      grid: z.object({
-        columns: z.number(),
-        rows: z.number(),
-        gap: z.number()
-      })
-    }),
-    styling: z.object({
-      theme: z.enum(['light', 'dark']),
-      primaryColor: z.string(),
-      secondaryColor: z.string(),
-      fontFamily: z.string(),
-      fontSize: z.number()
+  config: z
+    .object({
+      title: z.string(),
+      description: z.string().optional(),
+      templateId: z.string().optional(),
+      filters: z.record(z.any()),
+      parameters: z.record(z.any()),
+      layout: z.object({
+        components: z.array(z.any()),
+        grid: z.object({
+          columns: z.number(),
+          rows: z.number(),
+          gap: z.number(),
+        }),
+      }),
+      styling: z.object({
+        theme: z.enum(["light", "dark"]),
+        primaryColor: z.string(),
+        secondaryColor: z.string(),
+        fontFamily: z.string(),
+        fontSize: z.number(),
+      }),
     })
-  }).optional(),
+    .optional(),
   isPublic: z.boolean().optional(),
-  status: z.nativeEnum(ReportStatus).optional()
+  status: z.nativeEnum(ReportStatus).optional(),
 });
-
-// Helper function to check report permissions
-async function checkReportPermission(reportId: string, userId: string, requiredPermission: 'VIEW' | 'EDIT' | 'ADMIN') {
-  const report = await db.report.findUnique({
-    where: { id: reportId },
-    include: {
-      permissions: {
-        where: { userId }
-      }
-    }
-  });
-
-  if (!report) {
-    return { hasPermission: false, report: null };
-  }
-
-  // Owner has all permissions
-  if (report.createdBy === userId) {
-    return { hasPermission: true, report };
-  }
-
-  // Public reports can be viewed
-  if (report.isPublic && requiredPermission === 'VIEW') {
-    return { hasPermission: true, report };
-  }
-
-  // Check explicit permissions
-  const permission = report.permissions[0];
-  if (!permission) {
-    return { hasPermission: false, report };
-  }
-
-  const permissionLevels = {
-    'VIEW': ['view', 'edit', 'admin'],
-    'EDIT': ['edit', 'admin'],
-    'ADMIN': ['admin']
-  };
-
-  const hasPermission = permissionLevels[requiredPermission].includes(permission.permissionType);
-  return { hasPermission, report };
-}
 
 // GET /api/reports/[id] - Get a specific report
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: { id: string } },
 ) {
+  const requestId = crypto.randomUUID();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { hasPermission, report } = await checkReportPermission(params.id, userId, 'VIEW');
-
-    if (!hasPermission || !report) {
-      return NextResponse.json(
-        { error: 'Report not found or access denied' },
-        { status: 404 }
+      return StandardErrorResponse.unauthorized(
+        "Authentication required",
+        requestId,
       );
     }
 
-    // Get full report with relations
-    const fullReport = await db.report.findUnique({
-      where: { id: params.id },
-      include: {
-        template: {
-          include: {
-            category: true
-          }
-        },
-        permissions: true,
-        exportJobs: {
-          orderBy: { createdAt: 'desc' },
-          take: 10
-        }
-      }
+    const organizationId =
+      _request.headers.get("x-organization-id") || undefined;
+    const report = await ReportService.getReportById(
+      params.id,
+      userId,
+      organizationId,
+    );
+
+    if (!report) {
+      return StandardErrorResponse.notFound("Report", requestId);
+    }
+
+    return StandardSuccessResponse.create({ report });
+  } catch (error) {
+    logger.apiError("Error processing report request", "report", error, {
+      requestId,
+      resourceId: params.id,
+      endpoint: "/api/reports/:id",
     });
 
-    // Note: viewCount field doesn't exist in schema, removing this update
+    if (error instanceof ApiError) {
+      return StandardErrorResponse.fromApiError(error, requestId);
+    }
 
-    return NextResponse.json(fullReport);
-  } catch (error) {
-    console.error('Error fetching report:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    return StandardErrorResponse.internal(
+      "Failed to process report request",
+      process.env.NODE_ENV === "development"
+        ? {
+            originalError: error instanceof Error ? error.message : error,
+          }
+        : undefined,
+      requestId,
     );
   }
 }
 
 // PUT /api/reports/[id] - Update a report
 export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: { id: string } },
 ) {
+  const requestId = crypto.randomUUID();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { hasPermission } = await checkReportPermission(params.id, userId, 'EDIT');
-
-    if (!hasPermission) {
-      return NextResponse.json(
-        { error: 'Report not found or access denied' },
-        { status: 404 }
+      return StandardErrorResponse.unauthorized(
+        "Authentication required",
+        requestId,
       );
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const validatedData = updateReportSchema.parse(body);
+    const organizationId =
+      _request.headers.get("x-organization-id") || undefined;
 
-    // Update report
-    const updatedReport = await db.report.update({
-      where: { id: params.id },
-      data: {
-        name: validatedData.title,
-        description: validatedData.description,
-        config: validatedData.config ? JSON.stringify(validatedData.config) : undefined,
-        isPublic: validatedData.isPublic,
-        status: validatedData.status
-      },
-      include: {
-        template: {
-          include: {
-            category: true
-          }
-        },
-        permissions: true,
-        exportJobs: {
-          orderBy: { createdAt: 'desc' },
-          take: 10
-        }
-      }
-    });
+    const updatedReport = await ReportService.updateReport(
+      params.id,
+      userId,
+      validatedData,
+      organizationId,
+    );
 
-    return NextResponse.json(updatedReport);
+    return StandardSuccessResponse.create(
+      { report: updatedReport },
+      { message: "Report updated successfully" },
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
+      return StandardErrorResponse.badRequest(
+        "Validation error",
+        "validation",
+        { validationErrors: error.errors },
+        requestId,
       );
     }
 
-    console.error('Error updating report:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    logger.apiError("Error processing report request", "report", error, {
+      requestId,
+      reportId: params.id,
+      endpoint: "/api/reports/:id",
+    });
+
+    if (error instanceof ApiError) {
+      return StandardErrorResponse.fromApiError(error, requestId);
+    }
+
+    return StandardErrorResponse.internal(
+      "Failed to process report request",
+      process.env.NODE_ENV === "development"
+        ? {
+            originalError: error instanceof Error ? error.message : error,
+          }
+        : undefined,
+      requestId,
     );
   }
 }
 
 // DELETE /api/reports/[id] - Delete a report
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: { id: string } },
 ) {
+  const requestId = crypto.randomUUID();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { hasPermission, report } = await checkReportPermission(params.id, userId, 'ADMIN');
-
-    if (!hasPermission || !report) {
-      return NextResponse.json(
-        { error: 'Report not found or access denied' },
-        { status: 404 }
+      return StandardErrorResponse.unauthorized(
+        "Authentication required",
+        requestId,
       );
     }
 
-    // Only owner can delete
-    if (report.createdBy !== userId) {
-      return NextResponse.json(
-        { error: 'Only the report owner can delete it' },
-        { status: 403 }
-      );
-    }
+    const organizationId =
+      _request.headers.get("x-organization-id") || undefined;
+    await ReportService.deleteReport(params.id, userId, organizationId);
 
-    // Delete related records first
-    await db.$transaction([
-      db.exportJob.deleteMany({ where: { reportId: params.id } }),
-      db.reportPermission.deleteMany({ where: { reportId: params.id } }),
-      db.report.delete({ where: { id: params.id } })
-    ]);
-
-    return NextResponse.json({ message: 'Report deleted successfully' });
+    return StandardSuccessResponse.create(null, {
+      message: "Report deleted successfully",
+    });
   } catch (error) {
-    console.error('Error deleting report:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    logger.apiError("Error processing report request", "report", error, {
+      requestId,
+      resourceId: params.id,
+      endpoint: "/api/reports/:id",
+    });
+
+    if (error instanceof ApiError) {
+      return StandardErrorResponse.fromApiError(error, requestId);
+    }
+
+    return StandardErrorResponse.internal(
+      "Failed to process report request",
+      process.env.NODE_ENV === "development"
+        ? {
+            originalError: error instanceof Error ? error.message : error,
+          }
+        : undefined,
+      requestId,
     );
   }
 }

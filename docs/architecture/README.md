@@ -5,24 +5,28 @@ This directory contains documentation about the system architecture, design deci
 ## 🏗️ Architecture Overview
 
 ### 📁 [Project Organization](project-organization.md)
+
 - Folder structure and naming conventions
 - Route groups and patterns
 - Component organization
 - File naming standards
 
 ### 🗄️ Database Architecture
+
 - PostgreSQL schema design
 - Prisma ORM integration
 - Migration strategies
 - Performance considerations
 
 ### 🔄 Data Flow Patterns
+
 - Client-server communication
 - State management with Zustand
 - Real-time data synchronization
 - API design patterns
 
 ### 🧩 Component Architecture
+
 - Component composition patterns
 - Reusable UI components
 - Form handling strategies
@@ -31,21 +35,25 @@ This directory contains documentation about the system architecture, design deci
 ## 🎯 Design Principles
 
 ### 1. **Separation of Concerns**
+
 - Clear boundaries between layers
 - Feature-based organization
 - Modular architecture
 
 ### 2. **Scalability**
+
 - Route groups for organization
 - Shared layouts and components
 - Efficient state management
 
 ### 3. **Maintainability**
+
 - Consistent patterns throughout
 - Clear documentation
 - Type safety with TypeScript
 
 ### 4. **Performance**
+
 - Next.js App Router optimization
 - Server-side rendering
 - Static generation where possible

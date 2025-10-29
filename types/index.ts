@@ -1,235 +1,432 @@
-// Database types with relations
-export interface PostWithAuthor {
-  id: string
-  title: string
-  content: string | null
-  published: boolean
-  authorId: string
-  createdAt: Date
-  updatedAt: Date
-  author: {
-    id: string
-    email: string
-    firstName: string | null
-    lastName: string | null
-    imageUrl?: string | null
-  }
-}
+/**
+ * Consolidated TypeScript Types
+ *
+ * Archivo central para todos los tipos TypeScript del proyecto.
+ * Organizado por categorías para mejor mantenimiento y reutilización.
+ */
 
-export interface PostWithAuthorAndTags extends PostWithAuthor {
-  tags: {
-    id: string
-    name: string
-  }[]
-}
+// Re-export all types from individual modules
+// Note: Only export existing type modules
+// export * from "./auth";
+// export * from "./api";
+// export * from "./database";
+// export * from "./ui";
+// export * from "./security";
+// export * from "./monitoring";
+// export * from "./workflow";
+// export * from "./integration";
+// export * from "./notification";
+// export * from "./file";
 
-export interface UserProfile {
-  id: string
-  email: string
-  firstName: string | null
-  lastName: string | null
-  imageUrl?: string | null
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface Tag {
-  id: string
-  name: string
-  createdAt: Date
-  updatedAt: Date
-}
-
-// Form types
-export interface CreatePostData {
-  title: string
-  content?: string
-  published?: boolean
-  tags?: string[]
-}
-
-export interface UpdatePostData extends Partial<CreatePostData> {
-  id: string
-}
-
-export interface CreateTagData {
-  name: string
-}
+// Common utility types
+export type ID = string;
+export type Timestamp = Date;
+export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
 
 // API Response types
 export interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
-  error?: string
-  message?: string
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+  timestamp: Timestamp;
 }
 
-export interface PaginatedResponse<T> extends ApiResponse<T> {
+export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   pagination: {
-    page: number
-    pageSize: number
-    total: number
-    totalPages: number
-    hasNext: boolean
-    hasPrev: boolean
-  }
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
 }
 
-// Search and Filter types
-export interface PostFilters {
-  published?: boolean
-  authorId?: string
-  tags?: string[]
-  dateFrom?: Date
-  dateTo?: Date
-  search?: string
+export interface ErrorResponse extends ApiResponse {
+  success: false;
+  error: string;
+  details?: Record<string, any>;
+  code?: string;
 }
 
-export interface PaginationParams {
-  page?: number
-  pageSize?: number
-  orderBy?: string
-  orderDir?: 'asc' | 'desc'
+// Common entity patterns
+export interface BaseEntity {
+  id: ID;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
-// UI Component types
-export interface ModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title?: string
-  description?: string
-  children: React.ReactNode
+export interface SoftDeletableEntity extends BaseEntity {
+  deletedAt?: Timestamp | null;
 }
 
-export interface TableColumn<T> {
-  key: keyof T
-  label: string
-  sortable?: boolean
-  render?: (value: any, record: T) => React.ReactNode
+export interface UserOwnedEntity extends BaseEntity {
+  userId: ID;
 }
 
-export interface FormFieldProps {
-  name: string
-  label: string
-  type?: 'text' | 'email' | 'password' | 'textarea' | 'select' | 'checkbox'
-  placeholder?: string
-  required?: boolean
-  options?: { value: string; label: string }[]
+export interface OrganizationOwnedEntity extends BaseEntity {
+  organizationId: ID;
+}
+
+// Status enums
+export enum Status {
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+  PENDING = "pending",
+  SUSPENDED = "suspended",
+  DELETED = "deleted",
+}
+
+export enum Priority {
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
+  CRITICAL = "critical",
+}
+
+export enum Severity {
+  INFO = "info",
+  WARNING = "warning",
+  ERROR = "error",
+  CRITICAL = "critical",
+}
+
+// Search and filter types
+export interface SearchParams {
+  query?: string;
+  filters?: Record<string, any>;
+  sort?: {
+    field: string;
+    direction: "asc" | "desc";
+  };
+  pagination?: {
+    page: number;
+    limit: number;
+  };
+}
+
+export interface FilterOption {
+  label: string;
+  value: string;
+  count?: number;
+}
+
+// Form types
+export interface FormField {
+  name: string;
+  label: string;
+  type:
+    | "text"
+    | "email"
+    | "password"
+    | "number"
+    | "select"
+    | "textarea"
+    | "checkbox"
+    | "radio"
+    | "file"
+    | "date";
+  required?: boolean;
+  placeholder?: string;
+  options?: Array<{ label: string; value: string }>;
   validation?: {
-    min?: number
-    max?: number
-    pattern?: RegExp
-    message?: string
-  }
+    min?: number;
+    max?: number;
+    pattern?: string;
+    custom?: (value: any) => boolean | string;
+  };
 }
 
-// Theme types
-export type Theme = 'light' | 'dark' | 'system'
-
-export interface ThemeConfig {
-  theme: Theme
-  accentColor: string
-  fontSize: 'sm' | 'base' | 'lg'
-  fontFamily: 'sans' | 'serif' | 'mono'
+export interface FormConfig {
+  fields: FormField[];
+  submitLabel?: string;
+  resetLabel?: string;
+  layout?: "vertical" | "horizontal" | "inline";
 }
 
-// Navigation types
-export interface NavItem {
-  label: string
-  href: string
-  icon?: React.ComponentType
-  badge?: string | number
-  children?: NavItem[]
+// Theme and UI types
+export type Theme = "light" | "dark" | "system";
+export type Size = "xs" | "sm" | "md" | "lg" | "xl";
+export type Variant =
+  | "default"
+  | "primary"
+  | "secondary"
+  | "success"
+  | "warning"
+  | "error"
+  | "info";
+export type Color =
+  | "gray"
+  | "red"
+  | "yellow"
+  | "green"
+  | "blue"
+  | "indigo"
+  | "purple"
+  | "pink";
+
+// Component props patterns
+export interface ComponentWithChildren {
+  children: React.ReactNode;
 }
 
-export interface BreadcrumbItem {
-  label: string
-  href?: string
-  current?: boolean
+export interface ComponentWithClassName {
+  className?: string;
 }
 
-// Error types
-export interface AppError extends Error {
-  code?: string
-  statusCode?: number
-  details?: any
+export interface ComponentWithVariant {
+  variant?: Variant;
 }
 
-export type ErrorBoundaryFallback = React.ComponentType<{
-  error: AppError
-  resetError: () => void
-}>
-
-// Utility types
-export type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P]
+export interface ComponentWithSize {
+  size?: Size;
 }
 
-export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+export interface LoadingState {
+  isLoading: boolean;
+  error?: string | null;
+}
 
-export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>
+export interface AsyncState<T> extends LoadingState {
+  data?: T | null;
+}
 
 // Event types
-export interface CustomEvent<T = any> {
-  type: string
-  payload: T
-  timestamp: Date
+export interface BaseEvent {
+  id: ID;
+  type: string;
+  timestamp: Timestamp;
+  source: string;
+  metadata?: Record<string, any>;
 }
 
-// Upload types
-export interface FileUpload {
-  file: File
-  progress: number
-  status: 'pending' | 'uploading' | 'success' | 'error'
-  url?: string
-  error?: string
+export interface UserEvent extends BaseEvent {
+  userId: ID;
+  action: string;
+  resource?: string;
+  resourceId?: ID;
+}
+
+// Configuration types
+export interface AppConfig {
+  name: string;
+  version: string;
+  environment: "development" | "staging" | "production";
+  features: Record<string, boolean>;
+  limits: {
+    fileUpload: {
+      maxSize: number;
+      allowedTypes: string[];
+    };
+    api: {
+      rateLimit: number;
+      timeout: number;
+    };
+  };
+}
+
+// Validation types
+export interface ValidationRule {
+  field: string;
+  rules: Array<{
+    type: "required" | "min" | "max" | "pattern" | "custom";
+    value?: any;
+    message: string;
+  }>;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: Record<string, string[]>;
 }
 
 // Analytics types
 export interface AnalyticsEvent {
-  event: string
-  properties?: Record<string, any>
-  userId?: string
-  timestamp?: Date
+  name: string;
+  properties?: Record<string, any>;
+  userId?: ID;
+  sessionId?: string;
+  timestamp?: Timestamp;
 }
 
-export interface PageView {
-  path: string
-  title: string
-  referrer?: string
-  userId?: string
-  timestamp: Date
+export interface MetricData {
+  name: string;
+  value: number;
+  unit: string;
+  timestamp: Timestamp;
+  tags?: Record<string, string>;
 }
 
-// Notification types
-export interface Notification {
-  id: string
-  type: 'info' | 'success' | 'warning' | 'error'
-  title: string
-  message: string
-  timestamp: Date
-  read: boolean
-  actions?: {
-    label: string
-    action: () => void
-  }[]
+// Export utility functions for type guards
+export const isApiResponse = <T>(obj: any): obj is ApiResponse<T> => {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    typeof obj.success === "boolean" &&
+    obj.timestamp instanceof Date
+  );
+};
+
+export const isPaginatedResponse = <T>(
+  obj: any,
+): obj is PaginatedResponse<T> => {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    typeof obj.success === "boolean" &&
+    obj.data &&
+    Array.isArray(obj.data) &&
+    obj.pagination &&
+    typeof obj.pagination === "object" &&
+    typeof obj.pagination.page === "number" &&
+    typeof obj.pagination.limit === "number" &&
+    typeof obj.pagination.total === "number" &&
+    typeof obj.pagination.totalPages === "number" &&
+    typeof obj.pagination.hasNext === "boolean" &&
+    typeof obj.pagination.hasPrev === "boolean"
+  );
+};
+
+export const isErrorResponse = (obj: any): obj is ErrorResponse => {
+  return (
+    isApiResponse(obj) && obj.success === false && typeof obj.error === "string"
+  );
+};
+
+export const isBaseEntity = (obj: any): obj is BaseEntity => {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    typeof obj.id === "string" &&
+    obj.createdAt instanceof Date &&
+    obj.updatedAt instanceof Date
+  );
+};
+
+// Type helpers for better DX
+export type ExtractArrayType<T> = T extends (infer U)[] ? U : never;
+export type NonNullable<T> = T extends null | undefined ? never : T;
+export type KeysOfType<T, U> = {
+  [K in keyof T]: T[K] extends U ? K : never;
+}[keyof T];
+
+// Generic CRUD operations types
+export interface CrudOperations<T, CreateInput, UpdateInput> {
+  create: (input: CreateInput) => Promise<T>;
+  read: (id: ID) => Promise<T | null>;
+  update: (id: ID, input: UpdateInput) => Promise<T>;
+  delete: (id: ID) => Promise<boolean>;
+  list: (params?: SearchParams) => Promise<PaginatedResponse<T>>;
 }
 
-// Settings types
-export interface UserSettings {
-  theme: Theme
-  notifications: {
-    email: boolean
-    push: boolean
-    marketing: boolean
-  }
-  privacy: {
-    profileVisibility: 'public' | 'private'
-    showActivity: boolean
-  }
-  preferences: {
-    language: string
-    timezone: string
-    dateFormat: string
-  }
+// Hook return types
+export interface UseAsyncReturn<T> extends AsyncState<T> {
+  execute: (...args: any[]) => Promise<T>;
+  reset: () => void;
 }
+
+export interface UseFormReturn<T> {
+  values: T;
+  errors: Record<keyof T, string>;
+  touched: Record<keyof T, boolean>;
+  isValid: boolean;
+  isSubmitting: boolean;
+  handleChange: (field: keyof T, value: any) => void;
+  handleSubmit: (onSubmit: (values: T) => void | Promise<void>) => void;
+  reset: () => void;
+  setFieldError: (field: keyof T, error: string) => void;
+}
+
+// Context types
+export interface AppContextValue {
+  user: any | null; // Will be typed properly in auth.ts
+  organization: any | null; // Will be typed properly in database.ts
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  config: AppConfig;
+}
+
+// Route types
+export interface RouteConfig {
+  path: string;
+  component: React.ComponentType;
+  exact?: boolean;
+  protected?: boolean;
+  roles?: string[];
+  permissions?: string[];
+}
+
+export interface NavigationItem {
+  label: string;
+  href: string;
+  icon?: React.ComponentType;
+  children?: NavigationItem[];
+  badge?: string | number;
+  external?: boolean;
+}
+
+// Feature flag types
+export interface FeatureFlag {
+  key: string;
+  enabled: boolean;
+  description?: string;
+  conditions?: {
+    userRoles?: string[];
+    organizationTiers?: string[];
+    percentage?: number;
+  };
+}
+
+// Audit types
+export interface AuditLog extends BaseEntity {
+  action: string;
+  resource: string;
+  resourceId?: ID;
+  userId: ID;
+  organizationId?: ID;
+  ipAddress?: string;
+  userAgent?: string;
+  changes?: {
+    before?: Record<string, any>;
+    after?: Record<string, any>;
+  };
+  metadata?: Record<string, any>;
+}
+
+// Export default consolidated types object for easier importing
+const TypesExport = {
+  // Common patterns
+  // ApiResponse,
+  // PaginatedResponse,
+  // ErrorResponse,
+  // BaseEntity,
+  // SoftDeletableEntity,
+  // UserOwnedEntity,
+  // OrganizationOwnedEntity,
+
+  // Enums
+  Status,
+  Priority,
+  Severity,
+
+  // Utility types
+  // Optional,
+  // RequiredFields,
+  // DeepPartial,
+  // ExtractArrayType,
+  // NonNullable,
+  // KeysOfType,
+
+  // Type guards
+  isApiResponse,
+  isPaginatedResponse,
+  isErrorResponse,
+  isBaseEntity,
+};
+
+export default TypesExport;

@@ -18,7 +18,10 @@ api.interceptors.request.use(
   (config: any) => {
     // Add auth token if available (Clerk or NextAuth)
     // This will depend on your auth provider
-    const token = typeof window !== "undefined" ? localStorage.getItem("__session") || "" : "";
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("__session") || ""
+        : "";
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,7 +29,7 @@ api.interceptors.request.use(
   },
   (error: any) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor for error handling
@@ -43,7 +46,7 @@ api.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 /**
@@ -82,7 +85,7 @@ export function usePost(id: string) {
 
 export function useCreatePost() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (postData: any) => {
       const { data } = await api.post("/posts", postData);
@@ -97,7 +100,7 @@ export function useCreatePost() {
 
 export function useUpdatePost(id: string) {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (postData: any) => {
       const { data } = await api.patch(`/posts/${id}`, postData);
@@ -113,7 +116,7 @@ export function useUpdatePost(id: string) {
 
 export function useDeletePost(id: string) {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async () => {
       await api.delete(`/posts/${id}`);
@@ -129,7 +132,11 @@ export function useDeletePost(id: string) {
 /**
  * User Hooks
  */
-export function useUsers(params?: { page?: number; limit?: number; search?: string }) {
+export function useUsers(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) {
   return useQuery({
     queryKey: queryKeys.users,
     queryFn: async () => {
@@ -165,7 +172,7 @@ export function useCurrentUser() {
 
 export function useUpdateUser(id: string) {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (userData: any) => {
       const { data } = await api.patch(`/users/${id}`, userData);
@@ -206,7 +213,7 @@ export function useCategory(id: string) {
 
 export function useCreateCategory() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (categoryData: any) => {
       const { data } = await api.post("/categories", categoryData);
@@ -235,7 +242,7 @@ export function useComments(postId: string) {
 
 export function useCreateComment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (commentData: any) => {
       const { data } = await api.post("/comments", commentData);
@@ -243,8 +250,8 @@ export function useCreateComment() {
     },
     onSuccess: (data) => {
       // Invalidate comments for the specific post
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.comments(data.postId) 
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.comments(data.postId),
       });
     },
   });
@@ -281,14 +288,14 @@ export function useNotifications(userId: string) {
 
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (notificationId: string) => {
       await api.patch(`/notifications/${notificationId}/read`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.notifications("") // Will need actual user ID
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.notifications(""), // Will need actual user ID
       });
     },
   });
@@ -302,13 +309,13 @@ export function useFileUpload() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      
+
       const { data } = await api.post("/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      
+
       return data;
     },
   });
@@ -342,7 +349,7 @@ export function useSetting(key: string) {
 
 export function useUpdateSetting() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
       const { data } = await api.patch(`/settings/${key}`, { value });

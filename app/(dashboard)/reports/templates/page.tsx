@@ -1,12 +1,12 @@
-import { Suspense } from 'react';
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import { TemplateGallery } from '@/components/reports/template-gallery';
-import { TemplateGallerySkeleton } from '@/components/reports/template-gallery-skeleton';
+import { Suspense } from "react";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { TemplateGallery } from "@/components/reports/template-gallery";
+import { TemplateGallerySkeleton } from "@/components/reports/template-gallery-skeleton";
 
 export const metadata = {
-  title: 'Template Gallery',
-  description: 'Browse and manage report templates'
+  title: "Template Gallery",
+  description: "Browse and manage report templates",
 };
 
 interface TemplateGalleryPageProps {
@@ -17,11 +17,13 @@ interface TemplateGalleryPageProps {
   };
 }
 
-export default async function TemplateGalleryPage({ searchParams }: TemplateGalleryPageProps) {
+export default async function TemplateGalleryPage({
+  searchParams,
+}: TemplateGalleryPageProps) {
   const { userId } = await auth();
 
   if (!userId) {
-    redirect('/sign-in');
+    redirect("/sign-in");
   }
 
   return (
@@ -29,12 +31,13 @@ export default async function TemplateGalleryPage({ searchParams }: TemplateGall
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Template Gallery</h1>
         <p className="text-muted-foreground mt-2">
-          Browse, create, and manage report templates to streamline your reporting workflow
+          Browse, create, and manage report templates to streamline your
+          reporting workflow
         </p>
       </div>
 
       <Suspense fallback={<TemplateGallerySkeleton />}>
-        <TemplateGallery 
+        <TemplateGallery
           userId={userId}
           initialCategory={searchParams.category}
           initialSearch={searchParams.search}

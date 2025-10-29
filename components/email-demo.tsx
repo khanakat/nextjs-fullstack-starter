@@ -14,17 +14,17 @@ export default function EmailDemo() {
   const [customEmail, setCustomEmail] = useState({
     subject: "Test Email from FullStack Starter",
     html: "<h1>Hello!</h1><p>This is a test email from your FullStack Starter template.</p><p>The email system is working correctly! 🎉</p>",
-    text: ""
+    text: "",
   });
 
   const sendTestEmail = async (type: string, data?: any) => {
     setIsLoading(true);
-    
+
     try {
-      const response = await fetch('/api/email/test', {
-        method: 'POST',
+      const response = await fetch("/api/email/test", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ type, data }),
       });
@@ -37,8 +37,8 @@ export default function EmailDemo() {
         toast.error(`Failed to send email: ${result.error}`);
       }
     } catch (error) {
-      toast.error('Network error occurred');
-      console.error('Email test error:', error);
+      toast.error("Network error occurred");
+      console.error("Email test error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -46,33 +46,33 @@ export default function EmailDemo() {
 
   const emailTypes = [
     {
-      type: 'welcome',
-      title: 'Welcome Email',
-      description: 'Onboarding email for new users',
-      icon: '👋',
-      color: 'bg-blue-50 border-blue-200'
+      type: "welcome",
+      title: "Welcome Email",
+      description: "Onboarding email for new users",
+      icon: "👋",
+      color: "bg-blue-50 border-blue-200",
     },
     {
-      type: 'email-verification',
-      title: 'Email Verification',
-      description: 'Verify email address for new accounts',
-      icon: '✅',
-      color: 'bg-green-50 border-green-200'
+      type: "email-verification",
+      title: "Email Verification",
+      description: "Verify email address for new accounts",
+      icon: "✅",
+      color: "bg-green-50 border-green-200",
     },
     {
-      type: 'password-reset',
-      title: 'Password Reset',
-      description: 'Password recovery email',
-      icon: '🔐',
-      color: 'bg-red-50 border-red-200'
+      type: "password-reset",
+      title: "Password Reset",
+      description: "Password recovery email",
+      icon: "🔐",
+      color: "bg-red-50 border-red-200",
     },
     {
-      type: 'notification',
-      title: 'Notification',
-      description: 'General notification email',
-      icon: '🔔',
-      color: 'bg-purple-50 border-purple-200'
-    }
+      type: "notification",
+      title: "Notification",
+      description: "General notification email",
+      icon: "🔔",
+      color: "bg-purple-50 border-purple-200",
+    },
   ];
 
   return (
@@ -84,34 +84,42 @@ export default function EmailDemo() {
             📧 Email System Demo
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Test the Resend email integration with pre-built templates. Emails will be sent to your account email.
+            Test the Resend email integration with pre-built templates. Emails
+            will be sent to your account email.
           </p>
         </CardHeader>
         <CardContent>
-          {process.env.NODE_ENV === 'development' && !process.env.RESEND_API_KEY && (
-            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-yellow-600" />
-                <p className="text-sm text-yellow-800">
-                  <strong>Setup Required:</strong> Add RESEND_API_KEY to your .env.local file to test email functionality.
-                </p>
+          {process.env.NODE_ENV === "development" &&
+            !process.env.RESEND_API_KEY && (
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <p className="text-sm text-yellow-800">
+                    <strong>Setup Required:</strong> Add RESEND_API_KEY to your
+                    .env.local file to test email functionality.
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Pre-built Email Templates */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Pre-built Email Templates</h3>
             <div className="grid gap-4 md:grid-cols-2">
               {emailTypes.map((email) => (
-                <div key={email.type} className={`p-4 border rounded-lg ${email.color}`}>
+                <div
+                  key={email.type}
+                  className={`p-4 border rounded-lg ${email.color}`}
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span>{email.icon}</span>
                         <h4 className="font-medium">{email.title}</h4>
                       </div>
-                      <p className="text-sm text-muted-foreground">{email.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {email.description}
+                      </p>
                     </div>
                     <Button
                       size="sm"
@@ -136,7 +144,9 @@ export default function EmailDemo() {
                 <Input
                   id="subject"
                   value={customEmail.subject}
-                  onChange={(e) => setCustomEmail({ ...customEmail, subject: e.target.value })}
+                  onChange={(e) =>
+                    setCustomEmail({ ...customEmail, subject: e.target.value })
+                  }
                   placeholder="Email subject..."
                 />
               </div>
@@ -145,7 +155,9 @@ export default function EmailDemo() {
                 <Textarea
                   id="html"
                   value={customEmail.html}
-                  onChange={(e) => setCustomEmail({ ...customEmail, html: e.target.value })}
+                  onChange={(e) =>
+                    setCustomEmail({ ...customEmail, html: e.target.value })
+                  }
                   placeholder="HTML email content..."
                   rows={6}
                 />
@@ -155,14 +167,18 @@ export default function EmailDemo() {
                 <Textarea
                   id="text"
                   value={customEmail.text}
-                  onChange={(e) => setCustomEmail({ ...customEmail, text: e.target.value })}
+                  onChange={(e) =>
+                    setCustomEmail({ ...customEmail, text: e.target.value })
+                  }
                   placeholder="Plain text email content..."
                   rows={3}
                 />
               </div>
               <Button
-                onClick={() => sendTestEmail('custom', customEmail)}
-                disabled={isLoading || !customEmail.subject || !customEmail.html}
+                onClick={() => sendTestEmail("custom", customEmail)}
+                disabled={
+                  isLoading || !customEmail.subject || !customEmail.html
+                }
                 className="w-full"
               >
                 <Send className="h-4 w-4 mr-2" />

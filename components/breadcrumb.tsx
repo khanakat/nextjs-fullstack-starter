@@ -20,42 +20,42 @@ interface BreadcrumbProps {
  * SEO-friendly breadcrumb navigation component
  * Provides structured navigation and JSON-LD data for search engines
  */
-export default function Breadcrumb({ 
-  items, 
+export default function Breadcrumb({
+  items,
   className,
-  showHome = true 
+  showHome = true,
 }: BreadcrumbProps) {
   // Add home item if not present and showHome is true
-  const allItems = showHome && items[0]?.href !== '/' 
-    ? [{ label: 'Home', href: '/' }, ...items]
-    : items;
+  const allItems =
+    showHome && items[0]?.href !== "/"
+      ? [{ label: "Home", href: "/" }, ...items]
+      : items;
 
   return (
     <nav
       aria-label="Breadcrumb"
-      className={cn("flex items-center space-x-1 text-sm text-muted-foreground", className)}
+      className={cn(
+        "flex items-center space-x-1 text-sm text-muted-foreground",
+        className,
+      )}
     >
       <ol className="flex items-center space-x-1">
         {allItems.map((item, index) => {
           const isLast = index === allItems.length - 1;
-          const isHome = item.href === '/';
-          
+          const isHome = item.href === "/";
+
           return (
             <li key={index} className="flex items-center">
               {index > 0 && (
                 <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/50" />
               )}
-              
+
               {isLast || !item.href ? (
-                <span 
+                <span
                   className="font-medium text-foreground"
                   aria-current={isLast ? "page" : undefined}
                 >
-                  {isHome ? (
-                    <Home className="h-4 w-4" />
-                  ) : (
-                    item.label
-                  )}
+                  {isHome ? <Home className="h-4 w-4" /> : item.label}
                 </span>
               ) : (
                 <Link
@@ -63,11 +63,7 @@ export default function Breadcrumb({
                   className="hover:text-foreground transition-colors"
                   title={`Go to ${item.label}`}
                 >
-                  {isHome ? (
-                    <Home className="h-4 w-4" />
-                  ) : (
-                    item.label
-                  )}
+                  {isHome ? <Home className="h-4 w-4" /> : item.label}
                 </Link>
               )}
             </li>

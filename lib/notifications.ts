@@ -13,19 +13,19 @@ export interface Notification {
   userId: string;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error' | 'system';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  
+  type: "info" | "success" | "warning" | "error" | "system";
+  priority: "low" | "medium" | "high" | "urgent";
+
   // Metadata
   data?: Record<string, any>;
   actionUrl?: string;
   actionLabel?: string;
-  
+
   // State
   read: boolean;
   createdAt: Date;
   readAt?: Date;
-  
+
   // Delivery channels
   channels: {
     inApp: boolean;
@@ -33,7 +33,7 @@ export interface Notification {
     push: boolean;
     sms?: boolean;
   };
-  
+
   // Scheduling
   deliverAt?: Date;
   expiresAt?: Date;
@@ -54,11 +54,11 @@ export interface NotificationPreferences {
     system: boolean;
     billing: boolean;
   };
-  frequency: 'immediate' | 'hourly' | 'daily' | 'weekly';
+  frequency: "immediate" | "hourly" | "daily" | "weekly";
   quietHours: {
     enabled: boolean;
     start: string; // "22:00"
-    end: string;   // "08:00"
+    end: string; // "08:00"
     timezone: string;
   };
 }
@@ -79,10 +79,13 @@ export interface RealtimeEvent {
 class NotificationStore {
   private notifications: Map<string, Notification> = new Map();
   private preferences: Map<string, NotificationPreferences> = new Map();
-  private subscribers: Map<string, Set<(event: RealtimeEvent) => void>> = new Map();
+  private subscribers: Map<string, Set<(event: RealtimeEvent) => void>> =
+    new Map();
 
   // Notification CRUD operations
-  async createNotification(notification: Omit<Notification, 'id' | 'createdAt'>): Promise<Notification> {
+  async createNotification(
+    notification: Omit<Notification, "id" | "createdAt">,
+  ): Promise<Notification> {
     const newNotification: Notification = {
       ...notification,
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -90,11 +93,11 @@ class NotificationStore {
     };
 
     this.notifications.set(newNotification.id, newNotification);
-    
+
     // Send real-time event
     this.broadcastEvent({
       id: `event_${Date.now()}`,
-      type: 'notification:created',
+      type: "notification:created",
       userId: newNotification.userId,
       data: newNotification,
       timestamp: new Date(),
@@ -103,18 +106,21 @@ class NotificationStore {
     return newNotification;
   }
 
-  async getUserNotifications(userId: string, options: {
-    limit?: number;
-    offset?: number;
-    unreadOnly?: boolean;
-    type?: Notification['type'];
-  } = {}): Promise<Notification[]> {
+  async getUserNotifications(
+    userId: string,
+    options: {
+      limit?: number;
+      offset?: number;
+      unreadOnly?: boolean;
+      type?: Notification["type"];
+    } = {},
+  ): Promise<Notification[]> {
     const { limit = 50, offset = 0, unreadOnly = false, type } = options;
-    
+
     const userNotifications = Array.from(this.notifications.values())
-      .filter(n => n.userId === userId)
-      .filter(n => !unreadOnly || !n.read)
-      .filter(n => !type || n.type === type)
+      .filter((n) => n.userId === userId)
+      .filter((n) => !unreadOnly || !n.read)
+      .filter((n) => !type || n.type === type)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(offset, offset + limit);
 
@@ -123,18 +129,18 @@ class NotificationStore {
 
   async markAsRead(notificationId: string, userId: string): Promise<boolean> {
     const notification = this.notifications.get(notificationId);
-    
+
     if (!notification || notification.userId !== userId) {
       return false;
     }
 
     notification.read = true;
     notification.readAt = new Date();
-    
+
     // Broadcast update
     this.broadcastEvent({
       id: `event_${Date.now()}`,
-      type: 'notification:read',
+      type: "notification:read",
       userId,
       data: { notificationId },
       timestamp: new Date(),
@@ -145,7 +151,7 @@ class NotificationStore {
 
   async markAllAsRead(userId: string): Promise<number> {
     let count = 0;
-    
+
     for (const notification of this.notifications.values()) {
       if (notification.userId === userId && !notification.read) {
         notification.read = true;
@@ -157,7 +163,7 @@ class NotificationStore {
     if (count > 0) {
       this.broadcastEvent({
         id: `event_${Date.now()}`,
-        type: 'notifications:all_read',
+        type: "notifications:all_read",
         userId,
         data: { count },
         timestamp: new Date(),
@@ -167,18 +173,21 @@ class NotificationStore {
     return count;
   }
 
-  async deleteNotification(notificationId: string, userId: string): Promise<boolean> {
+  async deleteNotification(
+    notificationId: string,
+    userId: string,
+  ): Promise<boolean> {
     const notification = this.notifications.get(notificationId);
-    
+
     if (!notification || notification.userId !== userId) {
       return false;
     }
 
     this.notifications.delete(notificationId);
-    
+
     this.broadcastEvent({
       id: `event_${Date.now()}`,
-      type: 'notification:deleted',
+      type: "notification:deleted",
       userId,
       data: { notificationId },
       timestamp: new Date(),
@@ -190,7 +199,7 @@ class NotificationStore {
   // Preferences management
   async getUserPreferences(userId: string): Promise<NotificationPreferences> {
     const existing = this.preferences.get(userId);
-    
+
     if (existing) {
       return existing;
     }
@@ -211,12 +220,12 @@ class NotificationStore {
         system: true,
         billing: true,
       },
-      frequency: 'immediate',
+      frequency: "immediate",
       quietHours: {
         enabled: false,
-        start: '22:00',
-        end: '08:00',
-        timezone: 'UTC',
+        start: "22:00",
+        end: "08:00",
+        timezone: "UTC",
       },
     };
 
@@ -225,17 +234,17 @@ class NotificationStore {
   }
 
   async updateUserPreferences(
-    userId: string, 
-    updates: Partial<NotificationPreferences>
+    userId: string,
+    updates: Partial<NotificationPreferences>,
   ): Promise<NotificationPreferences> {
     const current = await this.getUserPreferences(userId);
     const updated = { ...current, ...updates };
-    
+
     this.preferences.set(userId, updated);
-    
+
     this.broadcastEvent({
       id: `event_${Date.now()}`,
-      type: 'preferences:updated',
+      type: "preferences:updated",
       userId,
       data: updated,
       timestamp: new Date(),
@@ -245,13 +254,16 @@ class NotificationStore {
   }
 
   // Real-time event system
-  subscribe(userId: string, callback: (event: RealtimeEvent) => void): () => void {
+  subscribe(
+    userId: string,
+    callback: (event: RealtimeEvent) => void,
+  ): () => void {
     if (!this.subscribers.has(userId)) {
       this.subscribers.set(userId, new Set());
     }
-    
+
     this.subscribers.get(userId)!.add(callback);
-    
+
     // Return unsubscribe function
     return () => {
       const userSubscribers = this.subscribers.get(userId);
@@ -269,22 +281,22 @@ class NotificationStore {
     if (event.userId) {
       const userSubscribers = this.subscribers.get(event.userId);
       if (userSubscribers) {
-        userSubscribers.forEach(callback => {
+        userSubscribers.forEach((callback) => {
           try {
             callback(event);
           } catch (error) {
-            console.error('Error broadcasting event to subscriber:', error);
+            console.error("Error broadcasting event to subscriber:", error);
           }
         });
       }
     } else {
       // Broadcast to all subscribers
-      this.subscribers.forEach(userSubscribers => {
-        userSubscribers.forEach(callback => {
+      this.subscribers.forEach((userSubscribers) => {
+        userSubscribers.forEach((callback) => {
           try {
             callback(event);
           } catch (error) {
-            console.error('Error broadcasting event to subscriber:', error);
+            console.error("Error broadcasting event to subscriber:", error);
           }
         });
       });
@@ -293,17 +305,17 @@ class NotificationStore {
 
   // Utility methods
   async getUnreadCount(userId: string): Promise<number> {
-    return Array.from(this.notifications.values())
-      .filter(n => n.userId === userId && !n.read)
-      .length;
+    return Array.from(this.notifications.values()).filter(
+      (n) => n.userId === userId && !n.read,
+    ).length;
   }
 
   async cleanup(olderThanDays: number = 30): Promise<number> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
-    
+
     let deletedCount = 0;
-    
+
     for (const [id, notification] of this.notifications.entries()) {
       if (notification.createdAt < cutoffDate && notification.read) {
         this.notifications.delete(id);
@@ -327,12 +339,15 @@ export class NotificationService {
    */
   static async notify(
     userId: string,
-    notification: Omit<Notification, 'id' | 'userId' | 'createdAt' | 'read'>
+    notification: Omit<Notification, "id" | "userId" | "createdAt" | "read">,
   ): Promise<Notification> {
     const preferences = await notificationStore.getUserPreferences(userId);
-    
+
     // Check if user wants this type of notification
-    const categoryEnabled = this.isCategoryEnabled(notification.type, preferences);
+    const categoryEnabled = this.isCategoryEnabled(
+      notification.type,
+      preferences,
+    );
     if (!categoryEnabled) {
       // Still create the notification but mark as read
       return notificationStore.createNotification({
@@ -365,8 +380,8 @@ export class NotificationService {
    * Send system-wide notification
    */
   static async broadcast(
-    notification: Omit<Notification, 'id' | 'userId' | 'createdAt' | 'read'>,
-    userIds?: string[]
+    notification: Omit<Notification, "id" | "userId" | "createdAt" | "read">,
+    userIds?: string[],
   ): Promise<Notification[]> {
     // If no specific users, you'd get all user IDs from your user service
     // For demo purposes, we'll just create notifications for provided users
@@ -375,7 +390,7 @@ export class NotificationService {
     }
 
     const notifications = await Promise.all(
-      userIds.map(userId => this.notify(userId, notification))
+      userIds.map((userId) => this.notify(userId, notification)),
     );
 
     return notifications;
@@ -384,12 +399,17 @@ export class NotificationService {
   /**
    * Quick notification helpers
    */
-  static async notifySuccess(userId: string, title: string, message: string, actionUrl?: string) {
+  static async notifySuccess(
+    userId: string,
+    title: string,
+    message: string,
+    actionUrl?: string,
+  ) {
     return this.notify(userId, {
       title,
       message,
-      type: 'success',
-      priority: 'medium',
+      type: "success",
+      priority: "medium",
       channels: {
         inApp: true,
         email: false,
@@ -399,12 +419,17 @@ export class NotificationService {
     });
   }
 
-  static async notifyError(userId: string, title: string, message: string, data?: any) {
+  static async notifyError(
+    userId: string,
+    title: string,
+    message: string,
+    data?: any,
+  ) {
     return this.notify(userId, {
       title,
       message,
-      type: 'error',
-      priority: 'high',
+      type: "error",
+      priority: "high",
       data,
       channels: {
         inApp: true,
@@ -414,12 +439,16 @@ export class NotificationService {
     });
   }
 
-  static async notifySecurityAlert(userId: string, title: string, message: string) {
+  static async notifySecurityAlert(
+    userId: string,
+    title: string,
+    message: string,
+  ) {
     return this.notify(userId, {
       title,
       message,
-      type: 'warning',
-      priority: 'urgent',
+      type: "warning",
+      priority: "urgent",
       channels: {
         inApp: true,
         email: true,
@@ -429,16 +458,19 @@ export class NotificationService {
   }
 
   // Helper methods
-  private static isCategoryEnabled(type: Notification['type'], prefs: NotificationPreferences): boolean {
+  private static isCategoryEnabled(
+    type: Notification["type"],
+    prefs: NotificationPreferences,
+  ): boolean {
     switch (type) {
-      case 'error':
-      case 'warning':
+      case "error":
+      case "warning":
         return prefs.categories.security;
-      case 'system':
+      case "system":
         return prefs.categories.system;
-      case 'info':
+      case "info":
         return prefs.categories.updates;
-      case 'success':
+      case "success":
         return true; // Always show success notifications
       default:
         return true;
@@ -447,21 +479,24 @@ export class NotificationService {
 
   private static isQuietHours(prefs: NotificationPreferences): boolean {
     if (!prefs.quietHours.enabled) return false;
-    
+
     const now = new Date();
     const currentTime = now.toTimeString().slice(0, 5); // HH:MM
-    
-    return currentTime >= prefs.quietHours.start || currentTime <= prefs.quietHours.end;
+
+    return (
+      currentTime >= prefs.quietHours.start ||
+      currentTime <= prefs.quietHours.end
+    );
   }
 
   private static getNextDeliveryTime(prefs: NotificationPreferences): Date {
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const [hours, minutes] = prefs.quietHours.end.split(':').map(Number);
+
+    const [hours, minutes] = prefs.quietHours.end.split(":").map(Number);
     tomorrow.setHours(hours, minutes, 0, 0);
-    
+
     return tomorrow;
   }
 }

@@ -1,4 +1,4 @@
-import { Metadata } from 'next';
+import { Metadata } from "next";
 
 /**
  * SEO Configuration and utilities for Next.js 14 Metadata API
@@ -14,76 +14,77 @@ import { Metadata } from 'next';
 // Base application configuration
 export const seoConfig = {
   // Basic site information
-  siteName: 'FullStack Template',
-  siteDescription: 'Production-ready Next.js 14 fullstack template with TypeScript, PostgreSQL, Prisma, Clerk Auth, and more.',
-  siteUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
-  
+  siteName: "FullStack Template",
+  siteDescription:
+    "Production-ready Next.js 14 fullstack template with TypeScript, PostgreSQL, Prisma, Clerk Auth, and more.",
+  siteUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001",
+
   // Social media
-  twitterHandle: '@yourtwitterhandle',
-  
+  twitterHandle: "@yourtwitterhandle",
+
   // Default images
-  defaultImage: '/og-image.png',
-  logoUrl: '/logo.png',
-  faviconUrl: '/favicon.ico',
-  
+  defaultImage: "/og-image.png",
+  logoUrl: "/logo.png",
+  faviconUrl: "/favicon.ico",
+
   // Author information
   author: {
-    name: 'FullStack Template',
-    url: 'https://github.com/khanakat/nextjs-fullstack-starter',
-    email: 'contact@yourapp.com'
+    name: "FullStack Template",
+    url: "https://github.com/khanakat/nextjs-fullstack-starter",
+    email: "contact@yourapp.com",
   },
-  
+
   // Organization structured data
   organization: {
-    name: 'FullStack Template',
-    url: 'https://github.com/khanakat/nextjs-fullstack-starter',
-    logo: '/logo.png',
+    name: "FullStack Template",
+    url: "https://github.com/khanakat/nextjs-fullstack-starter",
+    logo: "/logo.png",
     contactPoint: {
-      telephone: '+1-555-0123',
-      contactType: 'customer service'
-    }
-  }
+      telephone: "+1-555-0123",
+      contactType: "customer service",
+    },
+  },
 };
 
 // SEO page types for consistent metadata
-export type SEOPageType = 
-  | 'website' 
-  | 'article' 
-  | 'product' 
-  | 'profile'
-  | 'video'
-  | 'music'
-  | 'book';
+export type SEOPageType =
+  | "website"
+  | "article"
+  | "product"
+  | "profile"
+  | "video"
+  | "music"
+  | "book";
 
 // Comprehensive SEO options interface
 export interface SEOOptions {
   title: string;
   description: string;
-  
+
   // Optional overrides
   canonical?: string;
   noindex?: boolean;
   nofollow?: boolean;
-  
+
   // Open Graph
   ogType?: SEOPageType;
   ogImage?: string;
   ogImageAlt?: string;
-  
+
   // Twitter
-  twitterCard?: 'summary' | 'summary_large_image' | 'app' | 'player';
+  twitterCard?: "summary" | "summary_large_image" | "app" | "player";
   twitterImage?: string;
-  
+
   // Article specific (for blogs/news)
   publishedTime?: string;
   modifiedTime?: string;
   authors?: string[];
   section?: string;
   tags?: string[];
-  
+
   // Structured data
   structuredData?: Record<string, any> | Record<string, any>[];
-  
+
   // Additional meta tags
   keywords?: string[];
   language?: string;
@@ -99,56 +100,61 @@ export function generateMetadata(options: SEOOptions): Metadata {
     canonical,
     noindex = false,
     nofollow = false,
-    ogType = 'website',
+    ogType = "website",
     ogImage,
     ogImageAlt,
-    twitterCard = 'summary_large_image',
+    twitterCard = "summary_large_image",
     twitterImage,
     publishedTime,
     modifiedTime,
     authors,
     section,
     tags,
-    structuredData,
     keywords,
-    language = 'en'
+    language = "en",
   } = options;
 
   // Construct full title
-  const fullTitle = title.includes(seoConfig.siteName) 
-    ? title 
+  const fullTitle = title.includes(seoConfig.siteName)
+    ? title
     : `${title} | ${seoConfig.siteName}`;
 
   // Resolve image URLs
-  const resolvedOgImage = ogImage 
-    ? (ogImage.startsWith('http') ? ogImage : `${seoConfig.siteUrl}${ogImage}`)
+  const resolvedOgImage = ogImage
+    ? ogImage.startsWith("http")
+      ? ogImage
+      : `${seoConfig.siteUrl}${ogImage}`
     : `${seoConfig.siteUrl}${seoConfig.defaultImage}`;
-    
-  const resolvedTwitterImage = twitterImage 
-    ? (twitterImage.startsWith('http') ? twitterImage : `${seoConfig.siteUrl}${twitterImage}`)
+
+  const resolvedTwitterImage = twitterImage
+    ? twitterImage.startsWith("http")
+      ? twitterImage
+      : `${seoConfig.siteUrl}${twitterImage}`
     : resolvedOgImage;
 
   // Base metadata
   const metadata: Metadata = {
     title: fullTitle,
     description,
-    
+
     // Language and charset
-    ...(language && { 
+    ...(language && {
       alternates: {
         languages: {
-          [language]: canonical || seoConfig.siteUrl
-        }
-      }
+          [language]: canonical || seoConfig.siteUrl,
+        },
+      },
     }),
-    
+
     // Canonical URL
-    ...(canonical && { 
+    ...(canonical && {
       alternates: {
-        canonical: canonical.startsWith('http') ? canonical : `${seoConfig.siteUrl}${canonical}`
-      }
+        canonical: canonical.startsWith("http")
+          ? canonical
+          : `${seoConfig.siteUrl}${canonical}`,
+      },
     }),
-    
+
     // Robots directives
     robots: {
       index: !noindex,
@@ -158,13 +164,13 @@ export function generateMetadata(options: SEOOptions): Metadata {
         follow: !nofollow,
       },
     },
-    
+
     // Keywords
-    ...(keywords && { keywords: keywords.join(', ') }),
-    
+    ...(keywords && { keywords: keywords.join(", ") }),
+
     // Authors
-    ...(authors && { authors: authors.map(author => ({ name: author })) }),
-    
+    ...(authors && { authors: authors.map((author) => ({ name: author })) }),
+
     // Open Graph
     openGraph: {
       type: ogType as any,
@@ -181,9 +187,9 @@ export function generateMetadata(options: SEOOptions): Metadata {
         },
       ],
       locale: language,
-      
+
       // Article specific
-      ...(ogType === 'article' && {
+      ...(ogType === "article" && {
         publishedTime,
         modifiedTime,
         authors: authors,
@@ -191,7 +197,7 @@ export function generateMetadata(options: SEOOptions): Metadata {
         tags,
       }),
     },
-    
+
     // Twitter
     twitter: {
       card: twitterCard,
@@ -201,22 +207,22 @@ export function generateMetadata(options: SEOOptions): Metadata {
       description,
       images: [resolvedTwitterImage],
     },
-    
+
     // Additional meta tags
     other: {
       // Prevent duplicate content
-      ...(canonical && { 'rel:canonical': canonical }),
-      
+      ...(canonical && { "rel:canonical": canonical }),
+
       // Language
-      'http-equiv': 'Content-Language',
+      "http-equiv": "Content-Language",
       content: language,
-      
+
       // Mobile optimization
-      'viewport': 'width=device-width, initial-scale=1',
-      
+      viewport: "width=device-width, initial-scale=1",
+
       // Theme color
-      'theme-color': '#000000',
-      'msapplication-TileColor': '#000000',
+      "theme-color": "#000000",
+      "msapplication-TileColor": "#000000",
     },
   };
 
@@ -227,13 +233,13 @@ export function generateMetadata(options: SEOOptions): Metadata {
  * Generate structured data (JSON-LD) script tag
  */
 export function generateStructuredData(
-  data: Record<string, any> | Record<string, any>[]
+  data: Record<string, any> | Record<string, any>[],
 ): string {
   const structuredData = Array.isArray(data) ? data : [data];
-  
+
   return JSON.stringify({
-    '@context': 'https://schema.org',
-    '@graph': structuredData
+    "@context": "https://schema.org",
+    "@graph": structuredData,
   });
 }
 
@@ -243,29 +249,29 @@ export function generateStructuredData(
 export const structuredDataGenerators = {
   // Website/Organization
   organization: () => ({
-    '@type': 'Organization',
+    "@type": "Organization",
     name: seoConfig.organization.name,
     url: seoConfig.organization.url,
     logo: `${seoConfig.siteUrl}${seoConfig.organization.logo}`,
     contactPoint: {
-      '@type': 'ContactPoint',
+      "@type": "ContactPoint",
       telephone: seoConfig.organization.contactPoint.telephone,
       contactType: seoConfig.organization.contactPoint.contactType,
     },
   }),
-  
+
   // Website
   website: () => ({
-    '@type': 'WebSite',
+    "@type": "WebSite",
     name: seoConfig.siteName,
     url: seoConfig.siteUrl,
     description: seoConfig.siteDescription,
     publisher: {
-      '@type': 'Organization',
+      "@type": "Organization",
       name: seoConfig.organization.name,
     },
   }),
-  
+
   // Article/Blog post
   article: (options: {
     title: string;
@@ -276,37 +282,37 @@ export const structuredDataGenerators = {
     image?: string;
     url: string;
   }) => ({
-    '@type': 'Article',
+    "@type": "Article",
     headline: options.title,
     description: options.description,
     author: {
-      '@type': 'Person',
+      "@type": "Person",
       name: options.author,
     },
     publisher: {
-      '@type': 'Organization',
+      "@type": "Organization",
       name: seoConfig.organization.name,
       logo: {
-        '@type': 'ImageObject',
+        "@type": "ImageObject",
         url: `${seoConfig.siteUrl}${seoConfig.organization.logo}`,
       },
     },
     datePublished: options.publishedTime,
     dateModified: options.modifiedTime || options.publishedTime,
     mainEntityOfPage: {
-      '@type': 'WebPage',
-      '@id': options.url,
+      "@type": "WebPage",
+      "@id": options.url,
     },
     ...(options.image && {
       image: {
-        '@type': 'ImageObject',
-        url: options.image.startsWith('http') 
-          ? options.image 
+        "@type": "ImageObject",
+        url: options.image.startsWith("http")
+          ? options.image
           : `${seoConfig.siteUrl}${options.image}`,
       },
     }),
   }),
-  
+
   // Product (for e-commerce)
   product: (options: {
     name: string;
@@ -314,50 +320,52 @@ export const structuredDataGenerators = {
     image: string;
     price: number;
     currency: string;
-    availability: 'InStock' | 'OutOfStock' | 'PreOrder';
+    availability: "InStock" | "OutOfStock" | "PreOrder";
     brand?: string;
   }) => ({
-    '@type': 'Product',
+    "@type": "Product",
     name: options.name,
     description: options.description,
-    image: options.image.startsWith('http') 
-      ? options.image 
+    image: options.image.startsWith("http")
+      ? options.image
       : `${seoConfig.siteUrl}${options.image}`,
     offers: {
-      '@type': 'Offer',
+      "@type": "Offer",
       price: options.price,
       priceCurrency: options.currency,
       availability: `https://schema.org/${options.availability}`,
     },
     ...(options.brand && {
       brand: {
-        '@type': 'Brand',
+        "@type": "Brand",
         name: options.brand,
       },
     }),
   }),
-  
+
   // FAQ
   faq: (questions: Array<{ question: string; answer: string }>) => ({
-    '@type': 'FAQPage',
-    mainEntity: questions.map(qa => ({
-      '@type': 'Question',
+    "@type": "FAQPage",
+    mainEntity: questions.map((qa) => ({
+      "@type": "Question",
       name: qa.question,
       acceptedAnswer: {
-        '@type': 'Answer',
+        "@type": "Answer",
         text: qa.answer,
       },
     })),
   }),
-  
+
   // Breadcrumb
   breadcrumb: (items: Array<{ name: string; url: string }>) => ({
-    '@type': 'BreadcrumbList',
+    "@type": "BreadcrumbList",
     itemListElement: items.map((item, index) => ({
-      '@type': 'ListItem',
+      "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: item.url.startsWith('http') ? item.url : `${seoConfig.siteUrl}${item.url}`,
+      item: item.url.startsWith("http")
+        ? item.url
+        : `${seoConfig.siteUrl}${item.url}`,
     })),
   }),
 };
@@ -367,43 +375,51 @@ export const structuredDataGenerators = {
  */
 export const commonMetadata = {
   // Homepage
-  homepage: (): Metadata => generateMetadata({
-    title: seoConfig.siteName,
-    description: seoConfig.siteDescription,
-    structuredData: [
-      structuredDataGenerators.organization(),
-      structuredDataGenerators.website(),
-    ],
-  }),
-  
+  homepage: (): Metadata =>
+    generateMetadata({
+      title: seoConfig.siteName,
+      description: seoConfig.siteDescription,
+      structuredData: [
+        structuredDataGenerators.organization(),
+        structuredDataGenerators.website(),
+      ],
+    }),
+
   // Dashboard
-  dashboard: (): Metadata => generateMetadata({
-    title: 'Dashboard',
-    description: 'Manage your account, subscriptions, and settings.',
-    noindex: true, // Private pages shouldn't be indexed
-  }),
-  
+  dashboard: (): Metadata =>
+    generateMetadata({
+      title: "Dashboard",
+      description: "Manage your account, subscriptions, and settings.",
+      noindex: true, // Private pages shouldn't be indexed
+    }),
+
   // Auth pages
-  signIn: (): Metadata => generateMetadata({
-    title: 'Sign In',
-    description: 'Sign in to your account to access your dashboard and manage your settings.',
-  }),
-  
-  signUp: (): Metadata => generateMetadata({
-    title: 'Sign Up',
-    description: 'Create a new account to get started with our platform.',
-  }),
-  
+  signIn: (): Metadata =>
+    generateMetadata({
+      title: "Sign In",
+      description:
+        "Sign in to your account to access your dashboard and manage your settings.",
+    }),
+
+  signUp: (): Metadata =>
+    generateMetadata({
+      title: "Sign Up",
+      description: "Create a new account to get started with our platform.",
+    }),
+
   // Pricing
-  pricing: (): Metadata => generateMetadata({
-    title: 'Pricing Plans',
-    description: 'Choose the perfect plan for your needs. Free, Pro, and Enterprise options available.',
-  }),
-  
+  pricing: (): Metadata =>
+    generateMetadata({
+      title: "Pricing Plans",
+      description:
+        "Choose the perfect plan for your needs. Free, Pro, and Enterprise options available.",
+    }),
+
   // 404 Error
-  notFound: (): Metadata => generateMetadata({
-    title: 'Page Not Found',
-    description: 'The page you are looking for could not be found.',
-    noindex: true,
-  }),
+  notFound: (): Metadata =>
+    generateMetadata({
+      title: "Page Not Found",
+      description: "The page you are looking for could not be found.",
+      noindex: true,
+    }),
 };

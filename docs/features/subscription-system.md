@@ -5,23 +5,27 @@ A comprehensive Stripe-powered subscription system with multiple plans, secure p
 ## 🌟 Features
 
 ### Multi-tier Plans
+
 - **Free Plan**: Basic features with usage limits
-- **Pro Plan**: Enhanced features with higher limits  
+- **Pro Plan**: Enhanced features with higher limits
 - **Enterprise Plan**: Full access with custom solutions
 
 ### Payment Processing
+
 - Secure Stripe checkout integration
 - Multiple payment methods support
 - Automatic invoice generation
 - Failed payment handling
 
-### Billing Management  
+### Billing Management
+
 - Customer billing portal
 - Subscription upgrades/downgrades
 - Cancellation with grace period
 - Prorated billing adjustments
 
 ### Real-time Updates
+
 - Webhook-based synchronization
 - Instant status updates
 - Automated email notifications
@@ -36,7 +40,7 @@ Add these variables to your `.env.local`:
 ```bash
 # Stripe Configuration
 STRIPE_SECRET_KEY="sk_test_your_stripe_secret_key"
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_your_stripe_publishable_key"  
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_your_stripe_publishable_key"
 STRIPE_WEBHOOK_SECRET="whsec_your_webhook_secret"
 
 # Price IDs (create in Stripe Dashboard)
@@ -66,45 +70,48 @@ npx prisma db push
 ## 📋 API Routes
 
 ### Subscription Management
+
 - `GET /api/subscription` - Get user subscription status
 - `POST /api/subscription` - Create checkout session
 
 ### Billing Portal
+
 - `POST /api/subscription/billing-portal` - Access customer portal
 
 ### Webhooks
+
 - `POST /api/webhooks/stripe` - Handle Stripe events
 
 ## 🔧 Components
 
 ### PricingCards
+
 Interactive pricing display with checkout integration:
 
 ```tsx
 import PricingCards from "@/components/pricing-cards";
 
-<PricingCards 
-  currentPlan="free" 
-  hasActiveSubscription={false} 
-/>
+<PricingCards currentPlan="free" hasActiveSubscription={false} />;
 ```
 
 ### SubscriptionStatus
+
 Real-time subscription dashboard:
 
 ```tsx
 import SubscriptionStatus from "@/components/subscription-status";
 
-<SubscriptionStatus />
+<SubscriptionStatus />;
 ```
 
 ### SubscriptionDemo
+
 Complete demo with all features:
 
 ```tsx
 import SubscriptionDemo from "@/components/subscription-demo";
 
-<SubscriptionDemo />
+<SubscriptionDemo />;
 ```
 
 ## 🔐 Usage & Security
@@ -118,11 +125,11 @@ import { getUserSubscription } from "@/lib/subscription-service";
 
 export async function FeatureComponent() {
   const subscription = await getUserSubscription();
-  
-  if (!subscription || subscription.plan === 'free') {
+
+  if (!subscription || subscription.plan === "free") {
     return <UpgradePrompt />;
   }
-  
+
   // Render premium feature
   return <PremiumFeature />;
 }
@@ -135,12 +142,12 @@ import { checkSubscriptionLimits } from "@/lib/subscription-service";
 
 export async function createPost(formData: FormData) {
   const user = await currentUser();
-  const canCreate = await checkSubscriptionLimits(user.id, 'posts');
-  
+  const canCreate = await checkSubscriptionLimits(user.id, "posts");
+
   if (!canCreate) {
-    throw new Error('Upgrade required');
+    throw new Error("Upgrade required");
   }
-  
+
   // Create post logic
 }
 ```
@@ -176,7 +183,7 @@ model UserSubscription {
 The system handles these Stripe events:
 
 - `checkout.session.completed` - New subscriptions
-- `customer.subscription.created` - Subscription created  
+- `customer.subscription.created` - Subscription created
 - `customer.subscription.updated` - Plan changes
 - `customer.subscription.deleted` - Cancellations
 - `invoice.payment_succeeded` - Successful payments
@@ -185,13 +192,15 @@ The system handles these Stripe events:
 ## 🎯 Testing
 
 ### Test Cards
+
 Use Stripe test cards for development:
 
 - **Success**: `4242 4242 4242 4242`
-- **Decline**: `4000 0000 0000 0002`  
+- **Decline**: `4000 0000 0000 0002`
 - **3D Secure**: `4000 0025 0000 3155`
 
 ### Webhook Testing
+
 Use Stripe CLI for local webhook testing:
 
 ```bash
@@ -218,16 +227,17 @@ Track key subscription metrics:
 
 ## 🔄 Plan Features & Limits
 
-| Feature | Free | Pro | Enterprise |
-|---------|------|-----|------------|
-| File Uploads | 5/month | Unlimited | Unlimited |
-| Emails | 10/month | 1,000/month | Unlimited |
-| Support | Community | Priority | Dedicated |
-| API Access | Limited | Full | Full + Custom |
+| Feature      | Free      | Pro         | Enterprise    |
+| ------------ | --------- | ----------- | ------------- |
+| File Uploads | 5/month   | Unlimited   | Unlimited     |
+| Emails       | 10/month  | 1,000/month | Unlimited     |
+| Support      | Community | Priority    | Dedicated     |
+| API Access   | Limited   | Full        | Full + Custom |
 
 ## 🚀 Production Deployment
 
 ### Environment Variables
+
 Ensure all production environment variables are set:
 
 ```bash
@@ -237,11 +247,14 @@ STRIPE_WEBHOOK_SECRET="whsec_..."
 ```
 
 ### Webhook Endpoint
+
 Configure production webhook URL in Stripe Dashboard:
+
 - URL: `https://yourapp.com/api/webhooks/stripe`
 - Events: All subscription and payment events
 
 ### Database Migration
+
 Run migrations in production:
 
 ```bash
@@ -260,16 +273,19 @@ npx prisma migrate deploy
 ### Common Issues
 
 **Webhook not receiving events**:
+
 - Verify webhook URL is accessible
 - Check webhook secret matches
 - Ensure HTTPS in production
 
-**Payment method declined**:  
+**Payment method declined**:
+
 - Validate test card numbers
 - Check billing address requirements
 - Review Stripe logs for details
 
 **Subscription not updating**:
+
 - Verify webhook processing
 - Check database connection
 - Review error logs

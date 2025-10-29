@@ -1,19 +1,19 @@
-import { Suspense } from 'react';
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import { ReportsDashboard } from '@/components/reports/reports-dashboard';
-import { ReportsDashboardSkeleton } from '@/components/reports/reports-dashboard-skeleton';
+import { Suspense } from "react";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { ReportsDashboard } from "@/components/reports/reports-dashboard";
+import { ReportsDashboardSkeleton } from "@/components/reports/reports-dashboard-skeleton";
 
 export const metadata = {
-  title: 'Reports Dashboard',
-  description: 'Manage and view your reports'
+  title: "Reports Dashboard",
+  description: "Manage and view your reports",
 };
 
 export default async function ReportsPage() {
   const { userId } = await auth();
 
   if (!userId) {
-    redirect('/sign-in');
+    redirect("/sign-in");
   }
 
   return (
@@ -26,7 +26,7 @@ export default async function ReportsPage() {
       </div>
 
       <Suspense fallback={<ReportsDashboardSkeleton />}>
-        <ReportsDashboard userId={userId} />
+        <ReportsDashboard />
       </Suspense>
     </div>
   );

@@ -1,12 +1,12 @@
-import { Suspense } from 'react';
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import { ReportBuilder } from '@/components/reports/report-builder';
-import { ReportBuilderSkeleton } from '@/components/reports/report-builder-skeleton';
+import { Suspense } from "react";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { ReportBuilder } from "@/components/reports/report-builder";
+import { ReportBuilderSkeleton } from "@/components/reports/report-builder-skeleton";
 
 export const metadata = {
-  title: 'Report Builder',
-  description: 'Create and customize your reports with drag-and-drop interface'
+  title: "Report Builder",
+  description: "Create and customize your reports with drag-and-drop interface",
 };
 
 interface ReportBuilderPageProps {
@@ -17,11 +17,13 @@ interface ReportBuilderPageProps {
   };
 }
 
-export default async function ReportBuilderPage({ searchParams }: ReportBuilderPageProps) {
+export default async function ReportBuilderPage({
+  searchParams,
+}: ReportBuilderPageProps) {
   const { userId } = await auth();
 
   if (!userId) {
-    redirect('/sign-in');
+    redirect("/sign-in");
   }
 
   return (
@@ -30,14 +32,16 @@ export default async function ReportBuilderPage({ searchParams }: ReportBuilderP
         <div className="container mx-auto py-4">
           <h1 className="text-2xl font-bold tracking-tight">Report Builder</h1>
           <p className="text-muted-foreground">
-            {searchParams.edit ? 'Edit your report' : 'Create a new report with drag-and-drop components'}
+            {searchParams.edit
+              ? "Edit your report"
+              : "Create a new report with drag-and-drop components"}
           </p>
         </div>
       </div>
 
       <div className="flex-1 overflow-hidden">
         <Suspense fallback={<ReportBuilderSkeleton />}>
-          <ReportBuilder 
+          <ReportBuilder
             userId={userId}
             editReportId={searchParams.edit}
             duplicateReportId={searchParams.duplicate}

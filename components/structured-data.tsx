@@ -1,6 +1,6 @@
 "use client";
 
-import { generateStructuredData } from '@/lib/seo';
+import { generateStructuredData } from "@/lib/seo";
 
 interface StructuredDataProps {
   data: Record<string, any> | Record<string, any>[];
@@ -12,7 +12,7 @@ interface StructuredDataProps {
  */
 export default function StructuredData({ data }: StructuredDataProps) {
   const jsonLd = generateStructuredData(data);
-  
+
   return (
     <script
       type="application/ld+json"

@@ -1,23 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { z } from 'zod';
+import { NextRequest } from "next/server";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
+import { logger } from "@/lib/logger";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
+import { z } from "zod";
+import { generateRequestId } from "@/lib/utils";
+import { handleZodError } from "@/lib/error-handlers";
 
-// Validation schema
+// Validation schema for creating categories
 const createCategorySchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
+  name: z.string().min(1).max(100),
   description: z.string().optional(),
-  color: z.string().optional(),
-  icon: z.string().optional()
 });
 
 // GET /api/template-categories - List all template categories
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to access template categories",
+        requestId,
+      );
     }
+
+    logger.info("Fetching template categories", "templates", {
+      requestId,
+      userId,
+    });
 
     const categories = await db.templateCategory.findMany({
       include: {
@@ -26,57 +41,78 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             isPublic: true,
-            createdBy: true
-          }
-        }
+            createdBy: true,
+          },
+        },
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: "asc" },
     });
 
     // Filter templates based on user access
-    const filteredCategories = categories.map(category => ({
+    const filteredCategories = categories.map((category) => ({
       ...category,
-      templates: category.templates.filter(template => 
-        template.isPublic || template.createdBy === userId
+      templates: category.templates.filter(
+        (template) => template.isPublic || template.createdBy === userId,
       ),
-      templateCount: category.templates.filter(template => 
-        template.isPublic || template.createdBy === userId
-      ).length
+      templateCount: category.templates.filter(
+        (template) => template.isPublic || template.createdBy === userId,
+      ).length,
     }));
 
-    return NextResponse.json(filteredCategories);
+    return StandardSuccessResponse.create({
+      categories: filteredCategories,
+      requestId,
+    });
   } catch (error) {
-    console.error('Error fetching template categories:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    logger.error("Error processing template categories request", {
+      requestId,
+      endpoint: "/api/template-categories",
+      error: error instanceof Error ? error.message : error,
+    });
+
+    return StandardErrorResponse.internal(
+      "Failed to process template categories request",
+      requestId,
     );
   }
 }
 
 // POST /api/template-categories - Create a new template category (admin only)
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to create template categories",
+        requestId,
+      );
     }
 
     // TODO: Add admin check here
     // For now, allow any authenticated user to create categories
-    
-    const body = await request.json();
+
+    const body = await _request.json();
     const validatedData = createCategorySchema.parse(body);
+
+    logger.info("Creating template category", "templates", {
+      requestId,
+      userId,
+      categoryName: validatedData.name,
+    });
 
     // Check if category name already exists
     const existingCategory = await db.templateCategory.findFirst({
-      where: { name: validatedData.name }
+      where: { name: validatedData.name },
     });
 
     if (existingCategory) {
-      return NextResponse.json(
-        { error: 'Category name already exists' },
-        { status: 400 }
+      return StandardErrorResponse.badRequest(
+        "Category name already exists",
+        "api",
+        { name: validatedData.name },
+        requestId,
       );
     }
 
@@ -84,26 +120,30 @@ export async function POST(request: NextRequest) {
       data: {
         name: validatedData.name,
         description: validatedData.description,
-
       },
       include: {
-        templates: true
-      }
+        templates: true,
+      },
     });
 
-    return NextResponse.json(category, { status: 201 });
+    return StandardSuccessResponse.created({
+      category,
+      requestId,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
+      return handleZodError(error, requestId);
     }
 
-    console.error('Error creating template category:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    logger.error("Error processing template categories request", {
+      requestId,
+      endpoint: "/api/template-categories",
+      error: error instanceof Error ? error.message : error,
+    });
+
+    return StandardErrorResponse.internal(
+      "Failed to process template categories request",
+      requestId,
     );
   }
 }

@@ -3,7 +3,7 @@ import SEODemo from "@/components/seo-demo";
 
 export const metadata: Metadata = {
   title: "SEO System | Fullstack Template",
-  description: "Dynamic metadata generation and SEO optimization features."
+  description: "Dynamic metadata generation and SEO optimization features.",
 };
 
 export default function SEOPage() {
@@ -16,7 +16,7 @@ export default function SEOPage() {
             Dynamic metadata generation, structured data, and SEO optimization.
           </p>
         </div>
-        
+
         <SEODemo />
       </div>
     </div>

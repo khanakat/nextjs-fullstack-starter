@@ -5,29 +5,34 @@ This document provides a comprehensive overview of the FullStack Base Template a
 ## 🏗️ Architecture Principles
 
 ### 1. **Separation of Concerns**
+
 - Clear separation between UI, business logic, and data layers
 - Modular component architecture
 - Dedicated directories for different concerns (components, hooks, lib, etc.)
 
 ### 2. **Type Safety**
+
 - TypeScript throughout the entire application
 - Zod schemas for runtime validation
 - Prisma for type-safe database operations
 - Strict TypeScript configuration
 
 ### 3. **Scalability**
+
 - Modular architecture that supports feature growth
 - Clean abstractions for easy extension
 - Efficient state management with Zustand
 - Optimized database queries with React Query
 
 ### 4. **Performance**
+
 - Server-side rendering with Next.js App Router
 - Efficient client-side caching with React Query
 - Optimized images and static assets
 - Code splitting and lazy loading
 
 ### 5. **Developer Experience**
+
 - Hot reloading for fast development
 - Comprehensive TypeScript support
 - ESLint and Prettier for code quality
@@ -83,18 +88,21 @@ components/
 ### State Management Layers
 
 #### 1. **Server State (React Query)**
+
 - API data caching and synchronization
 - Background updates and refetching
 - Optimistic updates
 - Error handling and retry logic
 
 #### 2. **Client State (Zustand)**
+
 - UI state (modals, sidebar, theme)
 - User preferences
 - Form state
 - Temporary application state
 
 #### 3. **URL State (Next.js Router)**
+
 - Navigation state
 - Search parameters
 - Filter and pagination state
@@ -125,6 +133,7 @@ app/api/
 ### API Design Patterns
 
 #### 1. **Consistent Response Format**
+
 ```typescript
 interface ApiResponse<T = any> {
   success: boolean;
@@ -135,18 +144,21 @@ interface ApiResponse<T = any> {
 ```
 
 #### 2. **Error Handling**
+
 - Custom `ApiError` class for consistent error handling
 - Validation error formatting with Zod
 - HTTP status code standardization
 - Comprehensive error logging
 
 #### 3. **Request Validation**
+
 - Zod schemas for runtime validation
 - Type-safe request parsing
 - Consistent validation error responses
 - Input sanitization
 
 #### 4. **Authentication Middleware**
+
 - JWT token validation
 - Role-based access control
 - Route protection
@@ -159,17 +171,20 @@ interface ApiResponse<T = any> {
 The database schema follows these principles:
 
 #### 1. **Normalized Structure**
+
 - Proper relationships between entities
 - Foreign key constraints
 - Junction tables for many-to-many relationships
 
 #### 2. **Flexible Content Model**
+
 - Generic post/content structure
 - Category and tag system
 - User-generated content support
 - Media attachment support
 
 #### 3. **Audit Trail**
+
 - `createdAt` and `updatedAt` timestamps
 - User attribution for all content
 - Soft delete capabilities (where needed)
@@ -203,6 +218,7 @@ The schema is designed to work with multiple database providers:
 The template supports two authentication strategies:
 
 #### 1. **Clerk (Primary)**
+
 - Complete authentication solution
 - Built-in UI components
 - Social login providers
@@ -210,6 +226,7 @@ The template supports two authentication strategies:
 - Webhooks for user events
 
 #### 2. **NextAuth.js (Alternative)**
+
 - Flexible authentication library
 - Custom login flows
 - Multiple provider support
@@ -242,16 +259,19 @@ graph TD
 ### Frontend Optimizations
 
 #### 1. **Code Splitting**
+
 - Dynamic imports for large components
 - Route-based code splitting with Next.js
 - Lazy loading for non-critical features
 
 #### 2. **Caching Strategies**
+
 - React Query for server state caching
 - Browser caching for static assets
 - Service worker for offline support (optional)
 
 #### 3. **Image Optimization**
+
 - Next.js Image component
 - WebP format support
 - Responsive image loading
@@ -260,17 +280,20 @@ graph TD
 ### Backend Optimizations
 
 #### 1. **Database Queries**
+
 - Prisma query optimization
 - Proper indexing strategy
 - N+1 query prevention
 - Connection pooling
 
 #### 2. **API Response Caching**
+
 - Redis for session storage (optional)
 - HTTP caching headers
 - ETags for conditional requests
 
 #### 3. **Asset Delivery**
+
 - CDN integration support
 - Static asset optimization
 - Compression (gzip/brotli)
@@ -302,18 +325,21 @@ graph TD
 ## 🧪 Testing Strategy
 
 ### Frontend Testing
+
 - Unit tests for components (Jest + React Testing Library)
 - Integration tests for user flows
 - E2E tests with Playwright (ready to implement)
 - Visual regression testing (optional)
 
 ### Backend Testing
+
 - API endpoint testing
 - Database integration tests
 - Authentication flow testing
 - Error handling validation
 
 ### Quality Assurance
+
 - TypeScript strict mode
 - ESLint for code quality
 - Prettier for code formatting
@@ -322,12 +348,14 @@ graph TD
 ## 📊 Monitoring and Analytics
 
 ### Application Monitoring
+
 - Error tracking (Sentry integration ready)
 - Performance monitoring
 - User analytics (privacy-focused)
 - API usage metrics
 
 ### Database Monitoring
+
 - Query performance tracking
 - Connection pool monitoring
 - Storage usage metrics
@@ -336,12 +364,14 @@ graph TD
 ## 🔄 Development Workflow
 
 ### Local Development
+
 1. Environment setup with `.env.local`
 2. Database migration and seeding
 3. Hot reloading with fast refresh
 4. Development tools and debugging
 
 ### Deployment Pipeline
+
 1. Code quality checks (lint, type-check)
 2. Test execution (unit, integration)
 3. Build optimization
@@ -352,18 +382,21 @@ graph TD
 ## 📈 Scalability Considerations
 
 ### Horizontal Scaling
+
 - Stateless API design
 - Database connection pooling
 - Load balancer ready
 - CDN integration support
 
 ### Vertical Scaling
+
 - Efficient resource utilization
 - Memory optimization
 - CPU-intensive task offloading
 - Database query optimization
 
 ### Microservices Migration
+
 - Modular code organization
 - Clear API boundaries
 - Database per service capability

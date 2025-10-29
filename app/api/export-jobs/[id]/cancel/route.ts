@@ -1,66 +1,101 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
+import { NextRequest } from "next/server";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
+import { logger } from "@/lib/logger";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
+import { generateRequestId } from "@/lib/utils";
+// import { queueService } from '@/lib/services/queue';
 
 // POST /api/export-jobs/[id]/cancel - Cancel an export job
 export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: { id: string } },
 ) {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to cancel export job",
+        requestId,
+      );
     }
 
     const jobId = params.id;
 
     // Find the export job
     const exportJob = await db.exportJob.findUnique({
-      where: { id: jobId }
+      where: { id: jobId },
     });
 
     if (!exportJob) {
-      return NextResponse.json(
-        { error: 'Export job not found' },
-        { status: 404 }
-      );
+      return StandardErrorResponse.notFound("Export job not found", requestId);
     }
 
     // Check if user owns the job
     if (exportJob.userId !== userId) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
+      return StandardErrorResponse.forbidden("Access denied", requestId);
     }
 
     // Check if job can be cancelled
-    if (!['pending', 'processing'].includes(exportJob.status)) {
-      return NextResponse.json(
-        { error: 'Job cannot be cancelled in current status' },
-        { status: 400 }
+    if (!["pending", "processing"].includes(exportJob.status)) {
+      return StandardErrorResponse.badRequest(
+        "Job cannot be cancelled in current status",
+        requestId,
       );
     }
+
+    // Cancel the job in the queue system if it exists
+    let queueJobCancelled = false;
+    // Note: queueJobId field is not available in current schema
+    // TODO: Add queueJobId field to ExportJob model if queue integration is needed
+    /*
+    if (exportJob.queueJobId) {
+      try {
+        const queueJob = await queueService.getJob(exportJob.queueJobId);
+        if (queueJob && !queueJob.finishedOn) {
+          await queueJob.remove();
+          queueJobCancelled = true;
+          logger.info('Queue job cancelled successfully', 'export-jobs');
+        }
+      } catch (queueError) {
+        logger.warn('Failed to cancel queue job, proceeding with database update', 'export-jobs');
+      }
+    }
+    */
 
     // Update job status to cancelled
     const updatedJob = await db.exportJob.update({
       where: { id: jobId },
       data: {
-        status: 'cancelled'
-      }
+        status: "cancelled",
+        completedAt: new Date(),
+        errorMessage: queueJobCancelled
+          ? null
+          : "Cancelled by user (queue job may still be running)",
+      },
     });
 
-    // TODO: Cancel any running background processes
-    // This would involve cancelling the actual export process
-    // For now, we just update the database status
+    logger.info("Export job cancelled successfully", "export-jobs");
 
-    return NextResponse.json(updatedJob);
+    return StandardSuccessResponse.ok({
+      job: updatedJob,
+      queueJobCancelled,
+      message: queueJobCancelled
+        ? "Export job cancelled successfully"
+        : "Export job marked as cancelled (background process may continue)",
+      requestId,
+    });
   } catch (error) {
-    console.error('Error cancelling export job:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    logger.error("Error cancelling export job", "export-jobs", error);
+
+    return StandardErrorResponse.internal(
+      "Failed to cancel export job",
+      requestId,
     );
   }
 }

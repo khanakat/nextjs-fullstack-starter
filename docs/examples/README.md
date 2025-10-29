@@ -5,42 +5,54 @@ Real-world code examples and tutorials for the **Next.js Fullstack Starter**.
 ## 📚 Available Examples
 
 ### **📝 CRUD Operations**
-*Coming Soon* - Complete Create, Read, Update, Delete examples with:
+
+_Coming Soon_ - Complete Create, Read, Update, Delete examples with:
+
 - Form handling and validation
 - Database operations with Prisma
 - Error handling and loading states
 - Optimistic updates
 
 ### **🧩 Custom Components**
-*Coming Soon* - Building reusable components:
+
+_Coming Soon_ - Building reusable components:
+
 - Extended shadcn/ui components
 - Custom form components
 - Data visualization components
 - Interactive UI patterns
 
 ### **🎨 Advanced Theming**
-*Coming Soon* - Complex theming system:
+
+_Coming Soon_ - Complex theming system:
+
 - Multi-brand support
 - Dynamic theme switching
 - Custom CSS properties
 - Component variants
 
 ### **📱 PWA Implementation**
-*Coming Soon* - Progressive Web App features:
+
+_Coming Soon_ - Progressive Web App features:
+
 - Service worker setup
 - Offline functionality
 - Push notifications
 - App installation
 
 ### **🌍 Internationalization**
-*Coming Soon* - Multi-language support:
+
+_Coming Soon_ - Multi-language support:
+
 - i18n setup with next-intl
 - Language switching
 - RTL support
 - Dynamic content translation
 
 ### **🔔 Real-time Features**
-*Coming Soon* - Live updates with:
+
+_Coming Soon_ - Live updates with:
+
 - WebSocket integration
 - Server-Sent Events
 - Real-time notifications
@@ -53,6 +65,7 @@ Real-world code examples and tutorials for the **Next.js Fullstack Starter**.
 Want to contribute an example? We'd love to have your input!
 
 ### **Example Structure**
+
 ```
 examples/
 ├── example-name/
@@ -63,6 +76,7 @@ examples/
 ```
 
 ### **Submission Process**
+
 1. **Fork** the repository
 2. **Create** your example in `/docs/examples/`
 3. **Document** implementation steps
@@ -70,6 +84,7 @@ examples/
 5. **Submit** pull request with description
 
 ### **Example Guidelines**
+
 - ✅ **Working Code**: All examples must run without errors
 - ✅ **Documentation**: Clear step-by-step instructions
 - ✅ **Best Practices**: Follow project coding standards
@@ -98,7 +113,7 @@ Community members have requested these examples:
 ## 📖 Related Documentation
 
 - **[Getting Started](../getting-started)** - Basic setup guides
-- **[Guides](../guides)** - Feature implementation guides  
+- **[Guides](../guides)** - Feature implementation guides
 - **[Architecture](../architecture)** - Understanding the project structure
 - **[Customization](../guides/customization.md)** - Theming and branding
 

@@ -1,60 +1,75 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { 
-  ArrowLeft, 
-  Download, 
-  Share2, 
-  Edit, 
-  MoreHorizontal, 
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Download,
+  Share2,
+  Edit,
+  MoreHorizontal,
   Filter,
-  Calendar,
   BarChart3,
   PieChart,
   LineChart,
-  Table
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePickerWithRange } from '@/components/ui/date-range-picker';
-import { DateRange } from 'react-day-picker';
-import { toast } from 'sonner';
-import { ReportWithTemplate, ReportStatus, ExportFormat } from '@/lib/types/reports';
-import { formatDistanceToNow } from 'date-fns';
+  Table,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { toast } from "sonner";
+import { ReportWithTemplate, ExportFormat } from "@/lib/types/reports";
+import { formatDistanceToNow } from "date-fns";
 
 interface ReportViewerProps {
   reportId: string;
-  userId: string;
 }
 
-export function ReportViewer({ reportId, userId }: ReportViewerProps) {
+export function ReportViewer({ reportId }: ReportViewerProps) {
   const router = useRouter();
   const [report, setReport] = useState<ReportWithTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>("all");
 
   const fetchReport = useCallback(async () => {
     try {
       const response = await fetch(`/api/reports/${reportId}`);
       if (!response.ok) {
         if (response.status === 404) {
-          router.push('/reports');
+          router.push("/reports");
           return;
         }
-        throw new Error('Failed to fetch report');
+        throw new Error("Failed to fetch report");
       }
-      
+
       const data = await response.json();
       setReport(data);
     } catch (error) {
-      toast.error('Failed to load report');
-      console.error('Error fetching report:', error);
-      router.push('/reports');
+      toast.error("Failed to load report");
+      console.error("Error fetching report:", error);
+      router.push("/reports");
     } finally {
       setLoading(false);
     }
@@ -66,48 +81,51 @@ export function ReportViewer({ reportId, userId }: ReportViewerProps) {
 
   const handleExport = async (format: ExportFormat) => {
     try {
-      const response = await fetch('/api/export-jobs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          reportId, 
+      const response = await fetch("/api/export-jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId,
           format,
           options: {
             dateRange,
-            filterCategory: filterCategory !== 'all' ? filterCategory : undefined
-          }
-        })
+            filterCategory:
+              filterCategory !== "all" ? filterCategory : undefined,
+          },
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to create export job');
+      if (!response.ok) throw new Error("Failed to create export job");
 
-      toast.success(`${format} export started. Check the Export Center for progress.`);
-      router.push('/reports/exports');
+      toast.success(
+        `${format} export started. Check the Export Center for progress.`,
+      );
+      router.push("/reports/exports");
     } catch (error) {
-      toast.error('Failed to start export');
-      console.error('Error creating export job:', error);
+      toast.error("Failed to start export");
+      console.error("Error creating export job:", error);
     }
   };
 
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      toast.success('Report link copied to clipboard');
+      toast.success("Report link copied to clipboard");
     } catch (error) {
-      toast.error('Failed to copy link');
+      toast.error("Failed to copy link");
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'published':
-        return 'bg-green-100 text-green-800';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'archived':
-        return 'bg-gray-100 text-gray-800';
+      case "published":
+        return "bg-green-100 text-green-800";
+      case "draft":
+        return "bg-yellow-100 text-yellow-800";
+      case "archived":
+        return "bg-gray-100 text-gray-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -131,11 +149,11 @@ export function ReportViewer({ reportId, userId }: ReportViewerProps) {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{report.name}</h1>
             <p className="text-muted-foreground mt-1">
-              {report.description || 'No description'}
+              {report.description || "No description"}
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Badge className={getStatusColor(report.status)}>
             {report.status}
@@ -144,7 +162,11 @@ export function ReportViewer({ reportId, userId }: ReportViewerProps) {
             <Share2 className="h-4 w-4 mr-2" />
             Share
           </Button>
-          <Button variant="outline" size="sm" onClick={() => router.push(`/reports/builder?edit=${reportId}`)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/reports/builder?edit=${reportId}`)}
+          >
             <Edit className="h-4 w-4 mr-2" />
             Edit
           </Button>
@@ -159,7 +181,9 @@ export function ReportViewer({ reportId, userId }: ReportViewerProps) {
               <DropdownMenuItem onClick={() => handleExport(ExportFormat.PDF)}>
                 Export as PDF
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport(ExportFormat.EXCEL)}>
+              <DropdownMenuItem
+                onClick={() => handleExport(ExportFormat.EXCEL)}
+              >
                 Export as Excel
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport(ExportFormat.CSV)}>
@@ -177,10 +201,16 @@ export function ReportViewer({ reportId, userId }: ReportViewerProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => router.push(`/reports/builder?duplicate=${reportId}`)}>
+              <DropdownMenuItem
+                onClick={() =>
+                  router.push(`/reports/builder?duplicate=${reportId}`)
+                }
+              >
                 Duplicate Report
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push(`/reports/settings?id=${reportId}`)}>
+              <DropdownMenuItem
+                onClick={() => router.push(`/reports/settings?id=${reportId}`)}
+              >
                 Report Settings
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -194,7 +224,7 @@ export function ReportViewer({ reportId, userId }: ReportViewerProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">Template:</span>
-              <p className="font-medium">{report.template?.name || 'Custom'}</p>
+              <p className="font-medium">{report.template?.name || "Custom"}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Views:</span>
@@ -203,13 +233,17 @@ export function ReportViewer({ reportId, userId }: ReportViewerProps) {
             <div>
               <span className="text-muted-foreground">Created:</span>
               <p className="font-medium">
-                {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
+                {formatDistanceToNow(new Date(report.createdAt), {
+                  addSuffix: true,
+                })}
               </p>
             </div>
             <div>
               <span className="text-muted-foreground">Last Updated:</span>
               <p className="font-medium">
-                {formatDistanceToNow(new Date(report.updatedAt), { addSuffix: true })}
+                {formatDistanceToNow(new Date(report.updatedAt), {
+                  addSuffix: true,
+                })}
               </p>
             </div>
           </div>
@@ -335,7 +369,9 @@ export function ReportViewer({ reportId, userId }: ReportViewerProps) {
                       <td className="p-3">Sales</td>
                       <td className="p-3">$1,000</td>
                       <td className="p-3">
-                        <Badge className="bg-green-100 text-green-800">Active</Badge>
+                        <Badge className="bg-green-100 text-green-800">
+                          Active
+                        </Badge>
                       </td>
                     </tr>
                     <tr className="border-b">
@@ -343,7 +379,9 @@ export function ReportViewer({ reportId, userId }: ReportViewerProps) {
                       <td className="p-3">Marketing</td>
                       <td className="p-3">$750</td>
                       <td className="p-3">
-                        <Badge className="bg-green-100 text-green-800">Active</Badge>
+                        <Badge className="bg-green-100 text-green-800">
+                          Active
+                        </Badge>
                       </td>
                     </tr>
                     <tr>
@@ -351,7 +389,9 @@ export function ReportViewer({ reportId, userId }: ReportViewerProps) {
                       <td className="p-3">Support</td>
                       <td className="p-3">$500</td>
                       <td className="p-3">
-                        <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
+                        <Badge className="bg-gray-100 text-gray-800">
+                          Inactive
+                        </Badge>
                       </td>
                     </tr>
                   </tbody>

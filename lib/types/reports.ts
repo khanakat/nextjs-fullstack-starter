@@ -1,4 +1,10 @@
-import { Report, Template, TemplateCategory, ExportJob, ReportPermission } from '@prisma/client';
+import {
+  Report,
+  Template,
+  TemplateCategory,
+  ExportJob,
+  ReportPermission,
+} from "@prisma/client";
 
 // Base types from Prisma
 export type ReportType = Report;
@@ -79,7 +85,7 @@ export interface ComponentConfig {
 }
 
 export interface ReportStyling {
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   primaryColor: string;
   secondaryColor: string;
   fontFamily: string;
@@ -98,47 +104,47 @@ export interface ComponentStyling {
 
 // Enums
 export enum ComponentType {
-  CHART = 'CHART',
-  TABLE = 'TABLE',
-  TEXT = 'TEXT',
-  IMAGE = 'IMAGE',
-  METRIC = 'METRIC',
-  FILTER = 'FILTER'
+  CHART = "CHART",
+  TABLE = "TABLE",
+  TEXT = "TEXT",
+  IMAGE = "IMAGE",
+  METRIC = "METRIC",
+  FILTER = "FILTER",
 }
 
 export enum ChartType {
-  BAR = 'BAR',
-  LINE = 'LINE',
-  PIE = 'PIE',
-  AREA = 'AREA',
-  SCATTER = 'SCATTER',
-  DONUT = 'DONUT'
+  BAR = "BAR",
+  LINE = "LINE",
+  PIE = "PIE",
+  AREA = "AREA",
+  SCATTER = "SCATTER",
+  DONUT = "DONUT",
 }
 
 export enum ExportFormat {
-  PDF = 'PDF',
-  EXCEL = 'EXCEL',
-  CSV = 'CSV',
-  PNG = 'PNG'
+  PDF = "PDF",
+  EXCEL = "EXCEL",
+  CSV = "CSV",
+  PNG = "PNG",
 }
 
 export enum ReportStatus {
-  DRAFT = 'DRAFT',
-  PUBLISHED = 'PUBLISHED',
-  ARCHIVED = 'ARCHIVED'
+  DRAFT = "DRAFT",
+  PUBLISHED = "PUBLISHED",
+  ARCHIVED = "ARCHIVED",
 }
 
 export enum ExportStatus {
-  PENDING = 'PENDING',
-  PROCESSING = 'PROCESSING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED'
+  PENDING = "PENDING",
+  PROCESSING = "PROCESSING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
 }
 
 export enum PermissionLevel {
-  VIEW = 'VIEW',
-  EDIT = 'EDIT',
-  ADMIN = 'ADMIN'
+  VIEW = "VIEW",
+  EDIT = "EDIT",
+  ADMIN = "ADMIN",
 }
 
 // API request/response types
@@ -175,9 +181,9 @@ export interface ExportReportRequest {
 export interface ExportOptions {
   includeCharts?: boolean;
   includeData?: boolean;
-  pageSize?: 'A4' | 'A3' | 'LETTER';
-  orientation?: 'portrait' | 'landscape';
-  quality?: 'low' | 'medium' | 'high';
+  pageSize?: "A4" | "A3" | "LETTER";
+  orientation?: "portrait" | "landscape";
+  quality?: "low" | "medium" | "high";
 }
 
 export interface ReportFilters {

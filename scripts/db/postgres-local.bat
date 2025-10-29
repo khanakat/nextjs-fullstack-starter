@@ -1,6 +1,6 @@
 @echo off
-REM Script para gestionar PostgreSQL local en Windows
-REM Uso: scripts\db\postgres-local.bat [start|stop|status|install]
+REM Script to manage local PostgreSQL on Windows
+REM Usage: scripts\db\postgres-local.bat [start|stop|status|install]
 
 setlocal
 

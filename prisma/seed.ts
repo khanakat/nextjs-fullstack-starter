@@ -2,12 +2,12 @@ import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 
 const prisma = new PrismaClient({
-  errorFormat: "pretty"
+  errorFormat: "pretty",
 });
 
 // Helper function to find tags by name
 function findTagByName(tags: { id: string; name: string }[], tagName: string) {
-  const tag = tags.find(tag => tag.name === tagName);
+  const tag = tags.find((tag) => tag.name === tagName);
   if (!tag) {
     throw new Error(`Tag "${tagName}" not found`);
   }
@@ -16,7 +16,7 @@ function findTagByName(tags: { id: string; name: string }[], tagName: string) {
 
 async function main() {
   console.log("🌱 Starting database seeding...");
-  
+
   // Test connection first
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -204,7 +204,8 @@ Start building your next project with confidence!
       update: {},
       create: {
         key: "site_description",
-        value: "Production-ready Next.js 14 fullstack starter with modern technologies",
+        value:
+          "Production-ready Next.js 14 fullstack starter with modern technologies",
         description: "The description of the website",
       },
     }),

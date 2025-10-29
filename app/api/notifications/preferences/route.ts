@@ -1,29 +1,64 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { notificationStore } from '@/lib/notifications';
+import { NextRequest } from "next/server";
+import { ApiError } from "@/lib/api-utils";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
+import { logger } from "@/lib/logger";
+import { auth } from "@clerk/nextjs/server";
+import { notificationStore } from "@/lib/notifications";
+import { generateRequestId } from "@/lib/utils";
 
 /**
  * GET /api/notifications/preferences - Get user notification preferences
  */
 export async function GET() {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to access notification preferences",
+        requestId,
       );
     }
 
-    const preferences = await notificationStore.getUserPreferences(userId);
-    return NextResponse.json({ preferences });
+    logger.info("Fetching user notification preferences", "notifications", {
+      requestId,
+      userId,
+    });
 
+    const preferences = await notificationStore.getUserPreferences(userId);
+
+    return StandardSuccessResponse.create({
+      preferences,
+      requestId,
+    });
   } catch (error) {
-    console.error('Error fetching notification preferences:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch preferences' },
-      { status: 500 }
+    logger.apiError(
+      "Error processing notification preferences request",
+      "notification",
+      error,
+      {
+        requestId,
+        endpoint: "/api/notifications/preferences",
+      },
+    );
+
+    if (error instanceof ApiError) {
+      return StandardErrorResponse.fromApiError(error, requestId);
+    }
+
+    return StandardErrorResponse.internal(
+      "Failed to process notification preferences request",
+      process.env.NODE_ENV === "development"
+        ? {
+            originalError: error instanceof Error ? error.message : error,
+          }
+        : undefined,
+      requestId,
     );
   }
 }
@@ -31,27 +66,29 @@ export async function GET() {
 /**
  * PATCH /api/notifications/preferences - Update user notification preferences
  */
-export async function PATCH(request: NextRequest) {
+export async function PATCH(_request: NextRequest) {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to update notification preferences",
+        requestId,
       );
     }
 
-    const updates = await request.json();
-    
+    const updates = await _request.json();
+
     // Validate the updates structure
     const allowedUpdates = [
-      'channels',
-      'categories', 
-      'frequency',
-      'quietHours'
+      "channels",
+      "categories",
+      "frequency",
+      "quietHours",
     ];
-    
+
     const filteredUpdates: any = {};
     for (const key of allowedUpdates) {
       if (updates[key] !== undefined) {
@@ -60,27 +97,52 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (Object.keys(filteredUpdates).length === 0) {
-      return NextResponse.json(
-        { error: 'No valid updates provided' },
-        { status: 400 }
+      return StandardErrorResponse.badRequest(
+        "No valid updates provided",
+        "notifications",
+        { allowedUpdates, providedKeys: Object.keys(updates) },
+        requestId,
       );
     }
 
-    const updatedPreferences = await notificationStore.updateUserPreferences(
+    logger.info("Updating user notification preferences", "notifications", {
+      requestId,
       userId,
-      filteredUpdates
-    );
-
-    return NextResponse.json({ 
-      preferences: updatedPreferences,
-      message: 'Preferences updated successfully'
+      updateKeys: Object.keys(filteredUpdates),
     });
 
+    const updatedPreferences = await notificationStore.updateUserPreferences(
+      userId,
+      filteredUpdates,
+    );
+
+    return StandardSuccessResponse.updated({
+      preferences: updatedPreferences,
+      requestId,
+    });
   } catch (error) {
-    console.error('Error updating notification preferences:', error);
-    return NextResponse.json(
-      { error: 'Failed to update preferences' },
-      { status: 500 }
+    logger.apiError(
+      "Error processing notification preferences request",
+      "notification",
+      error,
+      {
+        requestId,
+        endpoint: "/api/notifications/preferences",
+      },
+    );
+
+    if (error instanceof ApiError) {
+      return StandardErrorResponse.fromApiError(error, requestId);
+    }
+
+    return StandardErrorResponse.internal(
+      "Failed to process notification preferences request",
+      process.env.NODE_ENV === "development"
+        ? {
+            originalError: error instanceof Error ? error.message : error,
+          }
+        : undefined,
+      requestId,
     );
   }
 }

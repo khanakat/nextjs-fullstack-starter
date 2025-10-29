@@ -15,30 +15,29 @@ The template includes a comprehensive file upload system powered by **UploadThin
 ## 📦 Components
 
 ### ImageUpload Component
+
 ```tsx
 import { ImageUpload } from "@/components/image-upload";
 
-<ImageUpload 
-  value={imageUrl} 
-  onChange={setImageUrl}
-  disabled={false}
-/>
+<ImageUpload value={imageUrl} onChange={setImageUrl} disabled={false} />;
 ```
 
 ### FileUpload Component
+
 ```tsx
 import { FileUpload } from "@/components/file-upload";
 
-<FileUpload 
-  endpoint="fileUploader"  // or "imageUploader", "videoUploader"
-  value={fileUrl} 
-  onChange={setFileUrl} 
-/>
+<FileUpload
+  endpoint="fileUploader" // or "imageUploader", "videoUploader"
+  value={fileUrl}
+  onChange={setFileUrl}
+/>;
 ```
 
 ## 🛠️ Configuration
 
 ### Environment Variables
+
 ```env
 # UploadThing configuration
 UPLOADTHING_SECRET="sk_live_your_uploadthing_secret"
@@ -46,6 +45,7 @@ UPLOADTHING_APP_ID="your_uploadthing_app_id"
 ```
 
 ### Available Endpoints
+
 - `imageUploader`: Images only (4MB max)
 - `fileUploader`: Images, PDFs, text files (4MB max)
 - `videoUploader`: Video files (256MB max)
@@ -53,6 +53,7 @@ UPLOADTHING_APP_ID="your_uploadthing_app_id"
 ## 🔧 Database Schema
 
 The Post model includes file attachment fields:
+
 ```prisma
 model Post {
   id             String   @id @default(cuid())
@@ -66,6 +67,7 @@ model Post {
 ```
 
 The User model includes profile image:
+
 ```prisma
 model User {
   id     String  @id @default(cuid())
@@ -79,6 +81,7 @@ model User {
 ## 🚀 Usage Examples
 
 ### Basic Image Upload
+
 ```tsx
 "use client";
 
@@ -98,6 +101,7 @@ export default function ProfilePage() {
 ```
 
 ### Document Upload with Validation
+
 ```tsx
 "use client";
 
@@ -110,18 +114,18 @@ export default function DocumentUpload() {
 
   const handleSubmit = async () => {
     if (!documentUrl) return;
-    
+
     // Save to database
     const response = await fetch("/api/documents", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: documentUrl })
+      body: JSON.stringify({ url: documentUrl }),
     });
   };
 
   return (
     <div>
-      <FileUpload 
+      <FileUpload
         endpoint="fileUploader"
         value={documentUrl}
         onChange={(url) => setDocumentUrl(url || "")}
@@ -149,16 +153,19 @@ Visit `/dashboard` to test the upload functionality with the interactive demo co
 ## 🛡️ File Type Support
 
 ### Images
+
 - **Formats**: JPG, PNG, GIF, WebP
 - **Max Size**: 4MB
 - **Use Cases**: Profile pictures, post images, thumbnails
 
 ### Documents
+
 - **Formats**: PDF, TXT, DOC, DOCX
-- **Max Size**: 4MB  
+- **Max Size**: 4MB
 - **Use Cases**: Attachments, documentation, reports
 
 ### Videos
+
 - **Formats**: MP4, MOV, AVI, WebM
 - **Max Size**: 256MB
 - **Use Cases**: Content uploads, tutorials, presentations
@@ -166,14 +173,16 @@ Visit `/dashboard` to test the upload functionality with the interactive demo co
 ## 🔧 Customization
 
 ### Custom Upload Endpoints
+
 Add new endpoints in `app/api/uploadthing/core.ts`:
+
 ```ts
 export const ourFileRouter = {
-  profileImage: f({ 
-    image: { 
-      maxFileSize: "2MB", 
-      maxFileCount: 1 
-    } 
+  profileImage: f({
+    image: {
+      maxFileSize: "2MB",
+      maxFileCount: 1,
+    },
   })
     .middleware(() => handleAuth())
     .onUploadComplete(async ({ metadata, file }) => {
@@ -184,6 +193,7 @@ export const ourFileRouter = {
 ```
 
 ### UI Customization
+
 All components use Tailwind CSS classes and can be customized by modifying the component files in `/components/`.
 
 ## 📚 Learn More

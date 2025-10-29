@@ -7,7 +7,7 @@ Complete guide to authentication in **Next.js Fullstack Starter** using Clerk.
 This template uses **Clerk** for authentication, providing:
 
 - 🔒 **Secure authentication** with multiple sign-in options
-- 👥 **User management** with profiles and metadata  
+- 👥 **User management** with profiles and metadata
 - 🛡️ **Protected routes** and API endpoints
 - 📧 **Email verification** and password reset
 - 🌐 **Social login** (Google, GitHub, etc.)
@@ -20,7 +20,7 @@ This template uses **Clerk** for authentication, providing:
 ### **1. Get Clerk Credentials**
 
 1. **Create Account**: Visit [https://clerk.com](https://clerk.com)
-2. **New Application**: Click "Add Application" 
+2. **New Application**: Click "Add Application"
 3. **Choose Provider**: Select authentication methods
 4. **Copy Keys**: Get your API keys from the dashboard
 
@@ -48,13 +48,14 @@ Visit [http://localhost:3000/sign-up](http://localhost:3000/sign-up) to test!
 ## 🏗️ How It Works
 
 ### **File Structure**
+
 ```
 app/
 ├── (auth)/           # Authentication routes (grouped)
 │   ├── sign-in/     # Sign in page
-│   ├── sign-up/     # Sign up page  
+│   ├── sign-up/     # Sign up page
 │   └── layout.tsx   # Auth layout
-├── (dashboard)/     # Protected routes (grouped)  
+├── (dashboard)/     # Protected routes (grouped)
 │   ├── dashboard/   # User dashboard
 │   └── layout.tsx   # Protected layout
 ├── layout.tsx       # Root layout with ClerkProvider
@@ -64,13 +65,14 @@ app/
 ### **Key Components**
 
 **Root Layout (`app/layout.tsx`)**
+
 ```tsx
-import { ClerkProvider } from '@clerk/nextjs'
+import { ClerkProvider } from "@clerk/nextjs";
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <ClerkProvider>
@@ -78,18 +80,19 @@ export default function RootLayout({
         <body>{children}</body>
       </html>
     </ClerkProvider>
-  )
+  );
 }
 ```
 
 **Middleware (`middleware.ts`)**
+
 ```tsx
-import { authMiddleware } from '@clerk/nextjs'
+import { authMiddleware } from "@clerk/nextjs";
 
 export default authMiddleware({
-  publicRoutes: ['/', '/about', '/contact'],
-  ignoredRoutes: ['/api/webhook']
-})
+  publicRoutes: ["/", "/about", "/contact"],
+  ignoredRoutes: ["/api/webhook"],
+});
 ```
 
 ---
@@ -100,18 +103,19 @@ export default authMiddleware({
 
 Enable in your Clerk Dashboard:
 
-| Method | Description | Setup Required |
-|--------|-------------|----------------|
-| **Email** | Email + password | ✅ Built-in |
-| **Phone** | SMS verification | ✅ Built-in |
-| **Google** | OAuth with Google | 🔧 OAuth setup |
-| **GitHub** | OAuth with GitHub | 🔧 OAuth setup |
-| **Apple** | Sign in with Apple | 🔧 OAuth setup |
+| Method        | Description        | Setup Required |
+| ------------- | ------------------ | -------------- |
+| **Email**     | Email + password   | ✅ Built-in    |
+| **Phone**     | SMS verification   | ✅ Built-in    |
+| **Google**    | OAuth with Google  | 🔧 OAuth setup |
+| **GitHub**    | OAuth with GitHub  | 🔧 OAuth setup |
+| **Apple**     | Sign in with Apple | 🔧 OAuth setup |
 | **Microsoft** | Microsoft accounts | 🔧 OAuth setup |
 
 ### **Social OAuth Setup**
 
 **Google OAuth:**
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Create/select project
 3. Enable Google+ API
@@ -119,6 +123,7 @@ Enable in your Clerk Dashboard:
 5. Add to Clerk Dashboard
 
 **GitHub OAuth:**
+
 1. Go to GitHub Settings > Developer Settings
 2. Create new OAuth App
 3. Set Authorization callback URL: `https://clerk.yourapp.com/v1/oauth_callback`
@@ -143,59 +148,64 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL=/auth/register
 ### **User Data Access**
 
 **Client Side:**
+
 ```tsx
-import { useUser } from '@clerk/nextjs'
+import { useUser } from "@clerk/nextjs";
 
 function Profile() {
-  const { user, isLoaded } = useUser()
-  
-  if (!isLoaded) return <div>Loading...</div>
-  
+  const { user, isLoaded } = useUser();
+
+  if (!isLoaded) return <div>Loading...</div>;
+
   return (
     <div>
       <h1>Welcome {user?.firstName}!</h1>
       <p>Email: {user?.emailAddresses[0]?.emailAddress}</p>
     </div>
-  )
+  );
 }
 ```
 
 **Server Side:**
+
 ```tsx
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from "@clerk/nextjs";
 
 export default async function ServerProfile() {
-  const user = await currentUser()
-  
+  const user = await currentUser();
+
   return (
     <div>
       <h1>Server: {user?.firstName}</h1>
     </div>
-  )
+  );
 }
 ```
 
 ### **User Metadata**
 
 **Public Metadata** (visible to all):
+
 ```tsx
 await clerkClient.users.updateUser(userId, {
-  publicMetadata: { plan: 'pro', credits: 100 }
-})
+  publicMetadata: { plan: "pro", credits: 100 },
+});
 ```
 
 **Private Metadata** (admin only):
-```tsx  
+
+```tsx
 await clerkClient.users.updateUser(userId, {
-  privateMetadata: { internalNotes: 'VIP customer' }
-})
+  privateMetadata: { internalNotes: "VIP customer" },
+});
 ```
 
 **Unsafe Metadata** (user controlled):
+
 ```tsx
 await user.update({
-  unsafeMetadata: { preferences: { theme: 'dark' } }
-})
+  unsafeMetadata: { preferences: { theme: "dark" } },
+});
 ```
 
 ---
@@ -205,46 +215,49 @@ await user.update({
 ### **Middleware Protection**
 
 Edit `middleware.ts`:
+
 ```tsx
-import { authMiddleware } from '@clerk/nextjs'
+import { authMiddleware } from "@clerk/nextjs";
 
 export default authMiddleware({
   // Public routes (no auth required)
-  publicRoutes: ['/', '/about', '/pricing'],
-  
+  publicRoutes: ["/", "/about", "/pricing"],
+
   // Ignored routes (skip middleware)
-  ignoredRoutes: ['/api/webhook'],
-  
+  ignoredRoutes: ["/api/webhook"],
+
   // Debug mode
-  debug: process.env.NODE_ENV === 'development'
-})
+  debug: process.env.NODE_ENV === "development",
+});
 
 export const config = {
-  matcher: ['/((?!.+\\.[\\w]+$|_next).*)', '/', '/(api|trpc)(.*)'],
-}
+  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
+};
 ```
 
 ### **Component-Level Protection**
 
 **Protect entire pages:**
+
 ```tsx
-import { auth } from '@clerk/nextjs'
-import { redirect } from 'next/navigation'
+import { auth } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
 
 export default async function ProtectedPage() {
-  const { userId } = auth()
-  
+  const { userId } = auth();
+
   if (!userId) {
-    redirect('/sign-in')
+    redirect("/sign-in");
   }
-  
-  return <div>Protected content</div>
+
+  return <div>Protected content</div>;
 }
 ```
 
 **Conditional rendering:**
+
 ```tsx
-import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
+import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
 function Navigation() {
   return (
@@ -252,12 +265,12 @@ function Navigation() {
       <SignedOut>
         <SignInButton />
       </SignedOut>
-      
+
       <SignedIn>
         <UserButton />
       </SignedIn>
     </nav>
-  )
+  );
 }
 ```
 
@@ -269,18 +282,18 @@ function Navigation() {
 
 ```tsx
 // app/api/protected/route.ts
-import { auth } from '@clerk/nextjs'
-import { NextResponse } from 'next/server'
+import { auth } from "@clerk/nextjs";
+import { NextResponse } from "next/server";
 
 export async function GET() {
-  const { userId } = auth()
-  
+  const { userId } = auth();
+
   if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
+
   // Protected API logic here
-  return NextResponse.json({ data: 'Secret data' })
+  return NextResponse.json({ data: "Secret data" });
 }
 ```
 
@@ -288,22 +301,22 @@ export async function GET() {
 
 ```tsx
 // Check user role in API
-import { clerkClient } from '@clerk/nextjs'
+import { clerkClient } from "@clerk/nextjs";
 
 export async function POST(request: Request) {
-  const { userId } = auth()
-  
+  const { userId } = auth();
+
   if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
-  const user = await clerkClient.users.getUser(userId)
-  const userRole = user.publicMetadata.role
-  
-  if (userRole !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const user = await clerkClient.users.getUser(userId);
+  const userRole = user.publicMetadata.role;
+
+  if (userRole !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  
+
   // Admin-only logic
 }
 ```
@@ -316,24 +329,24 @@ export async function POST(request: Request) {
 
 ```tsx
 // app/layout.tsx
-import { ClerkProvider } from '@clerk/nextjs'
+import { ClerkProvider } from "@clerk/nextjs";
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <ClerkProvider
       appearance={{
-        baseTheme: 'dark', // or 'light'
+        baseTheme: "dark", // or 'light'
         variables: {
-          colorPrimary: '#0F172A',
-          colorText: '#FFFFFF',
+          colorPrimary: "#0F172A",
+          colorText: "#FFFFFF",
         },
         elements: {
-          formButtonPrimary: 'bg-blue-600 hover:bg-blue-700',
-          card: 'shadow-lg',
+          formButtonPrimary: "bg-blue-600 hover:bg-blue-700",
+          card: "shadow-lg",
         },
       }}
     >
@@ -341,14 +354,14 @@ export default function RootLayout({
         <body>{children}</body>
       </html>
     </ClerkProvider>
-  )
+  );
 }
 ```
 
 ### **Custom Sign-In Components**
 
 ```tsx
-import { SignIn } from '@clerk/nextjs'
+import { SignIn } from "@clerk/nextjs";
 
 export default function CustomSignInPage() {
   return (
@@ -356,14 +369,14 @@ export default function CustomSignInPage() {
       <SignIn
         appearance={{
           elements: {
-            rootBox: 'w-full max-w-md',
-            card: 'shadow-2xl border-0',
+            rootBox: "w-full max-w-md",
+            card: "shadow-2xl border-0",
           },
         }}
         redirectUrl="/dashboard"
       />
     </div>
-  )
+  );
 }
 ```
 
@@ -403,7 +416,7 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=https://yourdomain.com/onboarding
 ### **Domain Configuration**
 
 1. **Add Domain**: In Clerk Dashboard > Domains
-2. **Set Up DNS**: Add CNAME record  
+2. **Set Up DNS**: Add CNAME record
 3. **SSL Certificate**: Automatic with Clerk
 4. **Update URLs**: Use custom domain in redirects
 
@@ -440,16 +453,19 @@ curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:3000/api/protected
 ### **Common Issues**
 
 **"Invalid publishable key"**
+
 - Check key format: Should start with `pk_test_` or `pk_live_`
 - Ensure no extra spaces in `.env.local`
 - Restart development server
 
 **"User is not defined"**
+
 - Wrap component in `<ClerkProvider>`
 - Check if `useUser()` is called inside Clerk context
 - Verify middleware configuration
 
 **Redirects not working**
+
 - Check `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL` format
 - Ensure URLs are absolute in production
 - Verify middleware `publicRoutes` configuration

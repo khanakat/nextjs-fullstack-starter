@@ -1,35 +1,50 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { z } from 'zod';
-import { ExportFormat, ExportStatus } from '@/lib/types/reports';
+import { NextRequest } from "next/server";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
+import { logger } from "@/lib/logger";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
+import { z } from "zod";
+import { ExportFormat, ExportStatus } from "@/lib/types/reports";
+import { generateRequestId } from "@/lib/utils";
+import { handleZodError } from "@/lib/error-handlers";
+import { queueService } from "@/lib/services/queue";
 
 // Validation schema
 const createExportJobSchema = z.object({
-  reportId: z.string().min(1, 'Report ID is required'),
+  reportId: z.string().min(1, "Report ID is required"),
   format: z.nativeEnum(ExportFormat),
-  options: z.object({
-    includeCharts: z.boolean().default(true),
-    includeData: z.boolean().default(true),
-    pageSize: z.enum(['A4', 'A3', 'LETTER']).default('A4'),
-    orientation: z.enum(['portrait', 'landscape']).default('portrait'),
-    quality: z.enum(['low', 'medium', 'high']).default('medium')
-  }).optional()
+  options: z
+    .object({
+      includeCharts: z.boolean().default(true),
+      includeData: z.boolean().default(true),
+      pageSize: z.enum(["A4", "A3", "LETTER"]).default("A4"),
+      orientation: z.enum(["portrait", "landscape"]).default("portrait"),
+      quality: z.enum(["low", "medium", "high"]).default("medium"),
+    })
+    .optional(),
 });
 
 // GET /api/export-jobs - List export jobs for the current user
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to access export jobs",
+        requestId,
+      );
     }
 
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const status = searchParams.get('status') as ExportStatus;
-    const reportId = searchParams.get('reportId') || '';
+    const { searchParams } = new URL(_request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const status = searchParams.get("status") as ExportStatus;
+    const reportId = searchParams.get("reportId") || "";
     const skip = (page - 1) * limit;
 
     // Build where clause
@@ -52,42 +67,53 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               name: true,
-              description: true
-            }
-          }
+              description: true,
+            },
+          },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         skip,
-        take: limit
+        take: limit,
       }),
-      db.exportJob.count({ where })
+      db.exportJob.count({ where }),
     ]);
 
-    return NextResponse.json({
+    return StandardSuccessResponse.ok({
       exportJobs,
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
+      requestId,
     });
   } catch (error) {
-    console.error('Error fetching export jobs:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    logger.error("Error processing export job request", {
+      requestId,
+      endpoint: "/api/export-jobs",
+      error: error instanceof Error ? error.message : error,
+    });
+
+    return StandardErrorResponse.internal(
+      "Failed to process export job request",
+      requestId,
     );
   }
 }
 
 // POST /api/export-jobs - Create a new export job
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to create export jobs",
+        requestId,
+      );
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const validatedData = createExportJobSchema.parse(body);
 
     // Verify report exists and user has access
@@ -102,19 +128,19 @@ export async function POST(request: NextRequest) {
               some: {
                 userId: userId,
                 permissionType: {
-                  in: ['view', 'edit', 'admin']
-                }
-              }
-            }
-          }
-        ]
-      }
+                  in: ["view", "edit", "admin"],
+                },
+              },
+            },
+          },
+        ],
+      },
     });
 
     if (!report) {
-      return NextResponse.json(
-        { error: 'Report not found or access denied' },
-        { status: 404 }
+      return StandardErrorResponse.notFound(
+        "Report not found or access denied",
+        requestId,
       );
     }
 
@@ -125,163 +151,66 @@ export async function POST(request: NextRequest) {
         userId: userId,
         format: validatedData.format,
         options: JSON.stringify(validatedData.options || {}),
-        status: ExportStatus.PENDING
+        status: ExportStatus.PENDING,
       },
       include: {
         report: {
           select: {
             id: true,
             name: true,
-            description: true
-          }
-        }
-      }
+            description: true,
+          },
+        },
+      },
     });
 
-    // TODO: Queue the export job for processing
-    // This would typically involve adding the job to a queue system
-    // For now, we'll simulate processing by updating the status
-    setTimeout(async () => {
-      try {
-        await processExportJob(exportJob.id);
-      } catch (error) {
-        console.error('Error processing export job:', error);
-        await db.exportJob.update({
-          where: { id: exportJob.id },
-          data: {
-            status: ExportStatus.FAILED,
-            errorMessage: 'Processing failed'
-          }
-        });
-      }
-    }, 1000);
+    // ✅ Fixed: Queue the export job for processing
+    try {
+      await queueService.addJob("export-job", {
+        jobId: exportJob.id,
+        userId: auth().userId,
+        type: exportJob.format.toLowerCase(),
+        reportId: exportJob.reportId,
+        options: exportJob.options,
+      });
 
-    return NextResponse.json(exportJob, { status: 201 });
+      logger.info("Export job queued for processing", "export-jobs", {
+        requestId,
+        jobId: exportJob.id,
+        format: exportJob.format,
+        reportId: exportJob.reportId,
+      });
+    } catch (queueError) {
+      logger.error("Failed to queue export job", "export-jobs", queueError);
+
+      // Update job status to failed if queueing fails
+      await db.exportJob.update({
+        where: { id: exportJob.id },
+        data: {
+          status: ExportStatus.FAILED,
+          errorMessage: "Failed to queue job for processing",
+        },
+      });
+    }
+
+    return StandardSuccessResponse.created({
+      exportJob,
+      requestId,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
+      return handleZodError(error, requestId);
     }
 
-    console.error('Error creating export job:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    logger.error("Error processing export job request", {
+      requestId,
+      endpoint: "/api/export-jobs",
+      error: error instanceof Error ? error.message : error,
+    });
+
+    return StandardErrorResponse.internal(
+      "Failed to process export job request",
+      requestId,
     );
   }
-}
-
-// Helper function to process export jobs
-async function processExportJob(exportJobId: string) {
-  // Update status to processing
-  await db.exportJob.update({
-    where: { id: exportJobId },
-    data: { status: ExportStatus.PROCESSING }
-  });
-
-  // Get the export job with report data
-  const exportJob = await db.exportJob.findUnique({
-    where: { id: exportJobId },
-    include: {
-      report: true
-    }
-  });
-
-  if (!exportJob) {
-    throw new Error('Export job not found');
-  }
-
-  try {
-    let fileUrl: string;
-    let fileName: string;
-
-    // Generate the export based on format
-    switch (exportJob.format) {
-      case ExportFormat.PDF:
-        const pdfResult = await generatePDFExport(exportJob);
-        fileUrl = pdfResult.fileUrl;
-        fileName = pdfResult.fileName;
-        break;
-      case ExportFormat.EXCEL:
-        const excelResult = await generateExcelExport(exportJob);
-        fileUrl = excelResult.fileUrl;
-        fileName = excelResult.fileName;
-        break;
-      case ExportFormat.CSV:
-        const csvResult = await generateCSVExport(exportJob);
-        fileUrl = csvResult.fileUrl;
-        fileName = csvResult.fileName;
-        break;
-      case ExportFormat.PNG:
-        const pngResult = await generatePNGExport(exportJob);
-        fileUrl = pngResult.fileUrl;
-        fileName = pngResult.fileName;
-        break;
-      default:
-        throw new Error(`Unsupported export format: ${exportJob.format}`);
-    }
-
-    // Update export job with success
-    await db.exportJob.update({
-      where: { id: exportJobId },
-      data: {
-        status: ExportStatus.COMPLETED,
-        downloadUrl: fileUrl,
-        completedAt: new Date()
-      }
-    });
-  } catch (error) {
-    console.error('Export processing error:', error);
-    await db.exportJob.update({
-      where: { id: exportJobId },
-      data: {
-        status: ExportStatus.FAILED,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error'
-      }
-    });
-    throw error;
-  }
-}
-
-// Placeholder export functions - these would be implemented with actual export logic
-async function generatePDFExport(exportJob: any) {
-  // Simulate processing time
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  return {
-    fileUrl: `/exports/${exportJob.id}.pdf`,
-    fileName: `${exportJob.report.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
-  };
-}
-
-async function generateExcelExport(exportJob: any) {
-  // Simulate processing time
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  return {
-    fileUrl: `/exports/${exportJob.id}.xlsx`,
-    fileName: `${exportJob.report.title.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`
-  };
-}
-
-async function generateCSVExport(exportJob: any) {
-  // Simulate processing time
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  return {
-    fileUrl: `/exports/${exportJob.id}.csv`,
-    fileName: `${exportJob.report.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`
-  };
-}
-
-async function generatePNGExport(exportJob: any) {
-  // Simulate processing time
-  await new Promise(resolve => setTimeout(resolve, 2500));
-  
-  return {
-    fileUrl: `/exports/${exportJob.id}.png`,
-    fileName: `${exportJob.report.title.replace(/[^a-zA-Z0-9]/g, '_')}.png`
-  };
 }

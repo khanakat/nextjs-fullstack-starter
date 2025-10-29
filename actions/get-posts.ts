@@ -1,37 +1,37 @@
-import { db } from '@/lib/db'
+import { db } from "@/lib/db";
 
 // Type for Post with relations
 type PostWithAuthorAndTags = {
-  id: string
-  title: string | null
-  content: string | null
-  published: boolean
-  authorId: string
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  title: string | null;
+  content: string | null;
+  published: boolean;
+  authorId: string;
+  createdAt: Date;
+  updatedAt: Date;
   author: {
-    id: string
-    email: string
-    name: string | null
-    username: string | null
-  }
+    id: string;
+    email: string;
+    name: string | null;
+    username: string | null;
+  };
   tags: {
-    id: string
-    postId: string
-    tagId: string
+    id: string;
+    postId: string;
+    tagId: string;
     tag: {
-      id: string
-      name: string
-    }
-  }[]
-}
+      id: string;
+      name: string;
+    };
+  }[];
+};
 
 interface GetPostsParams {
-  userId?: string
-  published?: boolean
-  searchTerm?: string
-  limit?: number
-  offset?: number
+  userId?: string;
+  published?: boolean;
+  searchTerm?: string;
+  limit?: number;
+  offset?: number;
 }
 
 export async function getPosts({
@@ -41,20 +41,20 @@ export async function getPosts({
   limit = 10,
   offset = 0,
 }: GetPostsParams = {}): Promise<{
-  posts: PostWithAuthorAndTags[]
-  total: number
+  posts: PostWithAuthorAndTags[];
+  total: number;
 }> {
   try {
-    const where: any = {}
+    const where: any = {};
 
     // Filter by user if specified
     if (userId) {
-      where.authorId = userId
+      where.authorId = userId;
     }
 
     // Filter by published status
     if (published !== undefined) {
-      where.published = published
+      where.published = published;
     }
 
     // Search functionality
@@ -63,16 +63,16 @@ export async function getPosts({
         {
           title: {
             contains: searchTerm,
-            mode: 'insensitive',
+            mode: "insensitive",
           },
         },
         {
           content: {
             contains: searchTerm,
-            mode: 'insensitive',
+            mode: "insensitive",
           },
         },
-      ]
+      ];
     }
 
     // Get posts with pagination
@@ -95,22 +95,24 @@ export async function getPosts({
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
         take: limit,
         skip: offset,
       }),
       db.post.count({ where }),
-    ])
+    ]);
 
-    return { posts, total }
+    return { posts, total };
   } catch (error) {
-    console.error('Error fetching posts:', error)
-    throw new Error('Failed to fetch posts')
+    console.error("Error fetching posts:", error);
+    throw new Error("Failed to fetch posts");
   }
 }
 
-export async function getPostById(postId: string): Promise<PostWithAuthorAndTags | null> {
+export async function getPostById(
+  postId: string,
+): Promise<PostWithAuthorAndTags | null> {
   try {
     const post = await db.post.findUnique({
       where: { id: postId },
@@ -129,16 +131,18 @@ export async function getPostById(postId: string): Promise<PostWithAuthorAndTags
           },
         },
       },
-    })
+    });
 
-    return post
+    return post;
   } catch (error) {
-    console.error('Error fetching post:', error)
-    return null
+    console.error("Error fetching post:", error);
+    return null;
   }
 }
 
-export async function getUserPosts(userId: string): Promise<PostWithAuthorAndTags[]> {
+export async function getUserPosts(
+  userId: string,
+): Promise<PostWithAuthorAndTags[]> {
   try {
     const posts = await db.post.findMany({
       where: {
@@ -160,18 +164,20 @@ export async function getUserPosts(userId: string): Promise<PostWithAuthorAndTag
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
-    })
+    });
 
-    return posts
+    return posts;
   } catch (error) {
-    console.error('Error fetching user posts:', error)
-    throw new Error('Failed to fetch user posts')
+    console.error("Error fetching user posts:", error);
+    throw new Error("Failed to fetch user posts");
   }
 }
 
-export async function getPublishedPosts(limit?: number): Promise<PostWithAuthorAndTags[]> {
+export async function getPublishedPosts(
+  limit?: number,
+): Promise<PostWithAuthorAndTags[]> {
   try {
     const posts = await db.post.findMany({
       where: {
@@ -193,14 +199,14 @@ export async function getPublishedPosts(limit?: number): Promise<PostWithAuthorA
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
       take: limit,
-    })
+    });
 
-    return posts
+    return posts;
   } catch (error) {
-    console.error('Error fetching published posts:', error)
-    throw new Error('Failed to fetch published posts')
+    console.error("Error fetching published posts:", error);
+    throw new Error("Failed to fetch published posts");
   }
 }

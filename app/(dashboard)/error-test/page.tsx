@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { Container } from "@/components/ui/container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,7 @@ export default function ErrorTestPage() {
       const result = undefined.someProperty;
       return result;
     } catch (error) {
-      console.error('Server error test:', error);
+      console.error("Server error test:", error);
       throw error;
     }
   };

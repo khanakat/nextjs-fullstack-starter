@@ -1,53 +1,57 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Settings, 
-  Users, 
-  Shield, 
-  Download, 
-  Database, 
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+import { Switch } from "@/components/ui/switch";
+
+import {
+  Settings,
+  Users,
+  Download,
+  Database,
   Bell,
   Plus,
   Edit,
   Trash2,
-  Eye,
-  EyeOff,
   Key,
   Globe,
-  Lock,
   Mail,
   Smartphone,
-  Calendar,
   Clock,
   FileText,
   Server,
-  AlertTriangle,
   CheckCircle,
-  XCircle
-} from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { EmptyState } from '@/components/ui/empty-state';
+  XCircle,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'editor' | 'viewer';
-  status: 'active' | 'inactive' | 'pending';
+  role: "admin" | "editor" | "viewer";
+  status: "active" | "inactive" | "pending";
   lastActive: string;
   permissions: string[];
 }
@@ -55,15 +59,15 @@ interface User {
 interface DataSource {
   id: string;
   name: string;
-  type: 'database' | 'api' | 'file' | 'cloud';
-  status: 'connected' | 'disconnected' | 'error';
+  type: "database" | "api" | "file" | "cloud";
+  status: "connected" | "disconnected" | "error";
   lastSync: string;
   config: Record<string, any>;
 }
 
 interface ExportConfig {
   id: string;
-  format: 'pdf' | 'excel' | 'csv' | 'png';
+  format: "pdf" | "excel" | "csv" | "png";
   enabled: boolean;
   maxFileSize: number;
   retentionDays: number;
@@ -73,61 +77,83 @@ interface ExportConfig {
 
 interface NotificationSetting {
   id: string;
-  type: 'email' | 'sms' | 'push';
-  event: 'export_complete' | 'export_failed' | 'report_shared' | 'system_alert';
+  type: "email" | "sms" | "push";
+  event: "export_complete" | "export_failed" | "report_shared" | "system_alert";
   enabled: boolean;
   recipients: string[];
 }
 
-interface ReportSettingsProps {
-  userId: string;
-}
-
 const ROLE_CONFIG = {
-  admin: { 
-    label: 'Administrator', 
-    color: 'bg-red-100 text-red-800',
-    permissions: ['create', 'read', 'update', 'delete', 'share', 'export', 'manage_users']
+  admin: {
+    label: "Administrator",
+    color: "bg-red-100 text-red-800",
+    permissions: [
+      "create",
+      "read",
+      "update",
+      "delete",
+      "share",
+      "export",
+      "manage_users",
+    ],
   },
-  editor: { 
-    label: 'Editor', 
-    color: 'bg-blue-100 text-blue-800',
-    permissions: ['create', 'read', 'update', 'share', 'export']
+  editor: {
+    label: "Editor",
+    color: "bg-blue-100 text-blue-800",
+    permissions: ["create", "read", "update", "share", "export"],
   },
-  viewer: { 
-    label: 'Viewer', 
-    color: 'bg-green-100 text-green-800',
-    permissions: ['read', 'export']
-  }
+  viewer: {
+    label: "Viewer",
+    color: "bg-green-100 text-green-800",
+    permissions: ["read", "export"],
+  },
 };
 
 const STATUS_CONFIG = {
-  active: { label: 'Active', color: 'bg-green-100 text-green-800', icon: CheckCircle },
-  inactive: { label: 'Inactive', color: 'bg-gray-100 text-gray-800', icon: XCircle },
-  pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800', icon: Clock }
+  active: {
+    label: "Active",
+    color: "bg-green-100 text-green-800",
+    icon: CheckCircle,
+  },
+  inactive: {
+    label: "Inactive",
+    color: "bg-gray-100 text-gray-800",
+    icon: XCircle,
+  },
+  pending: {
+    label: "Pending",
+    color: "bg-yellow-100 text-yellow-800",
+    icon: Clock,
+  },
 };
 
 const DATA_SOURCE_CONFIG = {
-  database: { label: 'Database', icon: Database, color: 'text-blue-600' },
-  api: { label: 'API', icon: Server, color: 'text-green-600' },
-  file: { label: 'File', icon: FileText, color: 'text-orange-600' },
-  cloud: { label: 'Cloud', icon: Globe, color: 'text-purple-600' }
+  database: { label: "Database", icon: Database, color: "text-blue-600" },
+  api: { label: "API", icon: Server, color: "text-green-600" },
+  file: { label: "File", icon: FileText, color: "text-orange-600" },
+  cloud: { label: "Cloud", icon: Globe, color: "text-purple-600" },
 };
 
-function UserManagementTab({ users, onAddUser, onEditUser, onDeleteUser }: {
+function UserManagementTab({
+  users,
+  onAddUser,
+  onEditUser,
+  onDeleteUser,
+}: {
   users: User[];
   onAddUser: () => void;
   onEditUser: (user: User) => void;
   onDeleteUser: (user: User) => void;
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = !searchQuery || 
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      !searchQuery ||
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
@@ -162,7 +188,7 @@ function UserManagementTab({ users, onAddUser, onEditUser, onDeleteUser }: {
       </div>
 
       <div className="grid gap-4">
-        {filteredUsers.map(user => {
+        {filteredUsers.map((user) => {
           const roleConfig = ROLE_CONFIG[user.role];
           const statusConfig = STATUS_CONFIG[user.status];
           const StatusIcon = statusConfig.icon;
@@ -177,7 +203,9 @@ function UserManagementTab({ users, onAddUser, onEditUser, onDeleteUser }: {
                     </div>
                     <div>
                       <div className="font-semibold">{user.name}</div>
-                      <div className="text-sm text-muted-foreground">{user.email}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {user.email}
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge className={roleConfig.color}>
                           {roleConfig.label}
@@ -193,7 +221,9 @@ function UserManagementTab({ users, onAddUser, onEditUser, onDeleteUser }: {
                   <div className="flex items-center gap-2">
                     <div className="text-right text-sm text-muted-foreground">
                       <div>Last active:</div>
-                      <div>{new Date(user.lastActive).toLocaleDateString()}</div>
+                      <div>
+                        {new Date(user.lastActive).toLocaleDateString()}
+                      </div>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -206,7 +236,7 @@ function UserManagementTab({ users, onAddUser, onEditUser, onDeleteUser }: {
                           <Edit className="h-4 w-4 mr-2" />
                           Edit User
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => onDeleteUser(user)}
                           className="text-red-600"
                         >
@@ -221,9 +251,13 @@ function UserManagementTab({ users, onAddUser, onEditUser, onDeleteUser }: {
                 <div className="mt-4">
                   <div className="text-sm font-medium mb-2">Permissions:</div>
                   <div className="flex flex-wrap gap-1">
-                    {roleConfig.permissions.map(permission => (
-                      <Badge key={permission} variant="outline" className="text-xs">
-                        {permission.replace('_', ' ')}
+                    {roleConfig.permissions.map((permission) => (
+                      <Badge
+                        key={permission}
+                        variant="outline"
+                        className="text-xs"
+                      >
+                        {permission.replace("_", " ")}
                       </Badge>
                     ))}
                   </div>
@@ -237,7 +271,12 @@ function UserManagementTab({ users, onAddUser, onEditUser, onDeleteUser }: {
   );
 }
 
-function DataSourcesTab({ dataSources, onAddDataSource, onEditDataSource, onDeleteDataSource }: {
+function DataSourcesTab({
+  dataSources,
+  onAddDataSource,
+  onEditDataSource,
+  onDeleteDataSource,
+}: {
   dataSources: DataSource[];
   onAddDataSource: () => void;
   onEditDataSource: (dataSource: DataSource) => void;
@@ -259,32 +298,44 @@ function DataSourcesTab({ dataSources, onAddDataSource, onEditDataSource, onDele
       </div>
 
       <div className="grid gap-4">
-        {dataSources.map(dataSource => {
+        {dataSources.map((dataSource) => {
           const typeConfig = DATA_SOURCE_CONFIG[dataSource.type];
           const TypeIcon = typeConfig.icon;
-          const isConnected = dataSource.status === 'connected';
+          const isConnected = dataSource.status === "connected";
 
           return (
             <Card key={dataSource.id}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={cn("p-3 rounded-lg", typeConfig.color.replace('text-', 'bg-').replace('-600', '-50'))}>
+                    <div
+                      className={cn(
+                        "p-3 rounded-lg",
+                        typeConfig.color
+                          .replace("text-", "bg-")
+                          .replace("-600", "-50"),
+                      )}
+                    >
                       <TypeIcon className={cn("h-5 w-5", typeConfig.color)} />
                     </div>
                     <div>
                       <div className="font-semibold">{dataSource.name}</div>
-                      <div className="text-sm text-muted-foreground">{typeConfig.label}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {typeConfig.label}
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <div className={cn(
-                          "h-2 w-2 rounded-full",
-                          isConnected ? "bg-green-500" : "bg-red-500"
-                        )} />
+                        <div
+                          className={cn(
+                            "h-2 w-2 rounded-full",
+                            isConnected ? "bg-green-500" : "bg-red-500",
+                          )}
+                        />
                         <span className="text-sm">
-                          {isConnected ? 'Connected' : 'Disconnected'}
+                          {isConnected ? "Connected" : "Disconnected"}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          • Last sync: {new Date(dataSource.lastSync).toLocaleString()}
+                          • Last sync:{" "}
+                          {new Date(dataSource.lastSync).toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -297,7 +348,9 @@ function DataSourcesTab({ dataSources, onAddDataSource, onEditDataSource, onDele
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEditDataSource(dataSource)}>
+                      <DropdownMenuItem
+                        onClick={() => onEditDataSource(dataSource)}
+                      >
                         <Edit className="h-4 w-4 mr-2" />
                         Edit Connection
                       </DropdownMenuItem>
@@ -305,7 +358,7 @@ function DataSourcesTab({ dataSources, onAddDataSource, onEditDataSource, onDele
                         <Key className="h-4 w-4 mr-2" />
                         Test Connection
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={() => onDeleteDataSource(dataSource)}
                         className="text-red-600"
                       >
@@ -324,7 +377,10 @@ function DataSourcesTab({ dataSources, onAddDataSource, onEditDataSource, onDele
   );
 }
 
-function ExportConfigTab({ exportConfigs, onUpdateConfig }: {
+function ExportConfigTab({
+  exportConfigs,
+  onUpdateConfig,
+}: {
   exportConfigs: ExportConfig[];
   onUpdateConfig: (config: ExportConfig) => void;
 }) {
@@ -338,7 +394,7 @@ function ExportConfigTab({ exportConfigs, onUpdateConfig }: {
       </div>
 
       <div className="grid gap-6">
-        {exportConfigs.map(config => (
+        {exportConfigs.map((config) => (
           <Card key={config.id}>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -347,7 +403,7 @@ function ExportConfigTab({ exportConfigs, onUpdateConfig }: {
                 </CardTitle>
                 <Switch
                   checked={config.enabled}
-                  onCheckedChange={(enabled) => 
+                  onCheckedChange={(enabled) =>
                     onUpdateConfig({ ...config, enabled })
                   }
                 />
@@ -363,10 +419,10 @@ function ExportConfigTab({ exportConfigs, onUpdateConfig }: {
                     id={`maxFileSize-${config.id}`}
                     type="number"
                     value={config.maxFileSize}
-                    onChange={(e) => 
-                      onUpdateConfig({ 
-                        ...config, 
-                        maxFileSize: parseInt(e.target.value) 
+                    onChange={(e) =>
+                      onUpdateConfig({
+                        ...config,
+                        maxFileSize: parseInt(e.target.value),
                       })
                     }
                     disabled={!config.enabled}
@@ -380,10 +436,10 @@ function ExportConfigTab({ exportConfigs, onUpdateConfig }: {
                     id={`retentionDays-${config.id}`}
                     type="number"
                     value={config.retentionDays}
-                    onChange={(e) => 
-                      onUpdateConfig({ 
-                        ...config, 
-                        retentionDays: parseInt(e.target.value) 
+                    onChange={(e) =>
+                      onUpdateConfig({
+                        ...config,
+                        retentionDays: parseInt(e.target.value),
                       })
                     }
                     disabled={!config.enabled}
@@ -396,7 +452,7 @@ function ExportConfigTab({ exportConfigs, onUpdateConfig }: {
                   <Switch
                     id={`watermark-${config.id}`}
                     checked={config.watermark}
-                    onCheckedChange={(watermark) => 
+                    onCheckedChange={(watermark) =>
                       onUpdateConfig({ ...config, watermark })
                     }
                     disabled={!config.enabled}
@@ -410,7 +466,7 @@ function ExportConfigTab({ exportConfigs, onUpdateConfig }: {
                   <Switch
                     id={`password-${config.id}`}
                     checked={config.password}
-                    onCheckedChange={(password) => 
+                    onCheckedChange={(password) =>
                       onUpdateConfig({ ...config, password })
                     }
                     disabled={!config.enabled}
@@ -428,29 +484,35 @@ function ExportConfigTab({ exportConfigs, onUpdateConfig }: {
   );
 }
 
-function NotificationsTab({ notifications, onUpdateNotification }: {
+function NotificationsTab({
+  notifications,
+  onUpdateNotification,
+}: {
   notifications: NotificationSetting[];
   onUpdateNotification: (notification: NotificationSetting) => void;
 }) {
-  const groupedNotifications = notifications.reduce((acc, notification) => {
-    if (!acc[notification.event]) {
-      acc[notification.event] = [];
-    }
-    acc[notification.event].push(notification);
-    return acc;
-  }, {} as Record<string, NotificationSetting[]>);
+  const groupedNotifications = notifications.reduce(
+    (acc, notification) => {
+      if (!acc[notification.event]) {
+        acc[notification.event] = [];
+      }
+      acc[notification.event].push(notification);
+      return acc;
+    },
+    {} as Record<string, NotificationSetting[]>,
+  );
 
   const eventLabels = {
-    export_complete: 'Export Complete',
-    export_failed: 'Export Failed',
-    report_shared: 'Report Shared',
-    system_alert: 'System Alert'
+    export_complete: "Export Complete",
+    export_failed: "Export Failed",
+    report_shared: "Report Shared",
+    system_alert: "System Alert",
   };
 
   const typeIcons = {
     email: Mail,
     sms: Smartphone,
-    push: Bell
+    push: Bell,
   };
 
   return (
@@ -463,50 +525,55 @@ function NotificationsTab({ notifications, onUpdateNotification }: {
       </div>
 
       <div className="space-y-6">
-        {Object.entries(groupedNotifications).map(([event, eventNotifications]) => (
-          <Card key={event}>
-            <CardHeader>
-              <CardTitle className="text-base">
-                {eventLabels[event as keyof typeof eventLabels]}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {eventNotifications.map(notification => {
-                  const TypeIcon = typeIcons[notification.type];
-                  
-                  return (
-                    <div key={notification.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <TypeIcon className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <div className="font-medium capitalize">
-                            {notification.type}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {notification.recipients.length} recipient(s)
+        {Object.entries(groupedNotifications).map(
+          ([event, eventNotifications]) => (
+            <Card key={event}>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {eventLabels[event as keyof typeof eventLabels]}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {eventNotifications.map((notification) => {
+                    const TypeIcon = typeIcons[notification.type];
+
+                    return (
+                      <div
+                        key={notification.id}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <TypeIcon className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium capitalize">
+                              {notification.type}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {notification.recipients.length} recipient(s)
+                            </div>
                           </div>
                         </div>
+                        <Switch
+                          checked={notification.enabled}
+                          onCheckedChange={(enabled) =>
+                            onUpdateNotification({ ...notification, enabled })
+                          }
+                        />
                       </div>
-                      <Switch
-                        checked={notification.enabled}
-                        onCheckedChange={(enabled) => 
-                          onUpdateNotification({ ...notification, enabled })
-                        }
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ),
+        )}
       </div>
     </div>
   );
 }
 
-export function ReportSettings({ userId }: ReportSettingsProps) {
+export function ReportSettings() {
   const [users, setUsers] = useState<User[]>([]);
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [exportConfigs, setExportConfigs] = useState<ExportConfig[]>([]);
@@ -517,129 +584,129 @@ export function ReportSettings({ userId }: ReportSettingsProps) {
   useEffect(() => {
     const mockUsers: User[] = [
       {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'admin',
-        status: 'active',
-        lastActive: '2024-01-21T10:30:00Z',
-        permissions: ROLE_CONFIG.admin.permissions
+        id: "1",
+        name: "John Doe",
+        email: "john@example.com",
+        role: "admin",
+        status: "active",
+        lastActive: "2024-01-21T10:30:00Z",
+        permissions: ROLE_CONFIG.admin.permissions,
       },
       {
-        id: '2',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        role: 'editor',
-        status: 'active',
-        lastActive: '2024-01-20T15:45:00Z',
-        permissions: ROLE_CONFIG.editor.permissions
+        id: "2",
+        name: "Jane Smith",
+        email: "jane@example.com",
+        role: "editor",
+        status: "active",
+        lastActive: "2024-01-20T15:45:00Z",
+        permissions: ROLE_CONFIG.editor.permissions,
       },
       {
-        id: '3',
-        name: 'Bob Wilson',
-        email: 'bob@example.com',
-        role: 'viewer',
-        status: 'pending',
-        lastActive: '2024-01-19T09:15:00Z',
-        permissions: ROLE_CONFIG.viewer.permissions
-      }
+        id: "3",
+        name: "Bob Wilson",
+        email: "bob@example.com",
+        role: "viewer",
+        status: "pending",
+        lastActive: "2024-01-19T09:15:00Z",
+        permissions: ROLE_CONFIG.viewer.permissions,
+      },
     ];
 
     const mockDataSources: DataSource[] = [
       {
-        id: '1',
-        name: 'Main Database',
-        type: 'database',
-        status: 'connected',
-        lastSync: '2024-01-21T11:00:00Z',
-        config: { host: 'localhost', port: 5432 }
+        id: "1",
+        name: "Main Database",
+        type: "database",
+        status: "connected",
+        lastSync: "2024-01-21T11:00:00Z",
+        config: { host: "localhost", port: 5432 },
       },
       {
-        id: '2',
-        name: 'Sales API',
-        type: 'api',
-        status: 'connected',
-        lastSync: '2024-01-21T10:45:00Z',
-        config: { endpoint: 'https://api.sales.com' }
+        id: "2",
+        name: "Sales API",
+        type: "api",
+        status: "connected",
+        lastSync: "2024-01-21T10:45:00Z",
+        config: { endpoint: "https://api.sales.com" },
       },
       {
-        id: '3',
-        name: 'Analytics Cloud',
-        type: 'cloud',
-        status: 'error',
-        lastSync: '2024-01-20T16:30:00Z',
-        config: { provider: 'aws', region: 'us-east-1' }
-      }
+        id: "3",
+        name: "Analytics Cloud",
+        type: "cloud",
+        status: "error",
+        lastSync: "2024-01-20T16:30:00Z",
+        config: { provider: "aws", region: "us-east-1" },
+      },
     ];
 
     const mockExportConfigs: ExportConfig[] = [
       {
-        id: '1',
-        format: 'pdf',
+        id: "1",
+        format: "pdf",
         enabled: true,
         maxFileSize: 50,
         retentionDays: 30,
         watermark: true,
-        password: false
+        password: false,
       },
       {
-        id: '2',
-        format: 'excel',
+        id: "2",
+        format: "excel",
         enabled: true,
         maxFileSize: 25,
         retentionDays: 14,
         watermark: false,
-        password: true
+        password: true,
       },
       {
-        id: '3',
-        format: 'csv',
+        id: "3",
+        format: "csv",
         enabled: true,
         maxFileSize: 10,
         retentionDays: 7,
         watermark: false,
-        password: false
+        password: false,
       },
       {
-        id: '4',
-        format: 'png',
+        id: "4",
+        format: "png",
         enabled: false,
         maxFileSize: 5,
         retentionDays: 3,
         watermark: true,
-        password: false
-      }
+        password: false,
+      },
     ];
 
     const mockNotifications: NotificationSetting[] = [
       {
-        id: '1',
-        type: 'email',
-        event: 'export_complete',
+        id: "1",
+        type: "email",
+        event: "export_complete",
         enabled: true,
-        recipients: ['user@example.com']
+        recipients: ["user@example.com"],
       },
       {
-        id: '2',
-        type: 'push',
-        event: 'export_complete',
+        id: "2",
+        type: "push",
+        event: "export_complete",
         enabled: false,
-        recipients: []
+        recipients: [],
       },
       {
-        id: '3',
-        type: 'email',
-        event: 'export_failed',
+        id: "3",
+        type: "email",
+        event: "export_failed",
         enabled: true,
-        recipients: ['admin@example.com']
+        recipients: ["admin@example.com"],
       },
       {
-        id: '4',
-        type: 'sms',
-        event: 'system_alert',
+        id: "4",
+        type: "sms",
+        event: "system_alert",
         enabled: true,
-        recipients: ['+1234567890']
-      }
+        recipients: ["+1234567890"],
+      },
     ];
 
     setUsers(mockUsers);
@@ -651,7 +718,7 @@ export function ReportSettings({ userId }: ReportSettingsProps) {
 
   // Event handlers
   const handleAddUser = () => {
-    toast.info('Add user dialog would open here');
+    toast.info("Add user dialog would open here");
   };
 
   const handleEditUser = (user: User) => {
@@ -659,12 +726,12 @@ export function ReportSettings({ userId }: ReportSettingsProps) {
   };
 
   const handleDeleteUser = (user: User) => {
-    setUsers(prev => prev.filter(u => u.id !== user.id));
+    setUsers((prev) => prev.filter((u) => u.id !== user.id));
     toast.success(`User ${user.name} deleted`);
   };
 
   const handleAddDataSource = () => {
-    toast.info('Add data source dialog would open here');
+    toast.info("Add data source dialog would open here");
   };
 
   const handleEditDataSource = (dataSource: DataSource) => {
@@ -672,22 +739,32 @@ export function ReportSettings({ userId }: ReportSettingsProps) {
   };
 
   const handleDeleteDataSource = (dataSource: DataSource) => {
-    setDataSources(prev => prev.filter(ds => ds.id !== dataSource.id));
+    setDataSources((prev) => prev.filter((ds) => ds.id !== dataSource.id));
     toast.success(`Data source ${dataSource.name} deleted`);
   };
 
   const handleUpdateExportConfig = (updatedConfig: ExportConfig) => {
-    setExportConfigs(prev => prev.map(config => 
-      config.id === updatedConfig.id ? updatedConfig : config
-    ));
-    toast.success(`${updatedConfig.format.toUpperCase()} export settings updated`);
+    setExportConfigs((prev) =>
+      prev.map((config) =>
+        config.id === updatedConfig.id ? updatedConfig : config,
+      ),
+    );
+    toast.success(
+      `${updatedConfig.format.toUpperCase()} export settings updated`,
+    );
   };
 
-  const handleUpdateNotification = (updatedNotification: NotificationSetting) => {
-    setNotifications(prev => prev.map(notification => 
-      notification.id === updatedNotification.id ? updatedNotification : notification
-    ));
-    toast.success('Notification settings updated');
+  const handleUpdateNotification = (
+    updatedNotification: NotificationSetting,
+  ) => {
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification.id === updatedNotification.id
+          ? updatedNotification
+          : notification,
+      ),
+    );
+    toast.success("Notification settings updated");
   };
 
   if (loading) {

@@ -55,11 +55,13 @@ d:\Projects\Typescript\fullstack-template\
 We use route groups to organize related pages without affecting the URL:
 
 #### `(auth)` - Authentication
+
 - **Purpose**: Authentication pages
 - **Layout**: Auth-specific layout
 - **Routes**: `/sign-in`, `/sign-up`
 
-#### `(dashboard)` - Main Dashboard  
+#### `(dashboard)` - Main Dashboard
+
 - **Purpose**: All authenticated dashboard pages
 - **Layout**: Layout with navigation and notifications
 - **Routes**: `/dashboard`, `/realtime`, `/upload`, etc.
@@ -110,15 +112,17 @@ components/
 ## 🔧 Implementation Patterns
 
 ### Server Actions
+
 ```typescript
 // actions/auth-actions.ts
 export async function signInUser(formData: FormData) {
-  "use server"
+  "use server";
   // Server logic
 }
 ```
 
 ### API Routes
+
 ```typescript
 // app/api/notifications/route.ts
 export async function GET(request: Request) {
@@ -127,6 +131,7 @@ export async function GET(request: Request) {
 ```
 
 ### React Hooks
+
 ```typescript
 // hooks/use-notifications.ts
 export function useNotifications() {
@@ -135,34 +140,36 @@ export function useNotifications() {
 ```
 
 ### Configurations
+
 ```typescript
 // lib/config.ts
 export const appConfig = {
   // Centralized configurations
-}
+};
 ```
 
 ## 🎨 UI/UX Patterns
 
 ### Visual Consistency
+
 - **Design System**: shadcn/ui as base
 - **Themes**: Dark/light mode support
 - **Responsive**: Mobile-first approach
 - **Accessibility**: WAI-ARIA compliance
 
 ### Navigation
+
 - **Navbar**: Consistent across dashboard
 - **Breadcrumbs**: For deep navigation
 - **Sidebar**: For complex sections
 
 ### Loading States
+
 ```tsx
 // Consistent pattern for loading states
-{loading ? (
-  <div className="animate-spin">Loading...</div>
-) : (
-  <ActualContent />
-)}
+{
+  loading ? <div className="animate-spin">Loading...</div> : <ActualContent />;
+}
 ```
 
 ## 📚 References and Inspiration

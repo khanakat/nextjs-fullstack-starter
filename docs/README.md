@@ -5,42 +5,52 @@ Welcome to the Next.js Fullstack Starter documentation! This comprehensive guide
 ## � Documentation Structure
 
 ### 🚀 [Getting Started](./getting-started/)
+
 Quick setup and installation guide to get you up and running.
 
 ### ⚡ [Features](./features/)
+
 Comprehensive documentation for all implemented features:
+
 - Authentication System (Clerk)
-- File Upload System (UploadThing) 
+- File Upload System (UploadThing)
 - Email System (Resend)
 - Payment System (Stripe)
 - SEO System (Dynamic Metadata)
 - Real-time Features (SSE & Notifications)
 
 ### 🏗️ [Architecture](./architecture/)
+
 System design, project organization, and technical decisions.
 
 ### � [Guides](./guides/)
+
 Step-by-step tutorials and best practices for development and deployment:
+
 - **Git Workflow & Conventions** - Collaboration standards and branch management
 - **Development & Deployment** - Setup, customization, and production deployment
 
 ### 📚 [Examples](./examples/)
+
 Practical code examples and implementation patterns.
 
 ## 🎯 Quick Navigation
 
 ### New Users
+
 1. **Start here**: [Getting Started Guide](./getting-started/README.md)
 2. **Explore features**: [Features Overview](./features/README.md)
 3. **Understand structure**: [Architecture Overview](./architecture/README.md)
 
-### Developers  
+### Developers
+
 - **Git Workflow**: [Git Conventions & Best Practices](./guides/git-workflow.md)
 - **Code Examples**: [Examples Collection](./examples/README.md)
 - **Development Guides**: [Setup & Configuration](./guides/README.md)
 - **API Reference**: Available in individual feature docs
 
 ### Maintainers
+
 - **Project Organization**: [Architecture Documentation](./architecture/README.md)
 
 ## 🔍 How to Use This Documentation

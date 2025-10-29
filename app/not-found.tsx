@@ -10,7 +10,7 @@ export default function NotFound() {
           <div className="flex justify-center">
             <FileQuestion className="h-16 w-16 text-muted-foreground" />
           </div>
-          
+
           <div className="space-y-2">
             <h1 className="text-4xl font-bold tracking-tight">404</h1>
             <h2 className="text-2xl font-semibold">Page Not Found</h2>
@@ -27,11 +27,9 @@ export default function NotFound() {
               Go to Dashboard
             </Link>
           </Button>
-          
+
           <Button asChild variant="outline" className="flex-1">
-            <Link href="/">
-              Go to Homepage
-            </Link>
+            <Link href="/">Go to Homepage</Link>
           </Button>
         </div>
 

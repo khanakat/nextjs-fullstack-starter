@@ -21,7 +21,7 @@ export interface UsePaginationReturn {
   pageSize: number;
   total: number;
   totalPages: number;
-  
+
   // Actions
   setPage: (page: number) => void;
   setPageSize: (pageSize: number) => void;
@@ -29,13 +29,13 @@ export interface UsePaginationReturn {
   nextPage: () => void;
   previousPage: () => void;
   resetPagination: () => void;
-  
+
   // Computed
   hasNextPage: boolean;
   hasPreviousPage: boolean;
   startIndex: number;
   endIndex: number;
-  
+
   // For server-side pagination
   searchParams: URLSearchParams | null;
 }
@@ -48,7 +48,7 @@ export function usePagination({
 }: UsePaginationProps = {}): UsePaginationReturn {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = serverSide ? useSearchParams() : null;
+  const searchParams = useSearchParams();
 
   // Get initial values from URL params if server-side
   const getInitialPage = () => {
@@ -92,51 +92,65 @@ export function usePagination({
   }, [page, pageSize, totalItems]);
 
   // Update URL params for server-side pagination
-  const updateURLParams = useCallback((newPage: number, newPageSize?: number) => {
-    if (!serverSide) return;
+  const updateURLParams = useCallback(
+    (newPage: number, newPageSize?: number) => {
+      if (!serverSide) return;
 
-    const params = new URLSearchParams(searchParams?.toString());
-    
-    if (newPage !== initialPage) {
-      params.set("page", newPage.toString());
-    } else {
-      params.delete("page");
-    }
+      const params = new URLSearchParams(searchParams?.toString());
 
-    if (newPageSize && newPageSize !== initialPageSize) {
-      params.set("pageSize", newPageSize.toString());
-    } else if (newPageSize === initialPageSize) {
-      params.delete("pageSize");
-    }
+      if (newPage !== initialPage) {
+        params.set("page", newPage.toString());
+      } else {
+        params.delete("page");
+      }
 
-    const paramString = params.toString();
-    const newURL = paramString ? `${pathname}?${paramString}` : pathname;
-    
-    router.push(newURL);
-  }, [serverSide, searchParams, pathname, router, initialPage, initialPageSize]);
+      if (newPageSize && newPageSize !== initialPageSize) {
+        params.set("pageSize", newPageSize.toString());
+      } else if (newPageSize === initialPageSize) {
+        params.delete("pageSize");
+      }
+
+      const paramString = params.toString();
+      const newURL = paramString ? `${pathname}?${paramString}` : pathname;
+
+      if (newURL) {
+        router.push(newURL);
+      }
+    },
+    [serverSide, searchParams, pathname, router, initialPage, initialPageSize],
+  );
 
   // Actions
-  const setPage = useCallback((newPage: number) => {
-    const validPage = Math.max(1, Math.min(newPage, totalPages));
-    setPageState(validPage);
-    updateURLParams(validPage);
-  }, [totalPages, updateURLParams]);
+  const setPage = useCallback(
+    (newPage: number) => {
+      const validPage = Math.max(1, Math.min(newPage, totalPages));
+      setPageState(validPage);
+      updateURLParams(validPage);
+    },
+    [totalPages, updateURLParams],
+  );
 
-  const setPageSize = useCallback((newPageSize: number) => {
-    setPageSizeState(newPageSize);
-    // Reset to page 1 when changing page size
-    setPageState(1);
-    updateURLParams(1, newPageSize);
-  }, [updateURLParams]);
+  const setPageSize = useCallback(
+    (newPageSize: number) => {
+      setPageSizeState(newPageSize);
+      // Reset to page 1 when changing page size
+      setPageState(1);
+      updateURLParams(1, newPageSize);
+    },
+    [updateURLParams],
+  );
 
-  const setTotal = useCallback((newTotal: number) => {
-    setTotalItems(newTotal);
-    // Adjust current page if it's now out of bounds
-    const newTotalPages = Math.ceil(newTotal / pageSize);
-    if (page > newTotalPages && newTotalPages > 0) {
-      setPage(newTotalPages);
-    }
-  }, [page, pageSize, setPage]);
+  const setTotal = useCallback(
+    (newTotal: number) => {
+      setTotalItems(newTotal);
+      // Adjust current page if it's now out of bounds
+      const newTotalPages = Math.ceil(newTotal / pageSize);
+      if (page > newTotalPages && newTotalPages > 0) {
+        setPage(newTotalPages);
+      }
+    },
+    [page, pageSize, setPage],
+  );
 
   const nextPage = useCallback(() => {
     if (hasNextPage) {
@@ -162,7 +176,7 @@ export function usePagination({
     pageSize,
     total: totalItems,
     totalPages,
-    
+
     // Actions
     setPage,
     setPageSize,
@@ -170,14 +184,14 @@ export function usePagination({
     nextPage,
     previousPage,
     resetPagination,
-    
+
     // Computed
     hasNextPage,
     hasPreviousPage,
     startIndex,
     endIndex,
-    
+
     // For server-side pagination
-    searchParams,
+    searchParams: serverSide ? searchParams : null,
   };
 }

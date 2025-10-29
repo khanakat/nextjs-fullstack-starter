@@ -5,15 +5,18 @@ Comprehensive guides for development, deployment, and maintenance of your **Next
 ## 🎯 Available Guides
 
 ### **Development Workflow**
+
 - **[Git Workflow & Conventions](./git-workflow.md)** - Git best practices, branch strategies, and collaboration guidelines
 
 ### **Feature Development**
+
 - **[Authentication System](./authentication.md)** - Setting up and customizing authentication
 - **[Database Management](./database.md)** - Database setup, migrations, and management
 - **[Email System](./email-system.md)** - Configuring and using the email system
 - **[File Upload System](./file-upload.md)** - File upload configuration and usage
 
 ### **Customization & Deployment**
+
 - **[Customization Guide](./customization.md)** - Customizing the template for your needs
 - **[Deployment Guide](./deployment.md)** - Deploying to various platforms
 
@@ -30,6 +33,7 @@ Comprehensive guides for development, deployment, and maintenance of your **Next
 ## 📋 Development Standards
 
 All guides follow these principles:
+
 - **Step-by-step instructions** with clear examples
 - **Code snippets** for quick implementation
 - **Best practices** and security considerations

@@ -1,31 +1,68 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { notificationStore, NotificationService } from '@/lib/notifications';
+import { NextRequest } from "next/server";
+import { ApiError } from "@/lib/api-utils";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
+import { logger } from "@/lib/logger";
+import { auth } from "@clerk/nextjs/server";
+import { notificationStore, NotificationService } from "@/lib/notifications";
+import { generateRequestId } from "@/lib/utils";
 
 /**
  * GET /api/notifications - Get user notifications
  * Query params:
  * - limit: number of notifications to return (default: 50)
- * - offset: pagination offset (default: 0) 
+ * - offset: pagination offset (default: 0)
  * - unread: only unread notifications (default: false)
  * - type: filter by notification type
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to access notifications",
+        requestId,
       );
     }
 
-    const url = new URL(request.url);
-    const limit = parseInt(url.searchParams.get('limit') || '50');
-    const offset = parseInt(url.searchParams.get('offset') || '0');
-    const unreadOnly = url.searchParams.get('unread') === 'true';
-    const type = url.searchParams.get('type') as any;
+    const url = new URL(_request.url);
+    const limit = parseInt(url.searchParams.get("limit") || "50");
+    const offset = parseInt(url.searchParams.get("offset") || "0");
+    const unreadOnly = url.searchParams.get("unread") === "true";
+    const type = url.searchParams.get("type") as any;
+
+    // Validate pagination parameters
+    if (limit < 1 || limit > 100) {
+      return StandardErrorResponse.badRequest(
+        "Limit must be between 1 and 100",
+        "notifications",
+        { limit },
+        requestId,
+      );
+    }
+
+    if (offset < 0) {
+      return StandardErrorResponse.badRequest(
+        "Offset must be non-negative",
+        "notifications",
+        { offset },
+        requestId,
+      );
+    }
+
+    logger.info("Fetching user notifications", "notifications", {
+      requestId,
+      userId,
+      limit,
+      offset,
+      unreadOnly,
+      type,
+    });
 
     const notifications = await notificationStore.getUserNotifications(userId, {
       limit,
@@ -37,7 +74,7 @@ export async function GET(request: NextRequest) {
     const unreadCount = await notificationStore.getUnreadCount(userId);
     const preferences = await notificationStore.getUserPreferences(userId);
 
-    return NextResponse.json({
+    return StandardSuccessResponse.create({
       notifications,
       unreadCount,
       preferences,
@@ -46,13 +83,31 @@ export async function GET(request: NextRequest) {
         offset,
         hasMore: notifications.length === limit, // Simple check
       },
+      requestId,
     });
-
   } catch (error) {
-    console.error('Error fetching notifications:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch notifications' },
-      { status: 500 }
+    logger.apiError(
+      "Error processing notification request",
+      "notification",
+      error,
+      {
+        requestId,
+        endpoint: "/api/notifications",
+      },
+    );
+
+    if (error instanceof ApiError) {
+      return StandardErrorResponse.fromApiError(error, requestId);
+    }
+
+    return StandardErrorResponse.internal(
+      "Failed to process notification request",
+      process.env.NODE_ENV === "development"
+        ? {
+            originalError: error instanceof Error ? error.message : error,
+          }
+        : undefined,
+      requestId,
     );
   }
 }
@@ -61,23 +116,25 @@ export async function GET(request: NextRequest) {
  * POST /api/notifications - Create a new notification
  * Body: Notification data
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to create notifications",
+        requestId,
       );
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const {
       title,
       message,
-      type = 'info',
-      priority = 'medium',
+      type = "info",
+      priority = "medium",
       data,
       actionUrl,
       actionLabel,
@@ -90,11 +147,21 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!title || !message) {
-      return NextResponse.json(
-        { error: 'Title and message are required' },
-        { status: 400 }
+      return StandardErrorResponse.badRequest(
+        "Title and message are required",
+        "notifications",
+        { title: !!title, message: !!message },
+        requestId,
       );
     }
+
+    logger.info("Creating new notification", "notifications", {
+      requestId,
+      userId,
+      type,
+      priority,
+      channels,
+    });
 
     const notification = await NotificationService.notify(userId, {
       title,
@@ -107,52 +174,33 @@ export async function POST(request: NextRequest) {
       channels,
     });
 
-    return NextResponse.json({ notification }, { status: 201 });
-
+    return StandardSuccessResponse.created({
+      notification,
+      requestId,
+    });
   } catch (error) {
-    console.error('Error creating notification:', error);
-    return NextResponse.json(
-      { error: 'Failed to create notification' },
-      { status: 500 }
+    logger.apiError(
+      "Error processing notification request",
+      "notification",
+      error,
+      {
+        requestId,
+        endpoint: "/api/notifications",
+      },
     );
-  }
-}
 
-/**
- * PATCH /api/notifications - Bulk operations
- * Body: { action: 'markAllAsRead' | 'deleteAll', type?: string }
- */
-export async function PATCH(request: NextRequest) {
-  try {
-    const { userId } = auth();
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+    if (error instanceof ApiError) {
+      return StandardErrorResponse.fromApiError(error, requestId);
     }
 
-    const body = await request.json();
-    const { action } = body;
-
-    switch (action) {
-      case 'markAllAsRead':
-        const count = await notificationStore.markAllAsRead(userId);
-        return NextResponse.json({ message: `Marked ${count} notifications as read` });
-
-      default:
-        return NextResponse.json(
-          { error: 'Invalid action' },
-          { status: 400 }
-        );
-    }
-
-  } catch (error) {
-    console.error('Error updating notifications:', error);
-    return NextResponse.json(
-      { error: 'Failed to update notifications' },
-      { status: 500 }
+    return StandardErrorResponse.internal(
+      "Failed to process notification request",
+      process.env.NODE_ENV === "development"
+        ? {
+            originalError: error instanceof Error ? error.message : error,
+          }
+        : undefined,
+      requestId,
     );
   }
 }

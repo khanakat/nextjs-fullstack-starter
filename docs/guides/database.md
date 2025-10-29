@@ -4,12 +4,12 @@ Complete database setup and management guide for **Next.js Fullstack Starter**.
 
 ## 🎯 Database Options
 
-| Database | Use Case | Difficulty | Cost |
-|----------|----------|------------|------|
-| **[SQLite](#sqlite)** | Development, prototyping | Easy | Free |
-| **[PostgreSQL Local](#postgresql-local)** | Development with production parity | Medium | Free |
-| **[PostgreSQL Docker](#postgresql-docker)** | Consistent dev environment | Medium | Free |
-| **[PostgreSQL Cloud](#postgresql-cloud)** | Production, collaboration | Easy | Free tier |
+| Database                                    | Use Case                           | Difficulty | Cost      |
+| ------------------------------------------- | ---------------------------------- | ---------- | --------- |
+| **[SQLite](#sqlite)**                       | Development, prototyping           | Easy       | Free      |
+| **[PostgreSQL Local](#postgresql-local)**   | Development with production parity | Medium     | Free      |
+| **[PostgreSQL Docker](#postgresql-docker)** | Consistent dev environment         | Medium     | Free      |
+| **[PostgreSQL Cloud](#postgresql-cloud)**   | Production, collaboration          | Easy       | Free tier |
 
 ---
 
@@ -38,6 +38,7 @@ npm run db:setup
 **Perfect for**: Quick prototyping, development, testing
 
 ### **Setup**
+
 ```bash
 # Switch to SQLite
 npm run db:sqlite
@@ -49,12 +50,14 @@ npm run db:sqlite
 ```
 
 ### **Configuration**
+
 ```env
 # .env.local
 DATABASE_URL="file:./dev.db"
 ```
 
 ### **Pros & Cons**
+
 ✅ **Pros**: Zero setup, fast, portable  
 ❌ **Cons**: Single connection, not production-suitable
 
@@ -65,6 +68,7 @@ DATABASE_URL="file:./dev.db"
 **Perfect for**: Development with production database features
 
 ### **Automatic Setup**
+
 ```bash
 # One-command setup
 npm run db:postgres:local
@@ -80,6 +84,7 @@ npm run db:postgres:local
 ### **Manual Installation**
 
 **Windows:**
+
 ```bash
 # Using Chocolatey (recommended)
 choco install postgresql
@@ -89,6 +94,7 @@ choco install postgresql
 ```
 
 **macOS:**
+
 ```bash
 # Using Homebrew
 brew install postgresql
@@ -96,6 +102,7 @@ brew services start postgresql
 ```
 
 **Ubuntu/Linux:**
+
 ```bash
 sudo apt update
 sudo apt install postgresql postgresql-contrib
@@ -103,6 +110,7 @@ sudo systemctl start postgresql
 ```
 
 ### **Database Setup**
+
 ```bash
 # Connect to PostgreSQL as superuser
 psql -U postgres
@@ -115,19 +123,21 @@ GRANT ALL PRIVILEGES ON DATABASE nextjs_fullstack_starter TO starter_user;
 ```
 
 ### **Configuration**
+
 ```env
 # .env.local
 DATABASE_URL="postgresql://starter_user:starter_password@localhost:5432/nextjs_fullstack_starter?schema=public"
 ```
 
 ### **Management Commands**
+
 ```bash
 # Start PostgreSQL service
 sudo systemctl start postgresql  # Linux
 brew services start postgresql   # macOS
 net start postgresql-x64-15      # Windows
 
-# Stop PostgreSQL service  
+# Stop PostgreSQL service
 sudo systemctl stop postgresql   # Linux
 brew services stop postgresql    # macOS
 net stop postgresql-x64-15       # Windows
@@ -144,6 +154,7 @@ brew services list | grep postgres # macOS
 **Perfect for**: Consistent environment, team development
 
 ### **Setup**
+
 ```bash
 # Start PostgreSQL with Docker
 npm run db:postgres:docker
@@ -157,6 +168,7 @@ npm run db:postgres:docker
 ```
 
 ### **Manual Docker Setup**
+
 ```bash
 # Start PostgreSQL container
 docker run --name nextjs-starter-postgres \
@@ -174,12 +186,14 @@ docker logs nextjs-starter-postgres
 ```
 
 ### **Configuration**
+
 ```env
 # .env.local
 DATABASE_URL="postgresql://starter_user:starter_password@localhost:5433/nextjs_fullstack_starter?schema=public"
 ```
 
 ### **Docker Management**
+
 ```bash
 # Start existing container
 docker start nextjs-starter-postgres
@@ -224,7 +238,7 @@ docker exec -it nextjs-starter-postgres psql -U starter_user -d nextjs_fullstack
 4. **Connection Info**: Copy URI format
 5. **Update Environment**:
    ```env
-   # .env.local  
+   # .env.local
    DATABASE_URL="postgresql://postgres:pass@db.xxx.supabase.co:5432/postgres"
    ```
 
@@ -262,6 +276,7 @@ docker exec -it nextjs-starter-postgres psql -U starter_user -d nextjs_fullstack
 ## 🔧 Database Operations
 
 ### **Schema Management**
+
 ```bash
 # Apply schema changes (development)
 npx prisma db push
@@ -277,6 +292,7 @@ npx prisma generate
 ```
 
 ### **Data Management**
+
 ```bash
 # Seed database with sample data
 npm run db:seed
@@ -289,6 +305,7 @@ npm run db:studio
 ```
 
 ### **Database Inspection**
+
 ```bash
 # View database structure
 npx prisma db pull
@@ -347,6 +364,7 @@ model Tag {
 ## 🔐 Security Best Practices
 
 ### **Connection Security**
+
 ```env
 # Always use SSL in production
 DATABASE_URL="postgresql://user:pass@host:port/db?sslmode=require"
@@ -356,6 +374,7 @@ DATABASE_URL="postgresql://user:pass@host:port/db?pgbouncer=true"
 ```
 
 ### **Environment Variables**
+
 ```bash
 # Different URLs per environment
 DATABASE_URL_DEVELOPMENT="postgresql://..."
@@ -364,6 +383,7 @@ DATABASE_URL_PRODUCTION="postgresql://..."
 ```
 
 ### **Access Control**
+
 ```sql
 -- Create limited user for application
 CREATE USER app_user WITH PASSWORD 'strong_password';
@@ -376,6 +396,7 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
 ## 📈 Performance Optimization
 
 ### **Indexing**
+
 ```sql
 -- Add indexes for common queries
 CREATE INDEX CONCURRENTLY idx_posts_author_id ON posts(author_id);
@@ -384,6 +405,7 @@ CREATE INDEX CONCURRENTLY idx_posts_created_at ON posts(created_at DESC);
 ```
 
 ### **Query Optimization**
+
 ```typescript
 // Use select to limit data
 const posts = await prisma.post.findMany({
@@ -391,20 +413,21 @@ const posts = await prisma.post.findMany({
     id: true,
     title: true,
     author: {
-      select: { id: true, name: true }
-    }
-  }
-})
+      select: { id: true, name: true },
+    },
+  },
+});
 
 // Use pagination
 const posts = await prisma.post.findMany({
   take: 10,
   skip: page * 10,
-  orderBy: { createdAt: 'desc' }
-})
+  orderBy: { createdAt: "desc" },
+});
 ```
 
 ### **Connection Pooling**
+
 ```typescript
 // lib/prisma.ts - Production configuration
 const prisma = new PrismaClient({
@@ -413,8 +436,11 @@ const prisma = new PrismaClient({
       url: process.env.DATABASE_URL,
     },
   },
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-})
+  log:
+    process.env.NODE_ENV === "development"
+      ? ["query", "error", "warn"]
+      : ["error"],
+});
 ```
 
 ---
@@ -424,6 +450,7 @@ const prisma = new PrismaClient({
 ### **Connection Issues**
 
 **"Can't reach database server"**
+
 ```bash
 # Check if PostgreSQL is running
 sudo systemctl status postgresql  # Linux
@@ -435,6 +462,7 @@ psql -h localhost -p 5432 -U your_user -d your_database
 ```
 
 **"Password authentication failed"**
+
 ```bash
 # Reset PostgreSQL password
 sudo -u postgres psql
@@ -445,6 +473,7 @@ ALTER USER postgres PASSWORD 'new_password';
 ### **Migration Errors**
 
 **"Migration failed"**
+
 ```bash
 # Check migration status
 npx prisma migrate status
@@ -459,6 +488,7 @@ npx prisma db push --force-reset
 ### **Performance Issues**
 
 **Slow queries**
+
 ```bash
 # Enable query logging
 # Add to postgresql.conf:

@@ -4,13 +4,13 @@ Complete guide to deploying your **Next.js Fullstack Starter** application to pr
 
 ## 🎯 Deployment Options
 
-| Platform | Difficulty | Cost | Best For |
-|----------|------------|------|----------|
-| **[Vercel](#vercel)** | Easy | Free tier | Next.js apps (recommended) |
-| **[Netlify](#netlify)** | Easy | Free tier | Static sites, SSG |
-| **[Railway](#railway)** | Medium | Free tier | Fullstack with DB |
-| **[Docker](#docker)** | Hard | Variable | Custom environments |
-| **[AWS](#aws)** | Expert | Pay-as-use | Enterprise scale |
+| Platform                | Difficulty | Cost       | Best For                   |
+| ----------------------- | ---------- | ---------- | -------------------------- |
+| **[Vercel](#vercel)**   | Easy       | Free tier  | Next.js apps (recommended) |
+| **[Netlify](#netlify)** | Easy       | Free tier  | Static sites, SSG          |
+| **[Railway](#railway)** | Medium     | Free tier  | Fullstack with DB          |
+| **[Docker](#docker)**   | Hard       | Variable   | Custom environments        |
+| **[AWS](#aws)**         | Expert     | Pay-as-use | Enterprise scale           |
 
 ---
 
@@ -19,12 +19,14 @@ Complete guide to deploying your **Next.js Fullstack Starter** application to pr
 **Perfect for Next.js applications** - Zero configuration deployment.
 
 ### **Prerequisites**
+
 - GitHub/GitLab/Bitbucket repository
 - Vercel account ([sign up free](https://vercel.com))
 
 ### **Step 1: Prepare Environment**
 
 Create `.env.production`:
+
 ```env
 # Production Clerk keys
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
@@ -42,11 +44,12 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=https://yourdomain.com/dashboard
 ### **Step 2: Deploy**
 
 **Option A: Vercel CLI**
+
 ```bash
 # Install Vercel CLI
 npm i -g vercel
 
-# Login to Vercel  
+# Login to Vercel
 vercel login
 
 # Deploy
@@ -54,6 +57,7 @@ vercel --prod
 ```
 
 **Option B: Git Integration**
+
 1. **Connect Repository**: Link your GitHub repo in Vercel dashboard
 2. **Configure**: Add environment variables
 3. **Deploy**: Push to main branch triggers deployment
@@ -61,6 +65,7 @@ vercel --prod
 ### **Step 3: Configure Environment Variables**
 
 In Vercel Dashboard:
+
 1. **Go to**: Project Settings > Environment Variables
 2. **Add all variables** from `.env.production`
 3. **Set Environment**: Production
@@ -95,6 +100,7 @@ netlify deploy --prod --dir=out
 ### **Configuration**
 
 Create `netlify.toml`:
+
 ```toml
 [build]
   command = "npm run build"
@@ -148,6 +154,7 @@ railway up
 ### **Railway Configuration**
 
 Create `railway.json`:
+
 ```json
 {
   "$schema": "https://railway.app/railway.schema.json",
@@ -176,7 +183,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 
-FROM node:18-alpine AS builder  
+FROM node:18-alpine AS builder
 WORKDIR /app
 COPY . .
 COPY --from=deps /app/node_modules ./node_modules
@@ -206,7 +213,7 @@ CMD ["node", "server.js"]
 
 ```yaml
 # docker-compose.prod.yml
-version: '3.8'
+version: "3.8"
 
 services:
   app:
@@ -322,6 +329,7 @@ railway up --service postgresql
 ## 🔐 Production Checklist
 
 ### **Security**
+
 - [ ] **Environment Variables**: All secrets in production environment
 - [ ] **HTTPS**: SSL certificate configured
 - [ ] **Clerk Production Keys**: Using `pk_live_` and `sk_live_` keys
@@ -329,7 +337,8 @@ railway up --service postgresql
 - [ ] **CORS**: Configured for production domain
 - [ ] **Headers**: Security headers configured
 
-### **Performance**  
+### **Performance**
+
 - [ ] **Build Optimization**: `npm run build` successful
 - [ ] **Image Optimization**: Next.js image optimization enabled
 - [ ] **Caching**: CDN and edge caching configured
@@ -337,6 +346,7 @@ railway up --service postgresql
 - [ ] **Bundle Analysis**: Bundle size optimized
 
 ### **Monitoring**
+
 - [ ] **Error Tracking**: Sentry or similar configured
 - [ ] **Analytics**: User behavior tracking
 - [ ] **Uptime Monitoring**: Health checks configured
@@ -352,38 +362,38 @@ railway up --service postgresql
 // next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', // For Docker
+  output: "standalone", // For Docker
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
+    serverComponentsExternalPackages: ["@prisma/client"],
   },
   images: {
-    domains: ['images.clerk.dev'], // Clerk avatars
+    domains: ["images.clerk.dev"], // Clerk avatars
   },
   // Security headers
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'DENY',
+            key: "X-Frame-Options",
+            value: "DENY",
           },
           {
-            key: 'X-Content-Type-Options',  
-            value: 'nosniff',
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
           {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
+            key: "Referrer-Policy",
+            value: "origin-when-cross-origin",
           },
         ],
       },
-    ]
+    ];
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
 ```
 
 ### **Database Production Config**
@@ -459,11 +469,11 @@ npm run db:test
 // Enable experimental features
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
+    serverComponentsExternalPackages: ["@prisma/client"],
     optimizeCss: true,
-    optimizePackageImports: ['@/components/ui'],
+    optimizePackageImports: ["@/components/ui"],
   },
-}
+};
 ```
 
 ### **Database Optimizations**
@@ -482,6 +492,6 @@ EXPLAIN ANALYZE SELECT * FROM posts WHERE author_id = $1;
 ## 📚 Additional Resources
 
 - **[Vercel Deployment](https://vercel.com/docs)** - Official Vercel documentation
-- **[Next.js Deployment](https://nextjs.org/docs/deployment)** - Official Next.js guide  
+- **[Next.js Deployment](https://nextjs.org/docs/deployment)** - Official Next.js guide
 - **[Prisma Deployment](https://www.prisma.io/docs/guides/deployment)** - Database deployment
 - **[Clerk Production](https://clerk.com/docs/deployments/overview)** - Production authentication setup

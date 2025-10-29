@@ -1,4 +1,4 @@
-import { currentUser, redirectToSignIn } from "@clerk/nextjs/server";
+import { currentUser, redirectToSignIn } from "@/lib/conditional-auth";
 import { db } from "@/lib/db";
 
 /**

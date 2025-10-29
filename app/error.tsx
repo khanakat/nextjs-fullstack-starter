@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ interface ErrorProps {
 export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error('Global error occurred:', error);
+    console.error("Global error occurred:", error);
   }, [error]);
 
   return (
@@ -23,13 +23,14 @@ export default function Error({ error, reset }: ErrorProps) {
           <div className="flex justify-center">
             <AlertCircle className="h-16 w-16 text-red-500" />
           </div>
-          
+
           <div className="space-y-2">
             <h1 className="text-2xl font-bold tracking-tight">
               Something went wrong!
             </h1>
             <p className="text-muted-foreground">
-              {error.message || "An unexpected error occurred. Please try again."}
+              {error.message ||
+                "An unexpected error occurred. Please try again."}
             </p>
           </div>
         </div>
@@ -39,16 +40,14 @@ export default function Error({ error, reset }: ErrorProps) {
             <RefreshCw className="mr-2 h-4 w-4" />
             Try again
           </Button>
-          
+
           <Button asChild variant="outline" className="flex-1">
-            <Link href="/dashboard">
-              Go to Dashboard
-            </Link>
+            <Link href="/dashboard">Go to Dashboard</Link>
           </Button>
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Error ID: {error.digest || 'N/A'}
+          Error ID: {error.digest || "N/A"}
         </div>
       </div>
     </div>

@@ -1,11 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { z } from 'zod';
+import { NextRequest } from "next/server";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
+import { logger } from "@/lib/logger";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
+import { z } from "zod";
+
+import { handleZodError } from "@/lib/error-handlers";
 
 // Validation schemas
 const createTemplateSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255),
+  name: z.string().min(1, "Name is required").max(255),
   description: z.string().optional(),
   categoryId: z.string().optional(),
   config: z.object({
@@ -19,54 +26,49 @@ const createTemplateSchema = z.object({
       grid: z.object({
         columns: z.number(),
         rows: z.number(),
-        gap: z.number()
-      })
+        gap: z.number(),
+      }),
     }),
     styling: z.object({
-      theme: z.enum(['light', 'dark']),
+      theme: z.enum(["light", "dark"]),
       primaryColor: z.string(),
       secondaryColor: z.string(),
       fontFamily: z.string(),
-      fontSize: z.number()
-    })
+      fontSize: z.number(),
+    }),
   }),
   isPublic: z.boolean().default(false),
-  tags: z.array(z.string()).optional()
+  tags: z.array(z.string()).optional(),
 });
 
-const updateTemplateSchema = createTemplateSchema.partial();
-
 // GET /api/templates - List templates with pagination and filters
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return StandardErrorResponse.unauthorized("Authentication required");
     }
 
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '12');
-    const search = searchParams.get('search') || '';
-    const categoryId = searchParams.get('categoryId') || '';
-    const isPublic = searchParams.get('isPublic');
+    const { searchParams } = new URL(_request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "12");
+    const search = searchParams.get("search") || "";
+    const categoryId = searchParams.get("categoryId") || "";
+    const isPublic = searchParams.get("isPublic");
     const skip = (page - 1) * limit;
 
     // Build where clause
     const where: any = {
-      OR: [
-        { createdBy: userId },
-        { isPublic: true }
-      ]
+      OR: [{ createdBy: userId }, { isPublic: true }],
     };
 
     if (search) {
       where.AND = where.AND || [];
       where.AND.push({
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
-        ]
+          { name: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+        ],
       });
     }
 
@@ -77,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     if (isPublic !== null) {
       where.AND = where.AND || [];
-      where.AND.push({ isPublic: isPublic === 'true' });
+      where.AND.push({ isPublic: isPublic === "true" });
     }
 
     // Get templates with relations
@@ -90,59 +92,51 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               name: true,
-              createdAt: true
+              createdAt: true,
             },
             take: 3,
-            orderBy: { createdAt: 'desc' }
-          }
+            orderBy: { createdAt: "desc" },
+          },
         },
-        orderBy: [
-          { updatedAt: 'desc' }
-        ],
+        orderBy: [{ updatedAt: "desc" }],
         skip,
-        take: limit
+        take: limit,
       }),
-      db.template.count({ where })
+      db.template.count({ where }),
     ]);
 
-    return NextResponse.json({
+    return StandardSuccessResponse.ok({
       templates,
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error('Error fetching templates:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger.error("Error processing template request", "template", error);
+    return StandardErrorResponse.internal("Failed to process template request");
   }
 }
 
 // POST /api/templates - Create a new template
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return StandardErrorResponse.unauthorized("Authentication required");
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const validatedData = createTemplateSchema.parse(body);
 
     // Verify category exists if provided
     if (validatedData.categoryId) {
       const category = await db.templateCategory.findUnique({
-        where: { id: validatedData.categoryId }
+        where: { id: validatedData.categoryId },
       });
-      
+
       if (!category) {
-        return NextResponse.json(
-          { error: 'Category not found' },
-          { status: 404 }
-        );
+        return StandardErrorResponse.notFound("Category not found");
       }
     }
 
@@ -151,10 +145,12 @@ export async function POST(request: NextRequest) {
       data: {
         name: validatedData.name,
         description: validatedData.description,
-        ...(validatedData.categoryId && { categoryId: validatedData.categoryId }),
+        ...(validatedData.categoryId && {
+          categoryId: validatedData.categoryId,
+        }),
         config: JSON.stringify(validatedData.config),
         isPublic: validatedData.isPublic,
-        createdBy: userId
+        createdBy: userId,
       },
       include: {
         category: true,
@@ -162,27 +158,23 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            createdAt: true
+            createdAt: true,
           },
           take: 3,
-          orderBy: { createdAt: 'desc' }
-        }
-      }
+          orderBy: { createdAt: "desc" },
+        },
+      },
     });
 
-    return NextResponse.json(template, { status: 201 });
+    return StandardSuccessResponse.created(template);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
+      return handleZodError(error);
     }
 
-    console.error('Error creating template:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    logger.error("Error processing templates request", "template", error);
+    return StandardErrorResponse.internal(
+      "Failed to process templates request",
     );
   }
 }

@@ -1,0 +1,152 @@
+/* Enhanced drag-and-drop animations and visual feedback */
+
+/* Smooth transitions for all drag-drop elements */
+.kanban-column,
+.kanban-task-card,
+.dashboard-widget,
+.sortable-item {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dragging state animations */
+.kanban-task-card[data-dragging="true"],
+.dashboard-widget[data-dragging="true"],
+.sortable-item[data-dragging="true"] {
+  transform: rotate(5deg) scale(1.05);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  opacity: 0.9;
+}
+
+/* Drop zone indicators */
+.kanban-column[data-drop-zone="active"] {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 2px dashed #3b82f6;
+  transform: scale(1.02);
+}
+
+.kanban-column[data-drop-zone="over"] {
+  background-color: rgba(34, 197, 94, 0.1);
+  border: 2px solid #22c55e;
+  transform: scale(1.05);
+}
+
+/* Hover states */
+.kanban-task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.kanban-column:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Drag overlay styles */
+.drag-overlay {
+  transform: rotate(5deg);
+  opacity: 0.8;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Insertion indicator */
+.insertion-indicator {
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  border-radius: 1px;
+  margin: 4px 0;
+  opacity: 0;
+  transform: scaleX(0);
+  transition: all 0.2s ease;
+}
+
+.insertion-indicator.active {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+/* Pulse animation for active drop zones */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.drop-zone-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Smooth column reordering */
+.kanban-columns-container {
+  display: flex;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+/* Task creation animation */
+.task-create-enter {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+}
+
+.task-create-enter-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: all 0.3s ease;
+}
+
+/* Column creation animation */
+.column-create-enter {
+  opacity: 0;
+  transform: translateX(-20px) scale(0.9);
+}
+
+.column-create-enter-active {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  transition: all 0.4s ease;
+}
+
+/* Loading states */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Focus states for accessibility */
+.kanban-task-card:focus,
+.kanban-column:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Responsive animations */
+@media (prefers-reduced-motion: reduce) {
+  .kanban-column,
+  .kanban-task-card,
+  .dashboard-widget,
+  .sortable-item {
+    transition: none;
+  }
+
+  .drop-zone-pulse {
+    animation: none;
+  }
+
+  .loading-shimmer {
+    animation: none;
+  }
+}

@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/conditional-auth";
 import { NextResponse } from "next/server";
 import { SubscriptionService } from "@/lib/subscription-service";
 
@@ -13,29 +13,29 @@ export interface SubscriptionRequirement {
 }
 
 export async function requireSubscription(
-  requirement: SubscriptionRequirement
+  requirement: SubscriptionRequirement,
 ): Promise<{ success: boolean; error?: string; subscription?: any }> {
   try {
     const { userId } = auth();
-    
+
     if (!userId) {
       return {
         success: false,
-        error: "Authentication required"
+        error: "Authentication required",
       };
     }
 
     const subscription = await SubscriptionService.getUserSubscription(userId);
-    
+
     // Check if user has required plan
-    const userPlan = subscription?.plan || 'free';
+    const userPlan = subscription?.plan || "free";
     const hasRequiredPlan = requirement.plans.includes(userPlan);
-    
+
     if (!hasRequiredPlan) {
       return {
         success: false,
-        error: `This feature requires a ${requirement.plans.join(' or ')} subscription`,
-        subscription
+        error: `This feature requires a ${requirement.plans.join(" or ")} subscription`,
+        subscription,
       };
     }
 
@@ -43,27 +43,30 @@ export async function requireSubscription(
     if (requirement.feature) {
       // This would integrate with your usage tracking system
       // For now, we'll just check the plan
-      const hasUsageLeft = await checkFeatureUsage(userId, requirement.feature, userPlan);
-      
+      const hasUsageLeft = await checkFeatureUsage(
+        userId,
+        requirement.feature,
+        userPlan,
+      );
+
       if (!hasUsageLeft) {
         return {
           success: false,
           error: `You've reached the limit for this feature on your ${userPlan} plan`,
-          subscription
+          subscription,
         };
       }
     }
 
     return {
       success: true,
-      subscription
+      subscription,
     };
-
   } catch (error) {
-    console.error('Subscription check error:', error);
+    console.error("Subscription check error:", error);
     return {
       success: false,
-      error: "Failed to verify subscription status"
+      error: "Failed to verify subscription status",
     };
   }
 }
@@ -72,37 +75,37 @@ export async function requireSubscription(
  * Check feature usage against plan limits
  */
 async function checkFeatureUsage(
-  userId: string, 
-  feature: string, 
-  plan: string
+  _userId: string,
+  feature: string,
+  plan: string,
 ): Promise<boolean> {
   // Define plan limits
   const planLimits = {
     free: {
       uploads: 5,
       emails: 10,
-      apiCalls: 100
+      apiCalls: 100,
     },
     pro: {
       uploads: -1, // unlimited
       emails: 1000,
-      apiCalls: 10000
+      apiCalls: 10000,
     },
     enterprise: {
       uploads: -1, // unlimited
       emails: -1, // unlimited
-      apiCalls: -1 // unlimited
-    }
+      apiCalls: -1, // unlimited
+    },
   };
 
   const limits = planLimits[plan as keyof typeof planLimits];
-  
+
   if (!limits) {
     return false;
   }
 
   const limit = limits[feature as keyof typeof limits];
-  
+
   if (limit === -1) {
     return true; // unlimited
   }
@@ -114,7 +117,7 @@ async function checkFeatureUsage(
   // TODO: Implement actual usage tracking
   // This is where you'd query your database for current usage
   // For now, we'll return true (assuming usage is within limits)
-  
+
   return true;
 }
 
@@ -123,25 +126,25 @@ async function checkFeatureUsage(
  */
 export function withSubscription(
   handler: (req: Request, context: any) => Promise<Response>,
-  requirement: SubscriptionRequirement
+  requirement: SubscriptionRequirement,
 ) {
   return async (req: Request, context: any) => {
     const subscriptionCheck = await requireSubscription(requirement);
-    
+
     if (!subscriptionCheck.success) {
       return NextResponse.json(
-        { 
+        {
           error: subscriptionCheck.error,
-          upgrade: true 
+          upgrade: true,
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     // Add subscription info to context
     const enhancedContext = {
       ...context,
-      subscription: subscriptionCheck.subscription
+      subscription: subscriptionCheck.subscription,
     };
 
     return handler(req, enhancedContext);
@@ -153,26 +156,26 @@ export function withSubscription(
  * Returns redirect information if access denied
  */
 export async function checkPageAccess(
-  requirement: SubscriptionRequirement
-): Promise<{ 
-  allowed: boolean; 
-  error?: string; 
+  requirement: SubscriptionRequirement,
+): Promise<{
+  allowed: boolean;
+  error?: string;
   subscription?: any;
   redirectTo?: string;
 }> {
   const subscriptionCheck = await requireSubscription(requirement);
-  
+
   if (!subscriptionCheck.success) {
     return {
       allowed: false,
       error: subscriptionCheck.error,
-      redirectTo: '/dashboard?upgrade=true'
+      redirectTo: "/dashboard?upgrade=true",
     };
   }
 
   return {
     allowed: true,
-    subscription: subscriptionCheck.subscription
+    subscription: subscriptionCheck.subscription,
   };
 }
 
@@ -186,7 +189,7 @@ export function createProtectedRoute(
     PUT?: (req: Request, context: any) => Promise<Response>;
     DELETE?: (req: Request, context: any) => Promise<Response>;
   },
-  requirement: SubscriptionRequirement
+  requirement: SubscriptionRequirement,
 ) {
   const protectedHandlers: any = {};
 

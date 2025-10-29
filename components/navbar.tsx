@@ -2,25 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { ConditionalSignedIn, ConditionalSignedOut, ConditionalUserButton } from "@/components/conditional-clerk";
 import { Button } from "@/components/ui/button";
 import NotificationCenter from "@/components/notification-center";
-import { 
-  Home, 
-  Upload, 
-  Mail, 
-  CreditCard, 
-  Zap,
+import {
+  Home,
+  Upload,
+  Mail,
+  CreditCard,
   Search,
-  BarChart3
+  BarChart3,
+  Layers,
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
+  { name: "Showcase", href: "/showcase", icon: Layers },
   { name: "File Upload", href: "/upload", icon: Upload },
   { name: "Email Demo", href: "/email", icon: Mail },
   { name: "Payments", href: "/payments", icon: CreditCard },
-  { name: "Real-time", href: "/realtime", icon: Zap },
   { name: "SEO Demo", href: "/seo", icon: Search },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
 ];
@@ -36,7 +36,7 @@ export default function Navbar() {
             <div className="h-6 w-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded"></div>
             <span className="font-semibold">Fullstack Template</span>
           </Link>
-          
+
           <nav className="hidden md:flex items-center gap-6">
             {navigation.map((item) => {
               const Icon = item.icon;
@@ -46,9 +46,7 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   className={`flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary ${
-                    isActive 
-                      ? "text-foreground" 
-                      : "text-muted-foreground"
+                    isActive ? "text-foreground" : "text-muted-foreground"
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -60,18 +58,18 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <SignedIn>
+          <ConditionalSignedIn>
             <NotificationCenter />
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
-          <SignedOut>
+            <ConditionalUserButton afterSignOutUrl="/" />
+          </ConditionalSignedIn>
+          <ConditionalSignedOut>
             <Button asChild variant="ghost">
               <Link href="/sign-in">Sign In</Link>
             </Button>
             <Button asChild>
               <Link href="/sign-up">Sign Up</Link>
             </Button>
-          </SignedOut>
+          </ConditionalSignedOut>
         </div>
       </div>
     </header>

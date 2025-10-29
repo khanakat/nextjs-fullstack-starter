@@ -6,7 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Globe, Share2, BarChart3 } from "lucide-react";
-import { seoConfig, generateMetadata, structuredDataGenerators } from "@/lib/seo";
+import {
+  seoConfig,
+  generateMetadata,
+  structuredDataGenerators,
+} from "@/lib/seo";
 import { useSEO } from "@/hooks/use-seo";
 import Breadcrumb from "@/components/breadcrumb";
 import StructuredData from "@/components/structured-data";
@@ -21,36 +25,37 @@ export default function SEODemo() {
       icon: Search,
       title: "SEO Optimization",
       description: "Comprehensive metadata generation for search engines",
-      color: "text-green-600"
+      color: "text-green-600",
     },
     {
       icon: Globe,
       title: "Open Graph",
       description: "Rich social media previews for Facebook, LinkedIn, etc.",
-      color: "text-blue-600"
+      color: "text-blue-600",
     },
     {
       icon: Share2,
       title: "Twitter Cards",
       description: "Optimized Twitter sharing with image previews",
-      color: "text-purple-600"
+      color: "text-purple-600",
     },
     {
       icon: BarChart3,
       title: "Structured Data",
       description: "JSON-LD markup for enhanced search results",
-      color: "text-orange-600"
-    }
+      color: "text-orange-600",
+    },
   ];
 
   // Example metadata generation
   const exampleMetadata = generateMetadata({
     title: "SEO System Demo",
-    description: "Comprehensive SEO and metadata management system for Next.js applications.",
+    description:
+      "Comprehensive SEO and metadata management system for Next.js applications.",
     ogImage: "/demo-image.jpg",
     keywords: ["SEO", "Next.js", "React", "Metadata", "Open Graph"],
     authors: ["Your Name"],
-    structuredData: structuredData
+    structuredData: structuredData,
   });
 
   // Example structured data
@@ -62,8 +67,8 @@ export default function SEODemo() {
       description: "Learn how to optimize your website for search engines",
       author: "SEO Expert",
       publishedTime: "2024-01-15T10:00:00Z",
-      url: canonicalUrl
-    })
+      url: canonicalUrl,
+    }),
   ];
 
   return (
@@ -78,7 +83,8 @@ export default function SEODemo() {
             <div>
               <CardTitle className="text-xl">SEO & Metadata System</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Complete SEO optimization with dynamic metadata, Open Graph, and structured data
+                Complete SEO optimization with dynamic metadata, Open Graph, and
+                structured data
               </p>
             </div>
           </div>
@@ -88,11 +94,18 @@ export default function SEODemo() {
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Icon className={`h-5 w-5 ${feature.color} flex-shrink-0 mt-0.5`} />
+                <div
+                  key={index}
+                  className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                >
+                  <Icon
+                    className={`h-5 w-5 ${feature.color} flex-shrink-0 mt-0.5`}
+                  />
                   <div>
                     <div className="font-medium text-sm">{feature.title}</div>
-                    <div className="text-xs text-muted-foreground">{feature.description}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {feature.description}
+                    </div>
                   </div>
                 </div>
               );
@@ -109,14 +122,20 @@ export default function SEODemo() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <div className="text-sm font-medium mb-2">Breadcrumb Navigation</div>
+              <div className="text-sm font-medium mb-2">
+                Breadcrumb Navigation
+              </div>
               <Breadcrumb items={breadcrumbs} />
             </div>
             <div>
               <div className="text-sm font-medium mb-2">Page Details</div>
               <div className="space-y-1 text-sm text-muted-foreground">
-                <div>Type: <Badge variant="outline">{pageType}</Badge></div>
-                <div>Canonical: <code className="text-xs">{canonicalUrl}</code></div>
+                <div>
+                  Type: <Badge variant="outline">{pageType}</Badge>
+                </div>
+                <div>
+                  Canonical: <code className="text-xs">{canonicalUrl}</code>
+                </div>
               </div>
             </div>
           </div>
@@ -140,16 +159,21 @@ export default function SEODemo() {
             <TabsContent value="metadata" className="mt-6">
               <div className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Dynamic Metadata Generation</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Dynamic Metadata Generation
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    Automatically generate comprehensive HTML metadata for better SEO
+                    Automatically generate comprehensive HTML metadata for
+                    better SEO
                   </p>
                 </div>
-                
+
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm font-medium mb-2">Generated HTML Meta Tags:</div>
+                  <div className="text-sm font-medium mb-2">
+                    Generated HTML Meta Tags:
+                  </div>
                   <pre className="text-xs bg-white p-3 rounded border overflow-auto">
-{`<title>${exampleMetadata.title}</title>
+                    {`<title>${exampleMetadata.title}</title>
 <meta name="description" content="${exampleMetadata.description}" />
 <meta name="robots" content="index,follow" />
 <meta property="og:title" content="${exampleMetadata.title}" />
@@ -166,12 +190,15 @@ export default function SEODemo() {
             <TabsContent value="opengraph" className="mt-6">
               <div className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Social Media Preview</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Social Media Preview
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    Rich previews for Facebook, LinkedIn, and other social platforms
+                    Rich previews for Facebook, LinkedIn, and other social
+                    platforms
                   </p>
                 </div>
-                
+
                 <div className="max-w-md mx-auto">
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
                     <div className="h-32 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
@@ -181,11 +208,16 @@ export default function SEODemo() {
                       </div>
                     </div>
                     <div className="p-3">
-                      <div className="text-sm font-medium mb-1">SEO System Demo | FullStack Template</div>
-                      <div className="text-xs text-muted-foreground mb-2">
-                        Comprehensive SEO and metadata management system for Next.js applications.
+                      <div className="text-sm font-medium mb-1">
+                        SEO System Demo | FullStack Template
                       </div>
-                      <div className="text-xs text-muted-foreground">{seoConfig.siteUrl}</div>
+                      <div className="text-xs text-muted-foreground mb-2">
+                        Comprehensive SEO and metadata management system for
+                        Next.js applications.
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {seoConfig.siteUrl}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -195,19 +227,24 @@ export default function SEODemo() {
             <TabsContent value="structured" className="mt-6">
               <div className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Structured Data (JSON-LD)</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Structured Data (JSON-LD)
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    Enhanced search results with rich snippets and knowledge panels
+                    Enhanced search results with rich snippets and knowledge
+                    panels
                   </p>
                 </div>
-                
+
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm font-medium mb-2">Generated JSON-LD:</div>
+                  <div className="text-sm font-medium mb-2">
+                    Generated JSON-LD:
+                  </div>
                   <pre className="text-xs bg-white p-3 rounded border overflow-auto max-h-64">
                     {JSON.stringify(exampleStructuredData[0], null, 2)}
                   </pre>
                 </div>
-                
+
                 {/* Inject actual structured data */}
                 <StructuredData data={exampleStructuredData} />
               </div>
@@ -216,31 +253,42 @@ export default function SEODemo() {
             <TabsContent value="tools" className="mt-6">
               <div className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">SEO Testing Tools</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    SEO Testing Tools
+                  </h3>
                   <p className="text-sm text-muted-foreground">
                     Links to validate and test your SEO implementation
                   </p>
                 </div>
-                
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm">Google Testing Tools</CardTitle>
+                      <CardTitle className="text-sm">
+                        Google Testing Tools
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="w-full justify-start"
-                        onClick={() => window.open('https://search.google.com/test/rich-results', '_blank')}
+                        onClick={() =>
+                          window.open(
+                            "https://search.google.com/test/rich-results",
+                            "_blank",
+                          )
+                        }
                       >
                         Rich Results Test
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="w-full justify-start"
-                        onClick={() => window.open('https://pagespeed.web.dev/', '_blank')}
+                        onClick={() =>
+                          window.open("https://pagespeed.web.dev/", "_blank")
+                        }
                       >
                         PageSpeed Insights
                       </Button>
@@ -249,22 +297,34 @@ export default function SEODemo() {
 
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm">Social Media Testing</CardTitle>
+                      <CardTitle className="text-sm">
+                        Social Media Testing
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="w-full justify-start"
-                        onClick={() => window.open('https://developers.facebook.com/tools/debug/', '_blank')}
+                        onClick={() =>
+                          window.open(
+                            "https://developers.facebook.com/tools/debug/",
+                            "_blank",
+                          )
+                        }
                       >
                         Facebook Debugger
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="w-full justify-start"
-                        onClick={() => window.open('https://cards-dev.twitter.com/validator', '_blank')}
+                        onClick={() =>
+                          window.open(
+                            "https://cards-dev.twitter.com/validator",
+                            "_blank",
+                          )
+                        }
                       >
                         Twitter Card Validator
                       </Button>
@@ -287,7 +347,9 @@ export default function SEODemo() {
             <div className="space-y-2">
               <h4 className="font-medium">Features Included</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Dynamic metadata generation with Next.js 14 Metadata API</li>
+                <li>
+                  • Dynamic metadata generation with Next.js 14 Metadata API
+                </li>
                 <li>• Open Graph and Twitter Card optimization</li>
                 <li>• Structured data (JSON-LD) for rich snippets</li>
                 <li>• SEO-friendly breadcrumb navigation</li>
@@ -298,11 +360,23 @@ export default function SEODemo() {
             <div className="space-y-2">
               <h4 className="font-medium">Files Created</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• <code>lib/seo.ts</code> - SEO utilities and config</li>
-                <li>• <code>hooks/use-seo.ts</code> - SEO React hooks</li>
-                <li>• <code>components/structured-data.tsx</code> - JSON-LD component</li>
-                <li>• <code>components/breadcrumb.tsx</code> - Navigation component</li>
-                <li>• <code>components/seo-demo.tsx</code> - Demo interface</li>
+                <li>
+                  • <code>lib/seo.ts</code> - SEO utilities and config
+                </li>
+                <li>
+                  • <code>hooks/use-seo.ts</code> - SEO React hooks
+                </li>
+                <li>
+                  • <code>components/structured-data.tsx</code> - JSON-LD
+                  component
+                </li>
+                <li>
+                  • <code>components/breadcrumb.tsx</code> - Navigation
+                  component
+                </li>
+                <li>
+                  • <code>components/seo-demo.tsx</code> - Demo interface
+                </li>
               </ul>
             </div>
           </div>

@@ -19,6 +19,7 @@ cp .env.local.example .env.local
 ```
 
 ### **Useful commands:**
+
 ```bash
 # Service management
 npm run postgres:local:start    # Start PostgreSQL
@@ -45,12 +46,14 @@ npm run postgres:docker:start
 ```
 
 ### **Included tools:**
+
 - **Adminer**: http://localhost:8080 (simple web admin)
 - **PgAdmin**: http://localhost:5050 (advanced admin)
   - User: `admin@fullstack.local`
   - Password: `admin123`
 
 ### **Docker commands:**
+
 ```bash
 npm run postgres:docker:start     # Start everything
 npm run postgres:docker:stop      # Stop
@@ -63,6 +66,7 @@ npm run postgres:docker:shell     # Direct PostgreSQL access
 ## 📋 Después de configurar PostgreSQL
 
 ### **1. Configurar base de datos:**
+
 ```bash
 # Aplicar esquema a la base de datos
 npm run db:push
@@ -75,6 +79,7 @@ npm run db:studio
 ```
 
 ### **2. Verificar conexión:**
+
 ```bash
 # Verificar que todo funcione
 npm run dev
@@ -86,6 +91,7 @@ npm run dev
 ## ⚠️ Solución de Problemas
 
 ### **PostgreSQL Local no inicia:**
+
 ```bash
 # Verificar si el servicio existe
 npm run postgres:local:status
@@ -95,6 +101,7 @@ npm run postgres:local:install
 ```
 
 ### **Docker no funciona:**
+
 ```bash
 # Verificar Docker Desktop
 docker --version
@@ -107,6 +114,7 @@ npm run postgres:docker:logs
 ```
 
 ### **Error de conexión:**
+
 1. Verificar que PostgreSQL esté ejecutándose
 2. Verificar DATABASE_URL en `.env.local`
 3. Verificar que la base de datos existe:
@@ -126,7 +134,7 @@ npm run db:switch:postgresql
 npm run db:push
 
 # Cambiar a SQLite (desarrollo rápido)
-npm run db:switch:sqlite  
+npm run db:switch:sqlite
 npm run db:push
 ```
 
@@ -149,9 +157,9 @@ npm run db:help
 
 ## 📊 Resumen de URLs
 
-| Servicio | URL | Credenciales |
-|----------|-----|--------------|
-| **App Local** | http://localhost:3000 | Tu usuario Clerk |
-| **Prisma Studio** | http://localhost:5555 | - |
-| **Adminer (Docker)** | http://localhost:8080 | postgres / postgres123 |
+| Servicio             | URL                   | Credenciales                     |
+| -------------------- | --------------------- | -------------------------------- |
+| **App Local**        | http://localhost:3000 | Tu usuario Clerk                 |
+| **Prisma Studio**    | http://localhost:5555 | -                                |
+| **Adminer (Docker)** | http://localhost:8080 | postgres / postgres123           |
 | **PgAdmin (Docker)** | http://localhost:5050 | admin@fullstack.local / admin123 |

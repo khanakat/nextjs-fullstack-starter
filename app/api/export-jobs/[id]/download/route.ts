@@ -1,16 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
+import { NextRequest, NextResponse } from "next/server";
+import { StandardErrorResponse } from "@/lib/standardized-error-responses";
+import { logger } from "@/lib/logger";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
+import { generateRequestId } from "@/lib/utils";
+import { FileStorageService } from "@/lib/services/file-storage-service";
+import { promises as fs } from "fs";
 
 // GET /api/export-jobs/[id]/download - Download exported file
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: { id: string } },
 ) {
+  const requestId = generateRequestId();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return StandardErrorResponse.unauthorized(
+        "Authentication required to download export job",
+        requestId,
+      );
     }
 
     const jobId = params.id;
@@ -19,85 +29,134 @@ export async function GET(
     const exportJob = await db.exportJob.findUnique({
       where: { id: jobId },
       include: {
-        report: true
-      }
+        report: true,
+      },
     });
 
     if (!exportJob) {
-      return NextResponse.json(
-        { error: 'Export job not found' },
-        { status: 404 }
-      );
+      return StandardErrorResponse.notFound("Export job not found", requestId);
     }
 
     // Check if user owns the job
     if (exportJob.userId !== userId) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      );
+      return StandardErrorResponse.forbidden("Access denied", requestId);
     }
 
     // Check if job is completed and has a file
-    if (exportJob.status !== 'completed' || !exportJob.downloadUrl) {
-      return NextResponse.json(
-        { error: 'File not available for download' },
-        { status: 400 }
+    if (exportJob.status !== "completed" || !exportJob.downloadUrl) {
+      return StandardErrorResponse.badRequest(
+        "File not available for download",
+        requestId,
       );
     }
 
     // Check if file has expired (if completedAt is more than 24 hours ago)
-    if (exportJob.completedAt && new Date().getTime() - exportJob.completedAt.getTime() > 24 * 60 * 60 * 1000) {
-      return NextResponse.json(
-        { error: 'File has expired' },
-        { status: 410 }
-      );
+    if (
+      exportJob.completedAt &&
+      new Date().getTime() - exportJob.completedAt.getTime() >
+        24 * 60 * 60 * 1000
+    ) {
+      return StandardErrorResponse.badRequest("File has expired", requestId);
     }
 
-    // TODO: In a real implementation, you would:
-    // 1. Fetch the file from your storage service (S3, etc.)
-    // 2. Stream the file content to the response
-    // 3. Set appropriate headers for file download
-    
-    // For now, we'll return a redirect to the file URL
-    // In production, you might want to generate signed URLs or stream the file directly
-    
-    const fileExtension = exportJob.format === 'excel' ? 'xlsx' : exportJob.format;
-    const fileName = `${exportJob.report.name.replace(/[^a-zA-Z0-9]/g, '_')}.${fileExtension}`;
-    
-    // Set headers for file download
-    const headers = new Headers();
-    headers.set('Content-Disposition', `attachment; filename="${fileName}"`);
-    headers.set('Content-Type', getContentType(exportJob.format));
-    
-    // In a real implementation, you would stream the file content here
-    // For now, we'll return a success response with download information
-    return NextResponse.json({
-      downloadUrl: exportJob.downloadUrl,
-      fileName,
-      contentType: getContentType(exportJob.format)
+    // ✅ Fixed: Proper file serving implementation
+    try {
+      // Use filePath from database if available, otherwise extract from URL
+      let filePath = exportJob.filePath;
+
+      if (!filePath) {
+        filePath = await FileStorageService.extractFilePathFromUrl(
+          exportJob.downloadUrl,
+        );
+      }
+
+      if (!filePath) {
+        logger.error("Could not find file path for export job", "export-jobs", {
+          requestId,
+          downloadUrl: exportJob.downloadUrl,
+          exportJobId: params.id,
+        });
+
+        return StandardErrorResponse.notFound("File not found", requestId);
+      }
+
+      // Check if file exists
+      const fileInfo = await FileStorageService.getFileInfo(filePath);
+      if (!fileInfo.exists) {
+        logger.error("Export file not found in storage", "export-jobs", {
+          requestId,
+          filePath,
+          exportJobId: params.id,
+        });
+
+        return StandardErrorResponse.notFound(
+          "Export file not found",
+          requestId,
+        );
+      }
+
+      // Read file content
+      const fileContent = await fs.readFile(filePath);
+
+      // Generate appropriate filename
+      const fileExtension =
+        exportJob.format === "excel" ? "xlsx" : exportJob.format;
+      const fileName = `${exportJob.report.name.replace(/[^a-zA-Z0-9]/g, "_")}.${fileExtension}`;
+
+      // Set headers for file download
+      const headers = new Headers();
+      headers.set("Content-Disposition", `attachment; filename="${fileName}"`);
+      headers.set("Content-Type", getContentType(exportJob.format));
+      headers.set("Content-Length", fileContent.length.toString());
+      headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+
+      logger.info("File served successfully", "export-jobs", {
+        requestId,
+        fileName,
+        fileSize: fileContent.length,
+        contentType: getContentType(exportJob.format),
+        exportJobId: params.id,
+      });
+
+      // Return file as response
+      return new NextResponse(new Uint8Array(fileContent), {
+        status: 200,
+        headers,
+      });
+    } catch (fileError) {
+      logger.error("Failed to serve export file", "export-jobs", fileError);
+
+      return StandardErrorResponse.internal(
+        "Failed to serve export file",
+        requestId,
+      );
+    }
+  } catch (error) {
+    logger.error("Error processing export job request", {
+      requestId,
+      resourceId: params.id,
+      endpoint: "/api/export-jobs/:id/download",
+      error: error instanceof Error ? error.message : error,
     });
 
-  } catch (error) {
-    console.error('Error downloading export file:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    return StandardErrorResponse.internal(
+      "Failed to process export job request",
+      requestId,
     );
   }
 }
 
 function getContentType(format: string): string {
   switch (format) {
-    case 'pdf':
-      return 'application/pdf';
-    case 'excel':
-      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    case 'csv':
-      return 'text/csv';
-    case 'png':
-      return 'image/png';
+    case "pdf":
+      return "application/pdf";
+    case "excel":
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    case "csv":
+      return "text/csv";
+    case "png":
+      return "image/png";
     default:
-      return 'application/octet-stream';
+      return "application/octet-stream";
   }
 }

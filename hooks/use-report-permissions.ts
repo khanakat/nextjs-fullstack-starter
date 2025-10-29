@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 
 export interface ReportPermission {
   id: string;
@@ -9,7 +9,7 @@ export interface ReportPermission {
   userId: string;
   userEmail: string;
   userName: string;
-  role: 'viewer' | 'editor' | 'admin';
+  role: "viewer" | "editor" | "admin";
   grantedBy: string;
   grantedAt: string;
   expiresAt?: string;
@@ -18,7 +18,7 @@ export interface ReportPermission {
 export interface PermissionRequest {
   userId: string;
   userEmail: string;
-  role: 'viewer' | 'editor' | 'admin';
+  role: "viewer" | "editor" | "admin";
   expiresAt?: string;
 }
 
@@ -33,7 +33,7 @@ export function useReportPermissions(reportId?: string) {
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
 
-  const fetchPermissions = async () => {
+  const fetchPermissions = useCallback(async () => {
     if (!reportId) {
       setLoading(false);
       return;
@@ -43,38 +43,41 @@ export function useReportPermissions(reportId?: string) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/reports/permissions?reportId=${reportId}`);
-      
+      const response = await fetch(
+        `/api/reports/permissions?reportId=${reportId}`,
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to fetch permissions');
+        throw new Error("Failed to fetch permissions");
       }
 
       const data: PermissionsResponse = await response.json();
       setPermissions(data.permissions);
       setTotal(data.total);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [reportId]);
 
   useEffect(() => {
     fetchPermissions();
-  }, [reportId]);
+  }, [reportId, fetchPermissions]);
 
   const addPermission = async (permission: PermissionRequest) => {
     if (!reportId) {
-      throw new Error('Report ID is required');
+      throw new Error("Report ID is required");
     }
 
     try {
-      const response = await fetch('/api/reports/permissions', {
-        method: 'POST',
+      const response = await fetch("/api/reports/permissions", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           reportId,
@@ -84,42 +87,49 @@ export function useReportPermissions(reportId?: string) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add permission');
+        throw new Error(errorData.error || "Failed to add permission");
       }
 
       const newPermission: ReportPermission = await response.json();
-      setPermissions(prev => [...prev, newPermission]);
-      setTotal(prev => prev + 1);
+      setPermissions((prev) => [...prev, newPermission]);
+      setTotal((prev) => prev + 1);
       toast.success(`Permission granted to ${permission.userEmail}`);
       return newPermission;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to add permission';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to add permission";
       toast.error(errorMessage);
       throw err;
     }
   };
 
-  const updatePermission = async (permissionId: string, updates: Partial<Pick<ReportPermission, 'role' | 'expiresAt'>>) => {
+  const updatePermission = async (
+    permissionId: string,
+    updates: Partial<Pick<ReportPermission, "role" | "expiresAt">>,
+  ) => {
     try {
       const response = await fetch(`/api/reports/permissions/${permissionId}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(updates),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update permission');
+        throw new Error(errorData.error || "Failed to update permission");
       }
 
       const updatedPermission: ReportPermission = await response.json();
-      setPermissions(prev => prev.map(p => p.id === permissionId ? updatedPermission : p));
-      toast.success('Permission updated successfully');
+      setPermissions((prev) =>
+        prev.map((p) => (p.id === permissionId ? updatedPermission : p)),
+      );
+      toast.success("Permission updated successfully");
       return updatedPermission;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update permission';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to update permission";
       toast.error(errorMessage);
       throw err;
     }
@@ -128,32 +138,40 @@ export function useReportPermissions(reportId?: string) {
   const removePermission = async (permissionId: string) => {
     try {
       const response = await fetch(`/api/reports/permissions/${permissionId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to remove permission');
+        throw new Error(errorData.error || "Failed to remove permission");
       }
 
-      const removedPermission = permissions.find(p => p.id === permissionId);
-      setPermissions(prev => prev.filter(p => p.id !== permissionId));
-      setTotal(prev => prev - 1);
-      toast.success(`Permission removed from ${removedPermission?.userEmail || 'user'}`);
+      const removedPermission = permissions.find((p) => p.id === permissionId);
+      setPermissions((prev) => prev.filter((p) => p.id !== permissionId));
+      setTotal((prev) => prev - 1);
+      toast.success(
+        `Permission removed from ${removedPermission?.userEmail || "user"}`,
+      );
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to remove permission';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to remove permission";
       toast.error(errorMessage);
       throw err;
     }
   };
 
-  const bulkUpdatePermissions = async (permissionIds: string[], updates: Partial<Pick<ReportPermission, 'role' | 'expiresAt'>>) => {
+  const bulkUpdatePermissions = async (
+    permissionIds: string[],
+    updates: Partial<Pick<ReportPermission, "role" | "expiresAt">>,
+  ) => {
     try {
-      const updatePromises = permissionIds.map(id => updatePermission(id, updates));
+      const updatePromises = permissionIds.map((id) =>
+        updatePermission(id, updates),
+      );
       const results = await Promise.allSettled(updatePromises);
-      
-      const successful = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
+
+      const successful = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
 
       if (successful > 0) {
         toast.success(`Updated ${successful} permissions`);
@@ -164,7 +182,8 @@ export function useReportPermissions(reportId?: string) {
 
       return { successful, failed };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update permissions';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to update permissions";
       toast.error(errorMessage);
       throw err;
     }
@@ -172,11 +191,11 @@ export function useReportPermissions(reportId?: string) {
 
   const bulkRemovePermissions = async (permissionIds: string[]) => {
     try {
-      const removePromises = permissionIds.map(id => removePermission(id));
+      const removePromises = permissionIds.map((id) => removePermission(id));
       const results = await Promise.allSettled(removePromises);
-      
-      const successful = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
+
+      const successful = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
 
       if (successful > 0) {
         toast.success(`Removed ${successful} permissions`);
@@ -187,17 +206,21 @@ export function useReportPermissions(reportId?: string) {
 
       return { successful, failed };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to remove permissions';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to remove permissions";
       toast.error(errorMessage);
       throw err;
     }
   };
 
   const checkUserPermission = (userId: string): ReportPermission | null => {
-    return permissions.find(p => p.userId === userId) || null;
+    return permissions.find((p) => p.userId === userId) || null;
   };
 
-  const hasPermission = (userId: string, requiredRole: 'viewer' | 'editor' | 'admin'): boolean => {
+  const hasPermission = (
+    userId: string,
+    requiredRole: "viewer" | "editor" | "admin",
+  ): boolean => {
     const permission = checkUserPermission(userId);
     if (!permission) return false;
 
@@ -211,20 +234,22 @@ export function useReportPermissions(reportId?: string) {
     return roleHierarchy[permission.role] >= roleHierarchy[requiredRole];
   };
 
-  const getPermissionsByRole = (role: 'viewer' | 'editor' | 'admin') => {
-    return permissions.filter(p => p.role === role);
+  const getPermissionsByRole = (role: "viewer" | "editor" | "admin") => {
+    return permissions.filter((p) => p.role === role);
   };
 
   const getExpiredPermissions = () => {
     const now = new Date();
-    return permissions.filter(p => p.expiresAt && new Date(p.expiresAt) < now);
+    return permissions.filter(
+      (p) => p.expiresAt && new Date(p.expiresAt) < now,
+    );
   };
 
   const getExpiringPermissions = (days: number = 7) => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + days);
-    
-    return permissions.filter(p => {
+
+    return permissions.filter((p) => {
       if (!p.expiresAt) return false;
       const expiryDate = new Date(p.expiresAt);
       return expiryDate > new Date() && expiryDate <= futureDate;
@@ -237,10 +262,13 @@ export function useReportPermissions(reportId?: string) {
 
   // Get permission statistics
   const getStats = () => {
-    const stats = permissions.reduce((acc, permission) => {
-      acc[permission.role] = (acc[permission.role] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const stats = permissions.reduce(
+      (acc, permission) => {
+        acc[permission.role] = (acc[permission.role] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     const expired = getExpiredPermissions().length;
     const expiring = getExpiringPermissions().length;

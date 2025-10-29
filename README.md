@@ -29,6 +29,7 @@
 <td>
 
 **🎯 Core Framework**
+
 - ⚡ Next.js 14 with App Router
 - 🔷 TypeScript for type safety
 - 🎨 TailwindCSS for styling
@@ -38,6 +39,7 @@
 <td>
 
 **🔐 Authentication**
+
 - 🛡️ Clerk Auth (v5.6.0)
 - 👥 User management
 - 🔒 Protected routes
@@ -49,6 +51,7 @@
 <td>
 
 **💾 Database**
+
 - 🐘 PostgreSQL primary
 - 🗃️ SQLite development option
 - ⚡ Prisma ORM
@@ -58,6 +61,7 @@
 <td>
 
 **🎨 UI Components**
+
 - 🧩 shadcn/ui components
 - 🌓 Dark/Light theme
 - ♿ Accessibility ready
@@ -69,6 +73,7 @@
 <td>
 
 **📁 File Upload**
+
 - 📤 UploadThing integration
 - 🖼️ Image upload components
 - 📄 Document handling
@@ -78,6 +83,7 @@
 <td>
 
 **⚡ Advanced Features**
+
 - 🔄 React Query caching
 - 🛠️ Server Actions
 - 📝 Form validation
@@ -108,6 +114,7 @@ cp .env.example .env.local
 ```
 
 Configure your `.env.local` with:
+
 - Clerk authentication keys
 - Database URL
 - Other environment variables
@@ -115,16 +122,19 @@ Configure your `.env.local` with:
 ### 3️⃣ **Database Setup**
 
 **Option A: Quick PostgreSQL (Docker)**
+
 ```bash
 npm run db:postgres:docker
 ```
 
 **Option B: Local PostgreSQL**
+
 ```bash
 npm run db:postgres:local
 ```
 
 **Option C: Development SQLite**
+
 ```bash
 npm run db:sqlite
 ```
@@ -141,14 +151,14 @@ npm run dev
 
 ## 📖 Documentation
 
-| Guide | Description |
-|-------|-------------|
-| [📚 Getting Started](./docs/getting-started) | Installation, setup, and first steps |
-| [🔐 Authentication](./docs/guides/authentication.md) | Clerk setup and user management |
-| [💾 Database](./docs/guides/database.md) | PostgreSQL, Prisma, and migrations |
-| [🚀 Deployment](./docs/guides/deployment.md) | Vercel, Docker, and production tips |
-| [🏗️ Architecture](./docs/architecture) | Project structure and patterns |
-| [🎯 Examples](./docs/examples) | Code samples and tutorials |
+| Guide                                                | Description                          |
+| ---------------------------------------------------- | ------------------------------------ |
+| [📚 Getting Started](./docs/getting-started)         | Installation, setup, and first steps |
+| [🔐 Authentication](./docs/guides/authentication.md) | Clerk setup and user management      |
+| [💾 Database](./docs/guides/database.md)             | PostgreSQL, Prisma, and migrations   |
+| [🚀 Deployment](./docs/guides/deployment.md)         | Vercel, Docker, and production tips  |
+| [🏗️ Architecture](./docs/architecture)               | Project structure and patterns       |
+| [🎯 Examples](./docs/examples)                       | Code samples and tutorials           |
 
 ---
 
@@ -185,6 +195,7 @@ npm run lint         # ESLint checks
 <summary><b>🏢 SaaS Applications</b></summary>
 
 Perfect for building SaaS products with:
+
 - User authentication and management
 - Subscription billing integration
 - Multi-tenant architecture
@@ -195,6 +206,7 @@ Perfect for building SaaS products with:
 <summary><b>📱 Social Platforms</b></summary>
 
 Ideal foundation for:
+
 - User profiles and social features
 - Content management systems
 - Real-time notifications
@@ -205,6 +217,7 @@ Ideal foundation for:
 <summary><b>🛒 E-commerce Sites</b></summary>
 
 Ready for online stores with:
+
 - Product catalog management
 - User accounts and orders
 - Payment processing integration
@@ -220,14 +233,14 @@ graph TB
     A[Frontend] --> B[Next.js 14 + TypeScript]
     A --> C[shadcn/ui + TailwindCSS]
     A --> D[React Query]
-    
+
     E[Backend] --> F[Next.js API Routes]
     E --> G[Prisma ORM]
     E --> H[PostgreSQL/SQLite]
-    
+
     I[Auth] --> J[Clerk Authentication]
     I --> K[Protected Routes]
-    
+
     L[DevOps] --> M[Docker Support]
     L --> N[Vercel Ready]
     L --> O[TypeScript Config]
@@ -240,9 +253,11 @@ graph TB
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ### 🐛 Found a bug?
+
 [Create an issue](https://github.com/khanakat/nextjs-fullstack-starter/issues)
 
 ### 💡 Have a feature request?
+
 [Start a discussion](https://github.com/khanakat/nextjs-fullstack-starter/discussions)
 
 ---

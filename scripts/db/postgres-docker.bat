@@ -1,6 +1,6 @@
 @echo off
-REM Script para gestionar Docker PostgreSQL
-REM Uso: scripts\db\postgres-docker.bat [start|stop|restart|status|logs|shell]
+REM Script to manage Docker PostgreSQL
+REM Usage: scripts\db\postgres-docker.bat [start|stop|restart|status|logs|shell]
 
 setlocal
 
@@ -96,53 +96,53 @@ if %errorlevel% equ 0 (
 goto end
 
 :status
-echo 📊 Estado de contenedores:
+echo 📊 Container status:
 echo.
 docker-compose -f %COMPOSE_FILE% ps
 echo.
-echo 🔍 Contenedores PostgreSQL:
+echo 🔍 PostgreSQL containers:
 docker ps --filter "name=%POSTGRES_CONTAINER%"
 goto end
 
 :logs
-echo 📋 Logs de PostgreSQL:
+echo 📋 PostgreSQL logs:
 echo.
 docker-compose -f %COMPOSE_FILE% logs -f postgres
 goto end
 
 :shell
-echo 🐚 Accediendo al shell de PostgreSQL...
-echo    (Usa \q para salir)
+echo 🐚 Accessing PostgreSQL shell...
+echo    (Use \q to exit)
 echo.
 docker exec -it %POSTGRES_CONTAINER% psql -U postgres -d fullstack_template
 goto end
 
 :adminer
-echo 🌐 Abriendo Adminer...
+echo 🌐 Opening Adminer...
 start http://localhost:8080
 goto end
 
 :pgadmin
-echo 🌐 Abriendo PgAdmin...
-echo    Usuario: admin@fullstack.local
-echo    Contraseña: admin123
+echo 🌐 Opening PgAdmin...
+echo    User: admin@fullstack.local
+echo    Password: admin123
 start http://localhost:5050
 goto end
 
 :reset
-echo ⚠️  ADVERTENCIA: Esto eliminará todos los datos de PostgreSQL
-set /p confirm="¿Estás seguro? (y/N): "
+echo ⚠️  WARNING: This will delete all PostgreSQL data
+set /p confirm="Are you sure? (y/N): "
 if /i not "%confirm%"=="y" goto end
 
-echo 🗑️  Eliminando contenedores y volúmenes...
+echo 🗑️  Removing containers and volumes...
 docker-compose -f %COMPOSE_FILE% down -v --remove-orphans
 docker system prune -f
 
 if %errorlevel% equ 0 (
-    echo ✅ Reset completado
-    echo    Ejecuta 'start' para reiniciar con datos limpios
+    echo ✅ Reset completed
+    echo    Run 'start' to restart with clean data
 ) else (
-    echo ❌ Error durante el reset
+    echo ❌ Error during reset
 )
 goto end
 

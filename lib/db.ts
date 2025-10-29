@@ -13,7 +13,10 @@ const globalForPrisma = globalThis as unknown as {
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "error", "warn"]
+        : ["error"],
     errorFormat: "pretty",
   });
 
@@ -28,7 +31,9 @@ export async function testConnection() {
   } catch (error) {
     console.error("❌ Database connection failed:", error);
     console.log("\n💡 To fix this:");
-    console.log("1. Start PostgreSQL: npm run postgres:docker:start (or install locally)");
+    console.log(
+      "1. Start PostgreSQL: npm run postgres:docker:start (or install locally)",
+    );
     console.log("2. Check DATABASE_URL in .env.local");
     console.log("3. Verify database exists and credentials are correct");
     return false;

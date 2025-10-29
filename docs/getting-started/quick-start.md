@@ -52,11 +52,13 @@ DATABASE_URL="file:./dev.db"
 ### Step 4: Set Up Database
 
 **Option A: Quick SQLite Setup (Recommended for first time)**
+
 ```bash
 npm run db:sqlite
 ```
 
 **Option B: PostgreSQL with Docker**
+
 ```bash
 npm run db:postgres:docker
 ```
@@ -76,12 +78,14 @@ npm run dev
 After completing the quick start, you'll have:
 
 ### ✅ **Working Application**
+
 - 🔐 **Authentication** - Sign up/in functionality
 - 🏠 **Landing page** - Beautiful homepage
 - 📊 **Dashboard** - Protected user area
 - 💾 **Database** - Ready for data storage
 
 ### ✅ **Development Environment**
+
 - 🔄 **Hot reload** - Instant updates on file changes
 - 🔍 **TypeScript** - Full type checking
 - 🎨 **TailwindCSS** - Utility-first styling
@@ -94,7 +98,7 @@ After completing the quick start, you'll have:
 ```bash
 # Development
 npm run dev          # Start development server
-npm run build        # Build for production  
+npm run build        # Build for production
 npm run start        # Start production server
 
 # Database
@@ -103,7 +107,7 @@ npm run db:seed      # Add sample data
 npm run db:studio    # Open database GUI
 npm run db:reset     # Reset database
 
-# Utilities  
+# Utilities
 npm run lint         # Check code quality
 npm run type-check   # Verify TypeScript
 ```
@@ -115,16 +119,19 @@ npm run type-check   # Verify TypeScript
 Now that you're running, try these features:
 
 ### 1. **Authentication Flow**
+
 - Visit `/sign-up` to create an account
 - Sign in and access the protected dashboard
 - Check out the user profile functionality
 
 ### 2. **Database Operations**
+
 - Visit `/dashboard` to see sample data
 - Try creating, editing, or deleting posts
 - Open Prisma Studio: `npm run db:studio`
 
 ### 3. **UI Components**
+
 - Check out the component library
 - Toggle between light/dark themes
 - Explore responsive design on mobile
@@ -136,28 +143,34 @@ Now that you're running, try these features:
 Ready to make it your own? Quick customizations:
 
 ### **Change App Name**
+
 Edit `app/layout.tsx`:
+
 ```tsx
 export const metadata = {
-  title: 'Your App Name',
-  description: 'Your app description'
-}
+  title: "Your App Name",
+  description: "Your app description",
+};
 ```
 
 ### **Update Colors**
+
 Edit `tailwind.config.ts`:
+
 ```ts
 theme: {
   extend: {
     colors: {
-      primary: 'your-color-here'
+      primary: "your-color-here";
     }
   }
 }
 ```
 
 ### **Add Your Logo**
+
 Replace files in `public/` folder:
+
 - `favicon.ico` - Browser tab icon
 - `logo.svg` - Your app logo
 
@@ -167,18 +180,19 @@ Replace files in `public/` folder:
 
 Great job! You now have a fully functional fullstack application. Here's what to explore next:
 
-| Step | Description | Link |
-|------|-------------|------|
-| 🔐 | **Set up production auth** | [Authentication Guide](../guides/authentication.md) |
-| 💾 | **Configure PostgreSQL** | [Database Guide](../guides/database.md) |
-| 🏗️ | **Understand the architecture** | [Architecture Overview](../architecture/overview.md) |
-| 🚀 | **Deploy your app** | [Deployment Guide](../guides/deployment.md) |
+| Step | Description                     | Link                                                 |
+| ---- | ------------------------------- | ---------------------------------------------------- |
+| 🔐   | **Set up production auth**      | [Authentication Guide](../guides/authentication.md)  |
+| 💾   | **Configure PostgreSQL**        | [Database Guide](../guides/database.md)              |
+| 🏗️   | **Understand the architecture** | [Architecture Overview](../architecture/overview.md) |
+| 🚀   | **Deploy your app**             | [Deployment Guide](../guides/deployment.md)          |
 
 ---
 
 ## 🆘 Troubleshooting
 
 ### **Port already in use**
+
 ```bash
 # Kill process on port 3000
 npx kill-port 3000
@@ -187,6 +201,7 @@ npm run dev -- -p 3001
 ```
 
 ### **Module not found errors**
+
 ```bash
 # Clear node modules and reinstall
 rm -rf node_modules package-lock.json
@@ -194,14 +209,16 @@ npm install
 ```
 
 ### **Database connection issues**
+
 ```bash
 # Reset database
 npm run db:reset
 # Or switch to SQLite
-npm run db:sqlite  
+npm run db:sqlite
 ```
 
 ### **Environment variables not loading**
+
 - Ensure `.env.local` exists in project root
 - Restart development server after changes
 - Check for typos in variable names
