@@ -68,7 +68,16 @@ This directory contains documentation for all the features implemented in the fu
 - Multi-format exports (PDF, Excel, CSV)
 - Permission-based access control and sharing
 - Real-time data visualization and filtering
-- Automated report scheduling and generation
+- Basic report generation and management
+
+### 📅 [Scheduled Reports System](scheduled-reports-system.md)
+
+- Automated report scheduling with multiple frequencies (daily, weekly, monthly, quarterly)
+- Real-time status monitoring via Server-Sent Events (SSE)
+- Execution history and performance monitoring
+- Email delivery to multiple recipients
+- Demo mode support and robust error handling
+- Rate limiting and production-ready stability
 
 ## 🚀 Getting Started
 

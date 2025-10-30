@@ -129,37 +129,37 @@ npm run postgres:docker:logs
 ## 🔄 Cambiar entre bases de datos
 
 ```bash
-# Cambiar a PostgreSQL
+# Switch to PostgreSQL
 npm run db:switch:postgresql
 npm run db:push
 
-# Cambiar a SQLite (desarrollo rápido)
+# Switch to SQLite (quick development)
 npm run db:switch:sqlite
 npm run db:push
 ```
 
 ---
 
-## 📞 ¿Necesitas ayuda?
+## 📞 Need Help?
 
 ```bash
-# Ver todos los comandos disponibles
+# View all available commands
 npm run postgres:local:help
 npm run postgres:docker:help
 
-# Scripts de base de datos
+# Database scripts
 npm run db:help
 ```
 
-**💡 Tip**: Para desarrollo diario, recomendamos PostgreSQL local. Para pruebas o si tienes problemas con la instalación local, usa Docker.
+**💡 Tip**: For daily development, we recommend local PostgreSQL. For testing or if you have issues with local installation, use Docker.
 
 ---
 
-## 📊 Resumen de URLs
+## 📊 URLs Summary
 
-| Servicio             | URL                   | Credenciales                     |
+| Service              | URL                   | Credentials                      |
 | -------------------- | --------------------- | -------------------------------- |
-| **App Local**        | http://localhost:3000 | Tu usuario Clerk                 |
+| **Local App**        | http://localhost:3000 | Your Clerk user                  |
 | **Prisma Studio**    | http://localhost:5555 | -                                |
 | **Adminer (Docker)** | http://localhost:8080 | postgres / postgres123           |
 | **PgAdmin (Docker)** | http://localhost:5050 | admin@fullstack.local / admin123 |

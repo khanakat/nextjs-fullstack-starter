@@ -720,12 +720,12 @@ function ResponsiveCard() {
 
 Ready to take customization further? Explore these areas:
 
-| Area                                                   | Description            | Difficulty |
-| ------------------------------------------------------ | ---------------------- | ---------- |
-| **[Animation System](./examples/animations.md)**       | Add smooth transitions | Medium     |
-| **[PWA Features](./examples/pwa.md)**                  | Offline functionality  | Hard       |
-| **[Internationalization](./examples/i18n.md)**         | Multi-language support | Medium     |
-| **[Advanced Theming](./examples/advanced-theming.md)** | Complex theme system   | Hard       |
+| Area                     | Description            | Difficulty |
+| ------------------------ | ---------------------- | ---------- |
+| **Animation System**     | Add smooth transitions | Medium     |
+| **PWA Features**         | Offline functionality  | Hard       |
+| **Internationalization** | Multi-language support | Medium     |
+| **Advanced Theming**     | Complex theme system   | Hard       |
 
 ---
 

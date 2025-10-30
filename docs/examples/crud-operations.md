@@ -1,19 +1,19 @@
-# CRUD Operations - Ejemplo Completo
+# CRUD Operations - Complete Example
 
-Este ejemplo muestra cómo implementar operaciones CRUD completas (Create, Read, Update, Delete) en el proyecto NextJS Fullstack Starter.
+This example shows how to implement complete CRUD operations (Create, Read, Update, Delete) in the NextJS Fullstack Starter project.
 
-## Estructura del Ejemplo
+## Example Structure
 
-Implementaremos un sistema de gestión de tareas (Tasks) que incluye:
+We will implement a task management system (Tasks) that includes:
 
-- ✅ **Create**: Crear nuevas tareas
-- ✅ **Read**: Listar y ver tareas
-- ✅ **Update**: Editar tareas existentes
-- ✅ **Delete**: Eliminar tareas
+- ✅ **Create**: Create new tasks
+- ✅ **Read**: List and view tasks
+- ✅ **Update**: Edit existing tasks
+- ✅ **Delete**: Delete tasks
 
-## 1. Modelo de Base de Datos
+## 1. Database Model
 
-Primero, definimos el modelo en Prisma:
+First, we define the model in Prisma:
 
 ```prisma
 // prisma/schema.prisma

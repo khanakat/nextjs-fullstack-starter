@@ -2,7 +2,7 @@
 
 Welcome to the Next.js Fullstack Starter documentation! This comprehensive guide will help you understand, set up, and customize this production-ready template.
 
-## � Documentation Structure
+## 📖 Documentation Structure
 
 ### 🚀 [Getting Started](./getting-started/)
 
@@ -23,7 +23,7 @@ Comprehensive documentation for all implemented features:
 
 System design, project organization, and technical decisions.
 
-### � [Guides](./guides/)
+### 📖 [Guides](./guides/)
 
 Step-by-step tutorials and best practices for development and deployment:
 
@@ -38,7 +38,7 @@ Practical code examples and implementation patterns.
 
 ### New Users
 
-1. **Start here**: [Getting Started Guide](./getting-started/README.md)
+1. **Start here**: [Getting Started Guide](./getting-started/)
 2. **Explore features**: [Features Overview](./features/README.md)
 3. **Understand structure**: [Architecture Overview](./architecture/README.md)
 
@@ -47,7 +47,6 @@ Practical code examples and implementation patterns.
 - **Git Workflow**: [Git Conventions & Best Practices](./guides/git-workflow.md)
 - **Code Examples**: [Examples Collection](./examples/README.md)
 - **Development Guides**: [Setup & Configuration](./guides/README.md)
-- **API Reference**: Available in individual feature docs
 
 ### Maintainers
 
@@ -68,8 +67,7 @@ All documentation follows markdown best practices and is optimized for reading o
 
 Real-world examples and tutorials:
 
-- **[📝 CRUD Operations](./examples/crud-operations.md)** - Create, read, update, delete
-- **[🧩 Custom Components](./examples/custom-components.md)** - Build your own components
+- **[📝 CRUD Operations](./examples/crud-operations.md)** - Create, read, update, delete operations
 
 ## 🏗️ Architecture
 
@@ -78,19 +76,13 @@ Understanding the project structure:
 - **[🔍 Overview](./architecture/overview.md)** - High-level architecture
 - **[📁 Folder Structure](./architecture/folder-structure.md)** - How files are organized
 
-## 🔧 API Reference
-
-Technical references:
-
-- **[📋 Components](./api-reference/components.md)** - All available components
-
 ---
 
 ## 🆘 Need Help?
 
 - **🐛 Found a bug?** [Create an issue](https://github.com/khanakat/nextjs-fullstack-starter/issues)
 - **💡 Have a question?** [Start a discussion](https://github.com/khanakat/nextjs-fullstack-starter/discussions)
-- **📖 Missing docs?** [Contribute to documentation](https://github.com/khanakat/nextjs-fullstack-starter/blob/main/CONTRIBUTING.md)
+- **📖 Missing docs?** Check the existing documentation or contribute improvements
 
 ---
 
@@ -100,7 +92,7 @@ Help us improve the documentation:
 
 1. Fork the repository
 2. Edit or create new documentation files
-3. Follow the [documentation style guide](./STYLE_GUIDE.md)
+3. Follow markdown best practices and maintain consistency
 4. Submit a pull request
 
 All documentation is written in Markdown and stored in the `/docs` folder.

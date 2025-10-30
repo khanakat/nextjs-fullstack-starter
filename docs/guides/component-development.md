@@ -1,32 +1,32 @@
-# Guía de Desarrollo de Componentes
+# Component Development Guide
 
-Esta guía establece las mejores prácticas para desarrollar componentes React en el proyecto NextJS Fullstack Starter.
+This guide establishes best practices for developing React components in the NextJS Fullstack Starter project.
 
-## Estructura de Componentes
+## Component Structure
 
-### Organización de Directorios
+### Directory Organization
 
 ```
 components/
-├── ui/                    # Componentes base (shadcn/ui)
+├── ui/                    # Base components (shadcn/ui)
 │   ├── button.tsx
 │   ├── input.tsx
-│   └── advanced/         # Componentes UI avanzados
-├── forms/                # Componentes de formularios
-├── layout/               # Componentes de layout
-├── features/             # Componentes específicos de funcionalidades
-├── shared/               # Componentes compartidos
+│   └── advanced/         # Advanced UI components
+├── forms/                # Form components
+├── layout/               # Layout components
+├── features/             # Feature-specific components
+├── shared/               # Shared components
 └── providers/            # Context providers
 ```
 
-### Convenciones de Nomenclatura
+### Naming Conventions
 
-- **Archivos**: PascalCase (`UserProfile.tsx`)
-- **Componentes**: PascalCase (`UserProfile`)
-- **Props**: camelCase con sufijo Props (`UserProfileProps`)
-- **Hooks**: camelCase con prefijo use (`useUserProfile`)
+- **Files**: PascalCase (`UserProfile.tsx`)
+- **Components**: PascalCase (`UserProfile`)
+- **Props**: camelCase with Props suffix (`UserProfileProps`)
+- **Hooks**: camelCase with use prefix (`useUserProfile`)
 
-## Patrones de Implementación
+## Implementation Patterns
 
 ### 1. Componente Funcional Básico
 

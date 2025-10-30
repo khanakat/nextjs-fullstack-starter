@@ -505,5 +505,4 @@ npx prisma studio
 
 - **[Prisma Documentation](https://www.prisma.io/docs)** - Complete Prisma guide
 - **[PostgreSQL Documentation](https://www.postgresql.org/docs/)** - Official PostgreSQL docs
-- **[Database Design Guide](./database-design.md)** - Schema design best practices
 - **[Deployment Guide](./deployment.md)** - Production database setup

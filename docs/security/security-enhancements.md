@@ -1,10 +1,10 @@
-# Mejoras de Seguridad - Phase 4
+# Security Enhancements
 
-Esta documentación describe las mejoras de seguridad implementadas durante la Phase 4 de optimización continua.
+This documentation describes the security improvements implemented in the project.
 
-## 🔒 Resumen de Mejoras Implementadas
+## 🔒 Summary of Implemented Improvements
 
-### ✅ Completadas
+### ✅ Completed
 
 1. **Enhanced Validation System**
 2. **Security Audit System**
@@ -12,13 +12,13 @@ Esta documentación describe las mejoras de seguridad implementadas durante la P
 4. **Request Validation Improvements**
 5. **Security Testing Framework**
 
-## 🛡️ Sistema de Validación Mejorado
+## 🛡️ Enhanced Validation System
 
 ### Enhanced Validation (`lib/security/enhanced-validation.ts`)
 
-El sistema de validación mejorado incluye:
+The enhanced validation system includes:
 
-#### Detección de Patrones Maliciosos
+#### Malicious Pattern Detection
 
 ```typescript
 import {
@@ -26,7 +26,7 @@ import {
   sanitizeInput,
 } from "@/lib/security/enhanced-validation";
 
-// Detectar patrones de inyección SQL
+// Detect SQL injection patterns
 const hasSQLInjection = detectMaliciousPatterns(userInput, "sql");
 
 // Detectar XSS

@@ -1,31 +1,31 @@
-# Guía de Desarrollo de APIs
+# API Development Guide
 
-Esta guía proporciona las mejores prácticas y patrones para desarrollar APIs en el proyecto NextJS Fullstack Starter.
+This guide provides best practices and patterns for developing APIs in the NextJS Fullstack Starter project.
 
-## Estructura de APIs
+## API Structure
 
-### Organización de Rutas
+### Route Organization
 
 ```
 app/api/
-├── auth/                 # Autenticación
-├── users/               # Gestión de usuarios
-├── organizations/       # Organizaciones
-├── workflows/          # Flujos de trabajo
-├── analytics/          # Análisis y métricas
-├── reports/            # Sistema de reportes
-├── integrations/       # Integraciones externas
-├── notifications/      # Notificaciones
-└── mobile/            # APIs específicas para móvil
+├── auth/                 # Authentication
+├── users/               # User management
+├── organizations/       # Organizations
+├── workflows/          # Workflows
+├── analytics/          # Analytics and metrics
+├── reports/            # Reports system
+├── integrations/       # External integrations
+├── notifications/      # Notifications
+└── mobile/            # Mobile-specific APIs
 ```
 
-### Convenciones de Nomenclatura
+### Naming Conventions
 
-- **Rutas**: Usar kebab-case (`/api/user-profiles`)
-- **Archivos**: Usar `route.ts` para endpoints
-- **Parámetros**: Usar corchetes `[id]` para rutas dinámicas
+- **Routes**: Use kebab-case (`/api/user-profiles`)
+- **Files**: Use `route.ts` for endpoints
+- **Parameters**: Use brackets `[id]` for dynamic routes
 
-## Patrones de Implementación
+## Implementation Patterns
 
 ### 1. Estructura Básica de Route Handler
 
