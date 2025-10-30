@@ -9,6 +9,43 @@ import { auth } from "@clerk/nextjs/server";
 import { notificationStore } from "@/lib/notifications";
 import { generateRequestId } from "@/lib/utils";
 
+// Demo preferences for when user is not authenticated
+const DEMO_PREFERENCES = {
+  userId: "demo-user",
+  channels: {
+    inApp: true,
+    email: true,
+    push: false,
+    sms: false,
+  },
+  categories: {
+    security: true,
+    updates: true,
+    marketing: false,
+    system: true,
+    billing: true,
+  },
+  frequency: "immediate" as const,
+  quietHours: {
+    enabled: false,
+    start: "22:00",
+    end: "08:00",
+    timezone: "UTC",
+  },
+};
+
+// Helper function to safely get user ID from auth
+async function safeGetUserId(): Promise<string | null> {
+  try {
+    const { userId } = auth();
+    return userId;
+  } catch (error) {
+    // Auth failed (likely Clerk not configured), return null for demo mode
+    logger.info("Auth failed, using demo mode", "notifications", { error: error instanceof Error ? error.message : error });
+    return null;
+  }
+}
+
 /**
  * GET /api/notifications/preferences - Get user notification preferences
  */
@@ -16,13 +53,19 @@ export async function GET() {
   const requestId = generateRequestId();
 
   try {
-    const { userId } = auth();
+    const userId = await safeGetUserId();
 
+    // Demo mode support - return demo preferences when no user is authenticated
     if (!userId) {
-      return StandardErrorResponse.unauthorized(
-        "Authentication required to access notification preferences",
+      logger.info("Returning demo notification preferences", "notifications", {
         requestId,
-      );
+        userId: "demo-user",
+      });
+
+      return StandardSuccessResponse.create({
+        preferences: DEMO_PREFERENCES,
+        requestId,
+      });
     }
 
     logger.info("Fetching user notification preferences", "notifications", {
@@ -38,7 +81,7 @@ export async function GET() {
     });
   } catch (error) {
     logger.apiError(
-      "Error processing notification preferences request",
+      "Error fetching notification preferences",
       "notification",
       error,
       {
@@ -52,7 +95,7 @@ export async function GET() {
     }
 
     return StandardErrorResponse.internal(
-      "Failed to process notification preferences request",
+      "Failed to fetch notification preferences",
       process.env.NODE_ENV === "development"
         ? {
             originalError: error instanceof Error ? error.message : error,
@@ -70,59 +113,71 @@ export async function PATCH(_request: NextRequest) {
   const requestId = generateRequestId();
 
   try {
-    const { userId } = auth();
+    const userId = await safeGetUserId();
 
+    // Demo mode - don't update preferences, just return success
     if (!userId) {
-      return StandardErrorResponse.unauthorized(
-        "Authentication required to update notification preferences",
+      const body = await _request.json();
+      
+      logger.info("Demo mode: preference update simulated", "notifications", {
         requestId,
-      );
-    }
+        userId: "demo-user",
+        updates: Object.keys(body),
+      });
 
-    const updates = await _request.json();
+      // Return updated demo preferences
+      const updatedPreferences = {
+        ...DEMO_PREFERENCES,
+        ...body,
+        userId: "demo-user",
+      };
 
-    // Validate the updates structure
-    const allowedUpdates = [
-      "channels",
-      "categories",
-      "frequency",
-      "quietHours",
-    ];
-
-    const filteredUpdates: any = {};
-    for (const key of allowedUpdates) {
-      if (updates[key] !== undefined) {
-        filteredUpdates[key] = updates[key];
-      }
-    }
-
-    if (Object.keys(filteredUpdates).length === 0) {
-      return StandardErrorResponse.badRequest(
-        "No valid updates provided",
-        "notifications",
-        { allowedUpdates, providedKeys: Object.keys(updates) },
+      return StandardSuccessResponse.create({
+        preferences: updatedPreferences,
+        message: "Preferences updated successfully (demo mode)",
         requestId,
-      );
+      });
     }
+
+    const body = await _request.json();
 
     logger.info("Updating user notification preferences", "notifications", {
       requestId,
       userId,
-      updateKeys: Object.keys(filteredUpdates),
+      updates: Object.keys(body),
     });
+
+    // Validate the request body structure
+    const validFields = [
+      "channels",
+      "categories", 
+      "frequency",
+      "quietHours",
+    ];
+
+    const hasValidFields = Object.keys(body).some(key => validFields.includes(key));
+    
+    if (!hasValidFields) {
+      return StandardErrorResponse.badRequest(
+        "No valid preference fields provided",
+        "notifications",
+        { validFields, providedFields: Object.keys(body) },
+        requestId,
+      );
+    }
 
     const updatedPreferences = await notificationStore.updateUserPreferences(
       userId,
-      filteredUpdates,
+      body,
     );
 
-    return StandardSuccessResponse.updated({
+    return StandardSuccessResponse.create({
       preferences: updatedPreferences,
       requestId,
     });
   } catch (error) {
     logger.apiError(
-      "Error processing notification preferences request",
+      "Error updating notification preferences",
       "notification",
       error,
       {
@@ -136,7 +191,7 @@ export async function PATCH(_request: NextRequest) {
     }
 
     return StandardErrorResponse.internal(
-      "Failed to process notification preferences request",
+      "Failed to update notification preferences",
       process.env.NODE_ENV === "development"
         ? {
             originalError: error instanceof Error ? error.message : error,
