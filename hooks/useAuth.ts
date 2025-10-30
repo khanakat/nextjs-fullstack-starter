@@ -16,9 +16,9 @@ export function useAuth() {
           id: clerkUser.id,
           email: clerkUser.emailAddresses[0]?.emailAddress || "",
           name: clerkUser.fullName,
-          username: clerkUser.username,
+          username: clerkUser.firstName || clerkUser.fullName || "User",
           image: clerkUser.imageUrl,
-          bio: (clerkUser.publicMetadata?.bio as string) || null,
+          bio: null,
         };
         setUser(userData);
       } else {

@@ -1,9 +1,12 @@
-import { SignUp } from "@clerk/nextjs";
+import { ConditionalSignUp } from "@/components/conditional-clerk";
 
 export default function SignUpPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
-      <SignUp />
+      <ConditionalSignUp 
+        redirectUrl="/"
+        signInUrl="/sign-in"
+      />
     </div>
   );
 }
