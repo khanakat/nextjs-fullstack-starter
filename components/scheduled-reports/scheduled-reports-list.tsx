@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -50,8 +50,9 @@ import {
   FileText,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { fetchScheduledReportsWithRetry } from "@/lib/utils/api-retry";
 // import { CreateScheduledReportDialog } from './create-scheduled-report-dialog';
 // import { EditScheduledReportDialog } from './edit-scheduled-report-dialog';
 
@@ -86,11 +87,17 @@ interface ScheduledReport {
 
 interface ScheduledReportsListProps {
   organizationId: string;
+  refreshTrigger?: number;
+  onReportUpdated?: () => void;
+  onReportDeleted?: () => void;
 }
 
-export function ScheduledReportsList({
+const ScheduledReportsListComponent = ({
   organizationId,
-}: ScheduledReportsListProps) {
+  refreshTrigger = 0,
+  onReportUpdated,
+  onReportDeleted,
+}: ScheduledReportsListProps) => {
   const [scheduledReports, setScheduledReports] = useState<ScheduledReport[]>(
     [],
   );
@@ -100,6 +107,7 @@ export function ScheduledReportsList({
   const [formatFilter, setFormatFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [internalRefreshTrigger, setInternalRefreshTrigger] = useState(0);
   // const [selectedReport, setSelectedReport] = useState<ScheduledReport | null>(
   //   null,
   // );
@@ -120,16 +128,21 @@ export function ScheduledReportsList({
         params.append("isActive", statusFilter === "active" ? "true" : "false");
       }
 
-      const response = await fetch(`/api/scheduled-reports?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch scheduled reports");
+      const result = await fetchScheduledReportsWithRetry(`/api/scheduled-reports?${params}`);
+      
+      if (!result.ok) {
+        throw new Error(result.error || "Failed to fetch scheduled reports");
+      }
 
-      const data = await response.json();
-      setScheduledReports(data.scheduledReports);
-      setTotalPages(data.totalPages);
+      const data = result.data;
+      setScheduledReports(data.scheduledReports || []);
+      setTotalPages(data.totalPages || 1);
     } catch (error) {
       console.error("Error fetching scheduled reports:", error);
+      setScheduledReports([]);
+      setTotalPages(1);
       toast({
-        title: "Error - No se pudieron cargar los reportes programados",
+        title: "Error - Could not load scheduled reports",
         type: "error",
       });
     } finally {
@@ -137,9 +150,15 @@ export function ScheduledReportsList({
     }
   }, [organizationId, page, statusFilter, toast]);
 
+  // Create a stable refresh function
+  const refreshData = useCallback(() => {
+    setInternalRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  // Separate useEffect for initial load and refreshTrigger
   useEffect(() => {
     fetchScheduledReports();
-  }, [fetchScheduledReports]);
+  }, [organizationId, page, statusFilter, refreshTrigger, internalRefreshTrigger]); // Remove fetchScheduledReports from dependencies
 
   const handleToggleStatus = async (
     reportId: string,
@@ -155,15 +174,16 @@ export function ScheduledReportsList({
       if (!response.ok) throw new Error("Failed to update status");
 
       toast({
-        title: `Éxito - Reporte ${!currentStatus ? "activado" : "desactivado"} correctamente`,
+        title: `Success - Report ${!currentStatus ? "activated" : "deactivated"} successfully`,
         type: "success",
       });
 
-      fetchScheduledReports();
+      refreshData();
+      onReportUpdated?.();
     } catch (error) {
       console.error("Error updating status:", error);
       toast({
-        title: "Error - No se pudo actualizar el estado del reporte",
+        title: "Error - Could not update report status",
         type: "error",
       });
     }
@@ -181,13 +201,13 @@ export function ScheduledReportsList({
       if (!response.ok) throw new Error("Failed to execute report");
 
       toast({
-        title: "Éxito - Reporte ejecutado correctamente",
+        title: "Success - Report executed successfully",
         type: "success",
       });
     } catch (error) {
       console.error("Error executing report:", error);
       toast({
-        title: "Error - No se pudo ejecutar el reporte",
+        title: "Error - Could not execute report",
         type: "error",
       });
     }
@@ -195,7 +215,7 @@ export function ScheduledReportsList({
 
   const handleDelete = async (reportId: string) => {
     if (
-      !confirm("¿Estás seguro de que quieres eliminar este reporte programado?")
+      !confirm("Are you sure you want to delete this scheduled report?")
     ) {
       return;
     }
@@ -208,15 +228,16 @@ export function ScheduledReportsList({
       if (!response.ok) throw new Error("Failed to delete report");
 
       toast({
-        title: "Éxito - Reporte programado eliminado correctamente",
+        title: "Success - Scheduled report deleted successfully",
         type: "success",
       });
 
-      fetchScheduledReports();
+      refreshData();
+      onReportDeleted?.();
     } catch (error) {
       console.error("Error deleting report:", error);
       toast({
-        title: "Error - No se pudo eliminar el reporte programado",
+        title: "Error - Could not delete scheduled report",
         type: "error",
       });
     }
@@ -224,10 +245,10 @@ export function ScheduledReportsList({
 
   const getFrequencyLabel = (frequency: string) => {
     const labels = {
-      daily: "Diario",
-      weekly: "Semanal",
-      monthly: "Mensual",
-      quarterly: "Trimestral",
+      daily: "Daily",
+      weekly: "Weekly",
+      monthly: "Monthly",
+      quarterly: "Quarterly",
     };
     return labels[frequency as keyof typeof labels] || frequency;
   };
@@ -241,11 +262,17 @@ export function ScheduledReportsList({
     return colors[format as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
-  const filteredReports = scheduledReports.filter(
-    (report) =>
-      report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.report.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredReports = useMemo(() => {
+    if (!scheduledReports || !Array.isArray(scheduledReports)) {
+      return [];
+    }
+    
+    return scheduledReports.filter(
+      (report) =>
+        report.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.report.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [scheduledReports, searchTerm]);
 
   return (
     <div className="space-y-6">
@@ -253,15 +280,15 @@ export function ScheduledReportsList({
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            Reportes Programados
+            Scheduled Reports
           </h2>
           <p className="text-muted-foreground">
-            Gestiona la generación automática de reportes
+            Manage automated report generation
           </p>
         </div>
         <Button onClick={() => console.log("Create new report")}>
           <Plus className="h-4 w-4 mr-2" />
-          Nuevo Reporte Programado
+          New Scheduled Report
         </Button>
       </div>
 
@@ -273,29 +300,29 @@ export function ScheduledReportsList({
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Buscar reportes..."
+                  placeholder="Search reports..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select key="status-filter" value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Estado" />
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="active">Activos</SelectItem>
-                <SelectItem value="inactive">Inactivos</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={formatFilter} onValueChange={setFormatFilter}>
+            <Select key="format-filter" value={formatFilter} onValueChange={setFormatFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Formato" />
+                <SelectValue placeholder="Format" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 <SelectItem value="pdf">PDF</SelectItem>
                 <SelectItem value="xlsx">Excel</SelectItem>
                 <SelectItem value="csv">CSV</SelectItem>
@@ -308,9 +335,9 @@ export function ScheduledReportsList({
       {/* Reports Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Reportes Programados ({filteredReports.length})</CardTitle>
+          <CardTitle>Scheduled Reports ({filteredReports.length})</CardTitle>
           <CardDescription>
-            Lista de todos los reportes programados para tu organización
+            List of all scheduled reports for your organization
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -322,29 +349,28 @@ export function ScheduledReportsList({
             <div className="text-center py-8">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No hay reportes programados
+                No scheduled reports
               </h3>
               <p className="text-gray-500 mb-4">
-                Crea tu primer reporte programado para automatizar la generación
-                de informes
+                Create your first scheduled report to automate report generation
               </p>
               <Button onClick={() => console.log("Create new report")}>
                 <Plus className="h-4 w-4 mr-2" />
-                Crear Reporte Programado
+                Create Scheduled Report
               </Button>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Reporte Base</TableHead>
-                  <TableHead>Frecuencia</TableHead>
-                  <TableHead>Próxima Ejecución</TableHead>
-                  <TableHead>Destinatarios</TableHead>
-                  <TableHead>Formato</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Base Report</TableHead>
+                  <TableHead>Frequency</TableHead>
+                  <TableHead>Next Execution</TableHead>
+                  <TableHead>Recipients</TableHead>
+                  <TableHead>Format</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -386,7 +412,7 @@ export function ScheduledReportsList({
                           <div className="text-sm text-gray-500">
                             {formatDistanceToNow(new Date(report.nextRun), {
                               addSuffix: true,
-                              locale: es,
+                              locale: enUS,
                             })}
                           </div>
                         </div>
@@ -409,7 +435,7 @@ export function ScheduledReportsList({
                       <Badge
                         variant={report.isActive ? "default" : "secondary"}
                       >
-                        {report.isActive ? "Activo" : "Inactivo"}
+                        {report.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -424,7 +450,7 @@ export function ScheduledReportsList({
                             onClick={() => handleExecuteNow(report.id)}
                           >
                             <Play className="h-4 w-4 mr-2" />
-                            Ejecutar Ahora
+                            Execute Now
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
@@ -434,7 +460,7 @@ export function ScheduledReportsList({
                             }}
                           >
                             <Edit className="h-4 w-4 mr-2" />
-                            Editar
+                            Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() =>
@@ -444,12 +470,12 @@ export function ScheduledReportsList({
                             {report.isActive ? (
                               <>
                                 <Pause className="h-4 w-4 mr-2" />
-                                Desactivar
+                                Deactivate
                               </>
                             ) : (
                               <>
                                 <Play className="h-4 w-4 mr-2" />
-                                Activar
+                                Activate
                               </>
                             )}
                           </DropdownMenuItem>
@@ -458,7 +484,7 @@ export function ScheduledReportsList({
                             className="text-red-600"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Eliminar
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -514,9 +540,11 @@ export function ScheduledReportsList({
         onSuccess={() => {
           setShowEditDialog(false);
           setSelectedReport(null);
-          fetchScheduledReports();
+          refreshData();
         }}
       /> */}
     </div>
   );
-}
+};
+
+export const ScheduledReportsList = React.memo(ScheduledReportsListComponent);

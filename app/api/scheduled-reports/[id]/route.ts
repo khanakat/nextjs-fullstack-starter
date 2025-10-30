@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ScheduledReportsService } from "@/lib/services/scheduled-reports-service";
+import { 
+  ScheduledReportError, 
+  ScheduledReportNotFoundError, 
+  ScheduledReportValidationError 
+} from "@/lib/types/scheduled-reports";
+import { 
+  handleScheduledReportsError, 
+  validateRequestAuth,
+  createSuccessResponse 
+} from "@/lib/middleware/scheduled-reports-error-handler";
+import { 
+  validateUpdateScheduledReportRequest 
+} from "@/lib/utils/scheduled-reports-validation";
 import { z } from "zod";
 
 const updateScheduledReportSchema = z.object({
@@ -10,24 +23,13 @@ const updateScheduledReportSchema = z.object({
     .min(1, "Name is required")
     .max(100, "Name too long")
     .optional(),
-  description: z.string().optional(),
-  schedule: z
-    .object({
-      frequency: z.enum(["daily", "weekly", "monthly", "quarterly"]),
-      time: z
-        .string()
-        .regex(
-          /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-          "Invalid time format (HH:MM)",
-        ),
-      dayOfWeek: z.number().min(0).max(6).optional(),
-      dayOfMonth: z.number().min(1).max(31).optional(),
-      timezone: z.string().default("UTC"),
-    })
-    .optional(),
+  description: z.string().max(500, "Description too long").optional(),
+  schedule: z.string().min(1, "Schedule is required").optional(),
+  timezone: z.string().optional(),
   recipients: z
     .array(z.string().email("Invalid email address"))
     .min(1, "At least one recipient required")
+    .max(50, "Maximum 50 recipients allowed")
     .optional(),
   format: z.enum(["pdf", "xlsx", "csv"]).optional(),
   options: z
@@ -35,7 +37,13 @@ const updateScheduledReportSchema = z.object({
       includeCharts: z.boolean().optional(),
       includeData: z.boolean().optional(),
       includeMetadata: z.boolean().optional(),
-      customMessage: z.string().optional(),
+      customMessage: z.string().max(1000, "Custom message too long").optional(),
+      filters: z.record(z.any()).optional(),
+      dateRange: z.object({
+        type: z.enum(['last_7_days', 'last_30_days', 'last_quarter', 'custom']),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional(),
     })
     .optional(),
   isActive: z.boolean().optional(),
@@ -50,131 +58,110 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get("organizationId");
 
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "Organization ID is required" },
-        { status: 400 },
-      );
+    // Validate authentication and required parameters
+    validateRequestAuth(session?.user?.id, organizationId || undefined);
+
+    // Validate scheduled report ID format
+    if (!params.id || typeof params.id !== 'string') {
+      throw new ScheduledReportValidationError('id', params.id, 'Invalid scheduled report ID');
     }
 
-    // Get scheduled reports for the organization and filter by ID
-    const result = await ScheduledReportsService.getScheduledReports(
-      organizationId,
-      {
-        page: 1,
-        limit: 1000, // Get all to find the specific one
-      },
+    // Get the specific scheduled report
+    const scheduledReport = await ScheduledReportsService.getScheduledReportById(
+      params.id,
+      session!.user!.id,
     );
 
-    const scheduledReport = result.scheduledReports.find(
-      (sr: any) => sr.id === params.id,
-    );
-
-    if (!scheduledReport) {
-      return NextResponse.json(
-        { error: "Scheduled report not found" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json(scheduledReport);
+    return createSuccessResponse(scheduledReport, "Scheduled report retrieved successfully");
   } catch (error) {
-    console.error("Error fetching scheduled report:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch scheduled report" },
-      { status: 500 },
-    );
+    return handleScheduledReportsError(error, {
+      operation: 'get_scheduled_report',
+      userId: (await getServerSession(authOptions))?.user?.id,
+      organizationId: new URL(request.url).searchParams.get("organizationId") || undefined,
+      scheduledReportId: params.id,
+      path: request.url,
+    });
   }
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const body = await request.json();
+    const { organizationId, ...updates } = body;
+
+    // Validate authentication and required parameters
+    validateRequestAuth(session?.user?.id, organizationId);
+
+    // Validate scheduled report ID format
+    if (!params.id || typeof params.id !== 'string') {
+      throw new ScheduledReportValidationError('id', params.id, 'Invalid scheduled report ID');
     }
 
-    const body = await request.json();
+    // Validate the request body with Zod
+    const validatedUpdates = updateScheduledReportSchema.parse(updates);
 
-    // Validate the request body
-    const validatedData = updateScheduledReportSchema.parse(body);
+    // Additional business logic validation
+    validateUpdateScheduledReportRequest(validatedUpdates);
 
     // Update the scheduled report
     const updatedReport = await ScheduledReportsService.updateScheduledReport(
       params.id,
-      session.user.id,
-      validatedData,
+      session!.user!.id,
+      validatedUpdates,
     );
 
-    return NextResponse.json(updatedReport);
+    return createSuccessResponse(
+      updatedReport, 
+      "Scheduled report updated successfully",
+      { scheduledReportId: params.id }
+    );
   } catch (error) {
-    console.error("Error updating scheduled report:", error);
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation failed", details: error.errors },
-        { status: 400 },
-      );
-    }
-
-    if (error instanceof Error && error.message.includes("not found")) {
-      return NextResponse.json(
-        { error: "Scheduled report not found" },
-        { status: 404 },
-      );
-    }
-
-    if (error instanceof Error && error.message.includes("access denied")) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
-    }
-
-    return NextResponse.json(
-      { error: "Failed to update scheduled report" },
-      { status: 500 },
-    );
+    return handleScheduledReportsError(error, {
+      operation: 'update_scheduled_report',
+      userId: (await getServerSession(authOptions))?.user?.id,
+      organizationId: (await request.json().catch(() => ({})))?.organizationId,
+      scheduledReportId: params.id,
+      path: request.url,
+    });
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { searchParams } = new URL(request.url);
+    const organizationId = searchParams.get("organizationId");
+
+    // Validate authentication and required parameters
+    validateRequestAuth(session?.user?.id, organizationId || undefined);
+
+    // Validate scheduled report ID format
+    if (!params.id || typeof params.id !== 'string') {
+      throw new ScheduledReportValidationError('id', params.id, 'Invalid scheduled report ID');
     }
 
     // Delete the scheduled report
     await ScheduledReportsService.deleteScheduledReport(
       params.id,
-      session.user.id,
+      session!.user!.id,
     );
 
-    return NextResponse.json({
-      message: "Scheduled report deleted successfully",
-    });
+    return createSuccessResponse(
+      { deleted: true }, 
+      "Scheduled report deleted successfully",
+      { scheduledReportId: params.id }
+    );
   } catch (error) {
-    console.error("Error deleting scheduled report:", error);
-
-    if (error instanceof Error && error.message.includes("not found")) {
-      return NextResponse.json(
-        { error: "Scheduled report not found" },
-        { status: 404 },
-      );
-    }
-
-    if (error instanceof Error && error.message.includes("access denied")) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
-    }
-
-    return NextResponse.json(
-      { error: "Failed to delete scheduled report" },
-      { status: 500 },
-    );
+    return handleScheduledReportsError(error, {
+      operation: 'delete_scheduled_report',
+      userId: (await getServerSession(authOptions))?.user?.id,
+      organizationId: new URL(request.url).searchParams.get("organizationId") || undefined,
+      scheduledReportId: params.id,
+      path: request.url,
+    });
   }
 }

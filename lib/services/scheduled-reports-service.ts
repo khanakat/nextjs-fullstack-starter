@@ -1,84 +1,143 @@
-// import { db } from "@/lib/db";
-// import { queueService } from "./queue";
-// import { EmailService } from "../email-service";
-// import { ExportService } from "./export-service";
-// import { AuditService } from "./audit";
-// import { scheduledReportEmailTemplate } from "../email-templates/scheduled-report"; // TODO: Fix email template import
+import { db } from "@/lib/db";
+import { QueueHelpers } from "@/lib/queue";
+import { emailService } from "@/lib/email/email-service";
+import { pdfService } from "@/lib/pdf/pdf-service";
+import { ErrorHandler, DatabaseError, ValidationError } from "@/lib/error-handling";
+import { logger } from "@/lib/logger";
+import * as cron from "node-cron";
+import { 
+  ScheduledReportConfig,
+  ScheduledReportRun,
+  CreateScheduledReportRequest,
+  UpdateScheduledReportRequest,
+  ScheduledReportFilters,
+  ScheduledReportRunFilters,
+  PaginatedScheduledReports,
+  PaginatedScheduledReportRuns,
+  ScheduledReportJobPayload,
+  ScheduledReportExecutionResult,
+  CronScheduleInfo,
+  ScheduledReportEmailData,
+  ScheduledReportError,
+  CronValidationError,
+  ReportAccessError,
+  ScheduledReportNotFoundError,
+  ScheduledReportRunStatus,
+  ScheduledReportStats
+} from "@/lib/types/scheduled-reports";
 
-// Mock implementations
-const queueService = {
-  addJob: async (_type: string, _data: any, _options?: any) => ({ id: 'mock-job' }),
-  removeJob: async (_jobId: string) => true,
-  getJob: async (_jobId: string) => ({ id: _jobId, status: 'completed' })
-};
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
 
-const EmailService = {
-  sendEmail: async (_options: any) => ({ success: true }),
-  sendScheduledReport: async (_recipient: string, _data: any) => ({ success: true })
-};
-
-const ExportService = {
-  createExportJob: async (_userId: string, _data: any) => ({ id: 'mock-export', status: 'PENDING' }),
-  getExportJobById: async (_exportJobId: string, _userId: string) => ({ 
-    id: _exportJobId, 
-    status: 'COMPLETED',
-    downloadUrl: 'https://example.com/download/mock-file.pdf'
-  })
-};
-
-const AuditService = {
-  logEvent: async (_event: any) => ({ id: 'mock-audit' }),
-  log: async (_event: any) => ({ id: 'mock-audit' })
-};
-
-// Mock db for now since the module is not available
-const db = {
-  report: {
-    findFirst: async () => ({ id: "mock-report", name: "Mock Report" }),
-  },
-  exportJob: {
-    findUnique: async () => ({ id: "mock-export", status: "COMPLETED" }),
-  },
-};
-
-export interface ScheduledReportConfig {
-  id: string;
-  name: string;
-  description?: string;
-  reportId: string;
-  organizationId: string;
-  createdBy: string;
-  schedule: {
-    frequency: "daily" | "weekly" | "monthly" | "quarterly";
-    time: string; // HH:MM format
-    dayOfWeek?: number; // 0-6 for weekly
-    dayOfMonth?: number; // 1-31 for monthly
-    timezone: string;
-  };
-  recipients: string[];
-  format: "pdf" | "xlsx" | "csv";
-  options: {
-    includeCharts?: boolean;
-    includeData?: boolean;
-    includeMetadata?: boolean;
-    customMessage?: string;
-  };
-  isActive: boolean;
-  lastRun?: Date;
-  nextRun?: Date;
+/**
+ * Validate cron expression
+ */
+function validateCronExpression(expression: string): boolean {
+  try {
+    return cron.validate(expression);
+  } catch (error) {
+    return false;
+  }
 }
 
-export interface ScheduledReportRun {
-  id: string;
-  scheduledReportId: string;
-  status: "pending" | "processing" | "completed" | "failed";
-  startedAt: Date;
-  completedAt?: Date;
-  exportJobId?: string;
-  error?: string;
-  recipientsSent: number;
-  totalRecipients: number;
+/**
+ * Calculate next run time from cron expression
+ */
+function calculateNextRun(cronExpression: string, timezone: string = 'UTC'): Date {
+  try {
+    const now = new Date();
+    
+    // Simple cron parsing for common patterns
+    const cronParts = cronExpression.split(' ');
+    if (cronParts.length !== 5) {
+      return new Date(now.getTime() + 24 * 60 * 60 * 1000); // Default to 24 hours
+    }
+    
+    const [minute, hour, dayOfMonth, month, dayOfWeek] = cronParts;
+    
+    // For daily reports (0 9 * * *) - 9 AM daily
+    if (minute === '0' && hour === '9' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+      const nextRun = new Date(now);
+      nextRun.setHours(9, 0, 0, 0);
+      if (nextRun <= now) {
+        nextRun.setDate(nextRun.getDate() + 1);
+      }
+      return nextRun;
+    }
+    
+    // For weekly reports (0 9 * * 1) - 9 AM every Monday
+    if (minute === '0' && hour === '9' && dayOfMonth === '*' && month === '*' && dayOfWeek === '1') {
+      const nextRun = new Date(now);
+      nextRun.setHours(9, 0, 0, 0);
+      const daysUntilMonday = (1 + 7 - nextRun.getDay()) % 7;
+      if (daysUntilMonday === 0 && nextRun <= now) {
+        nextRun.setDate(nextRun.getDate() + 7);
+      } else {
+        nextRun.setDate(nextRun.getDate() + daysUntilMonday);
+      }
+      return nextRun;
+    }
+    
+    // Default: add 1 hour
+    return new Date(now.getTime() + 60 * 60 * 1000);
+  } catch (error) {
+    logger.error('Failed to calculate next run time', 'scheduled-reports', { cronExpression, error });
+    // Fallback to 24 hours from now
+    return new Date(Date.now() + 24 * 60 * 60 * 1000);
+  }
 }
+
+/**
+ * Convert database model to ScheduledReportConfig
+ */
+function mapToScheduledReportConfig(dbRecord: any): ScheduledReportConfig {
+  return {
+    id: dbRecord.id,
+    name: dbRecord.name,
+    description: dbRecord.description,
+    reportId: dbRecord.reportId,
+    userId: dbRecord.userId,
+    organizationId: dbRecord.organizationId,
+    schedule: dbRecord.schedule,
+    timezone: dbRecord.timezone || 'UTC',
+    recipients: Array.isArray(dbRecord.recipients) ? dbRecord.recipients : JSON.parse(dbRecord.recipients || '[]'),
+    format: dbRecord.format,
+    options: typeof dbRecord.options === 'object' ? dbRecord.options : JSON.parse(dbRecord.options || '{}'),
+    isActive: dbRecord.isActive,
+    lastRun: dbRecord.lastRun,
+    nextRun: dbRecord.nextRun,
+    createdAt: dbRecord.createdAt,
+    updatedAt: dbRecord.updatedAt,
+  };
+}
+
+/**
+ * Convert database model to ScheduledReportRun
+ */
+function mapToScheduledReportRun(dbRecord: any): ScheduledReportRun {
+  return {
+    id: dbRecord.id,
+    scheduledReportId: dbRecord.scheduledReportId,
+    status: dbRecord.status,
+    startedAt: dbRecord.startedAt,
+    completedAt: dbRecord.completedAt,
+    duration: dbRecord.duration,
+    totalRecipients: dbRecord.totalRecipients,
+    successfulSends: dbRecord.successfulSends,
+    failedSends: dbRecord.failedSends,
+    exportJobId: dbRecord.exportJobId,
+    downloadUrl: dbRecord.downloadUrl,
+    fileSize: dbRecord.fileSize,
+    errorMessage: dbRecord.errorMessage,
+    errorDetails: dbRecord.errorDetails,
+    createdAt: dbRecord.createdAt,
+  };
+}
+
+// ============================================================================
+// SCHEDULED REPORTS SERVICE
+// ============================================================================
 
 export class ScheduledReportsService {
   /**
@@ -86,152 +145,196 @@ export class ScheduledReportsService {
    */
   static async createScheduledReport(
     userId: string,
-    organizationId: string,
-    config: Omit<
-      ScheduledReportConfig,
-      "id" | "createdBy" | "organizationId" | "lastRun" | "nextRun"
-    >,
+    request: CreateScheduledReportRequest,
   ): Promise<ScheduledReportConfig> {
     try {
+      // Validate cron expression
+      if (!validateCronExpression(request.schedule)) {
+        throw new CronValidationError(request.schedule);
+      }
+
       // Verify report exists and user has access
-      const report = await db.report.findFirst();
+      const report = await db.report.findFirst({
+        where: {
+          id: request.reportId,
+          OR: [
+            { createdBy: userId },
+            { organizationId: request.organizationId }
+          ]
+        }
+      });
 
       if (!report) {
-        throw new Error("Report not found or access denied");
+        throw new ReportAccessError(request.reportId, userId);
       }
 
       // Calculate next run time
-      const nextRun = this.calculateNextRun(config.schedule);
+      const nextRun = calculateNextRun(request.schedule, request.timezone);
 
       // Create scheduled report
-      // TODO: Add scheduledReport model to Prisma schema
-      const scheduledReport = {
-        id: "temp-id",
-        name: config.name,
-        description: config.description,
-        reportId: config.reportId,
-        organizationId: organizationId,
-        createdBy: userId,
-        schedule: JSON.stringify(config.schedule),
-        recipients: config.recipients,
-        format: config.format,
-        options: JSON.stringify(config.options),
-        isActive: config.isActive,
-        nextRun: nextRun,
-      };
-      // const scheduledReport = await db.scheduledReport.create({
-      //   data: {
-      //     name: config.name,
-      //     description: config.description,
-      //     reportId: config.reportId,
-      //     organizationId: organizationId,
-      //     createdBy: userId,
-      //     schedule: JSON.stringify(config.schedule),
-      //     recipients: config.recipients,
-      //     format: config.format,
-      //     options: JSON.stringify(config.options),
-      //     isActive: config.isActive,
-      //     nextRun: nextRun,
-      //   },
-      // });
+      const scheduledReport = await db.scheduledReport.create({
+        data: {
+          name: request.name,
+          description: request.description,
+          reportId: request.reportId,
+          userId: userId,
+          organizationId: request.organizationId,
+          schedule: request.schedule,
+          timezone: request.timezone || 'UTC',
+          recipients: JSON.stringify(request.recipients),
+          format: request.format,
+          options: JSON.stringify(request.options || {}),
+          isActive: request.isActive ?? true,
+          nextRun,
+        },
+      });
 
       // Schedule the job if active
-      if (config.isActive) {
+      if (scheduledReport.isActive) {
         await this.scheduleReportJob(scheduledReport.id, nextRun);
       }
 
-      // Log the creation
-      await AuditService.log({
-        action: "scheduled_report_created",
-        userId: userId,
-        organizationId: organizationId,
-        resource: "scheduled_report",
-        resourceId: scheduledReport.id,
-        // TODO: Fix AuditService - details field not supported
-        // details: {
-        //   reportId: config.reportId,
-        //   frequency: config.schedule.frequency,
-        //   recipients: config.recipients.length,
-        // },
+      logger.info('Scheduled report created', 'scheduled-reports', {
+        scheduledReportId: scheduledReport.id,
+        reportId: request.reportId,
+        userId,
+        organizationId: request.organizationId
       });
 
-      return {
-        id: scheduledReport.id,
-        name: scheduledReport.name,
-        description: scheduledReport.description,
-        reportId: scheduledReport.reportId,
-        organizationId: scheduledReport.organizationId,
-        createdBy: scheduledReport.createdBy,
-        schedule: JSON.parse(scheduledReport.schedule),
-        recipients: scheduledReport.recipients,
-        format: scheduledReport.format as "pdf" | "xlsx" | "csv",
-        options: JSON.parse(scheduledReport.options || "{}"),
-        isActive: scheduledReport.isActive,
-        // TODO: Fix Prisma model - lastRun field not available
-        // lastRun: scheduledReport.lastRun,
-        nextRun: scheduledReport.nextRun,
-      };
+      return mapToScheduledReportConfig(scheduledReport);
     } catch (error) {
-      console.error("Error creating scheduled report:", error);
-      throw error;
+      if (error instanceof ScheduledReportError) {
+        throw error;
+      }
+      
+      logger.error('Failed to create scheduled report', 'scheduled-reports', { error, userId, request });
+      throw new DatabaseError('Failed to create scheduled report', { 
+        userId, 
+        operation: 'CREATE_SCHEDULED_REPORT', 
+        metadata: { originalError: error, request } 
+      });
     }
   }
 
   /**
-   * Get scheduled reports for an organization
+   * Get scheduled reports with filtering and pagination
    */
   static async getScheduledReports(
-    organizationId: string,
-    filters: {
-      isActive?: boolean;
-      reportId?: string;
-      page?: number;
-      limit?: number;
-    } = {},
-  ) {
-    const page = filters.page || 1;
-    const limit = filters.limit || 10;
-    // const skip = (page - 1) * limit;
+    userId: string,
+    filters: ScheduledReportFilters = {},
+  ): Promise<PaginatedScheduledReports> {
+    try {
+      const page = filters.page || 1;
+      const limit = Math.min(filters.limit || 10, 100); // Cap at 100
+      const skip = (page - 1) * limit;
 
-    const where: any = { organizationId };
+      // Build where clause
+      const where: any = {
+        OR: [
+          { userId: userId },
+          ...(filters.organizationId ? [{ organizationId: filters.organizationId }] : [])
+        ]
+      };
 
-    if (filters.isActive !== undefined) {
-      where.isActive = filters.isActive;
+      if (filters.isActive !== undefined) {
+        where.isActive = filters.isActive;
+      }
+
+      if (filters.reportId) {
+        where.reportId = filters.reportId;
+      }
+
+      if (filters.format) {
+        where.format = filters.format;
+      }
+
+      if (filters.search) {
+        where.OR = [
+          { name: { contains: filters.search, mode: 'insensitive' } },
+          { description: { contains: filters.search, mode: 'insensitive' } }
+        ];
+      }
+
+      // Get scheduled reports with relations
+      const [scheduledReports, total] = await Promise.all([
+        db.scheduledReport.findMany({
+          where,
+          include: {
+            report: {
+              select: { id: true, name: true, description: true }
+            },
+            organization: {
+              select: { id: true, name: true }
+            },
+            _count: {
+              select: { runs: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        db.scheduledReport.count({ where })
+      ]);
+
+      const mappedReports = scheduledReports.map(mapToScheduledReportConfig);
+
+      return {
+        scheduledReports: mappedReports,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      logger.error('Failed to get scheduled reports', 'scheduled-reports', { error, userId, filters });
+      throw new DatabaseError('Failed to get scheduled reports', { 
+        userId, 
+        operation: 'GET_SCHEDULED_REPORTS', 
+        metadata: { originalError: error, filters } 
+      });
     }
+  }
 
-    if (filters.reportId) {
-      where.reportId = filters.reportId;
+  /**
+   * Get a single scheduled report by ID
+   */
+  static async getScheduledReportById(
+    scheduledReportId: string,
+    userId: string,
+  ): Promise<ScheduledReportConfig | null> {
+    try {
+      const scheduledReport = await db.scheduledReport.findFirst({
+        where: {
+          id: scheduledReportId,
+          OR: [
+            { userId: userId },
+            { organization: { members: { some: { userId: userId } } } }
+          ]
+        },
+        include: {
+          report: {
+            select: { id: true, name: true, description: true }
+          },
+          organization: {
+            select: { id: true, name: true }
+          }
+        }
+      });
+
+      if (!scheduledReport) {
+        return null;
+      }
+
+      return mapToScheduledReportConfig(scheduledReport);
+    } catch (error) {
+      logger.error('Failed to get scheduled report by ID', 'scheduled-reports', { error, scheduledReportId, userId });
+      throw new DatabaseError('Failed to get scheduled report', { 
+        userId, 
+        operation: 'GET_SCHEDULED_REPORT', 
+        metadata: { originalError: error, scheduledReportId } 
+      });
     }
-
-    // TODO: Add scheduledReport model to Prisma schema
-    const [scheduledReports, total] = await Promise.all([
-      Promise.resolve([]),
-      Promise.resolve(0),
-    ]);
-
-    return {
-      scheduledReports: scheduledReports.map((sr: any) => ({
-        id: sr.id,
-        name: sr.name,
-        description: sr.description,
-        reportId: sr.reportId,
-        organizationId: sr.organizationId,
-        createdBy: sr.createdBy,
-        schedule: JSON.parse(sr.schedule),
-        recipients: sr.recipients,
-        format: sr.format as "pdf" | "xlsx" | "csv",
-        options: JSON.parse(sr.options || "{}"),
-        isActive: sr.isActive,
-        lastRun: sr.lastRun,
-        nextRun: sr.nextRun,
-        report: sr.report,
-        createdByUser: sr.createdByUser,
-      })),
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
   }
 
   /**
@@ -240,92 +343,83 @@ export class ScheduledReportsService {
   static async updateScheduledReport(
     scheduledReportId: string,
     userId: string,
-    updates: Partial<
-      Omit<ScheduledReportConfig, "id" | "createdBy" | "organizationId">
-    >,
+    updates: UpdateScheduledReportRequest,
   ): Promise<ScheduledReportConfig> {
     try {
-      // TODO: Add scheduledReport model to Prisma schema
-      // const existingReport = await db.scheduledReport.findFirst({
-      //   where: {
-      //     id: scheduledReportId,
-      //     organizationId: organizationId,
-      //   },
-      // });
+      // Check if report exists and user has access
+      const existingReport = await db.scheduledReport.findFirst({
+        where: {
+          id: scheduledReportId,
+          OR: [
+            { userId: userId },
+            { organization: { members: { some: { userId: userId } } } }
+          ]
+        }
+      });
 
-      // if (!existingReport) {
-      //   throw new Error("Scheduled report not found");
-      // }
+      if (!existingReport) {
+        throw new ScheduledReportNotFoundError(scheduledReportId);
+      }
+
+      // Validate cron expression if schedule is being updated
+      if (updates.schedule && !validateCronExpression(updates.schedule)) {
+        throw new CronValidationError(updates.schedule);
+      }
+
+      // Calculate next run if schedule is being updated
+      let nextRun = existingReport.nextRun;
+      if (updates.schedule) {
+        nextRun = calculateNextRun(updates.schedule, updates.timezone || existingReport.timezone);
+      }
 
       // Prepare update data
       const updateData: any = {};
-
-      if (updates.name) updateData.name = updates.name;
-      if (updates.description !== undefined)
-        updateData.description = updates.description;
-      if (updates.schedule) {
-        updateData.schedule = JSON.stringify(updates.schedule);
-        updateData.nextRun = this.calculateNextRun(updates.schedule);
+      
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.schedule !== undefined) {
+        updateData.schedule = updates.schedule;
+        updateData.nextRun = nextRun;
       }
-      if (updates.recipients) updateData.recipients = updates.recipients;
-      if (updates.format) updateData.format = updates.format;
-      if (updates.options) updateData.options = JSON.stringify(updates.options);
-      if (updates.isActive !== undefined) {
-        updateData.isActive = updates.isActive;
-        
-        // If activating, schedule the job
-        if (updates.isActive) {
-          const nextRun = updateData.nextRun || this.calculateNextRun(updates.schedule || {
-            frequency: "daily",
-            time: "09:00",
-            timezone: "UTC",
-          });
-          await this.scheduleReportJob(scheduledReportId, nextRun);
+      if (updates.timezone !== undefined) updateData.timezone = updates.timezone;
+      if (updates.recipients !== undefined) updateData.recipients = JSON.stringify(updates.recipients);
+      if (updates.format !== undefined) updateData.format = updates.format;
+      if (updates.options !== undefined) updateData.options = JSON.stringify(updates.options);
+      if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
+
+      // Update the scheduled report
+      const updatedReport = await db.scheduledReport.update({
+        where: { id: scheduledReportId },
+        data: updateData,
+      });
+
+      // Reschedule job if schedule or active status changed
+      if (updates.schedule || updates.isActive !== undefined) {
+        if (updatedReport.isActive) {
+          await this.scheduleReportJob(scheduledReportId, updatedReport.nextRun!);
         } else {
-          // If deactivating, cancel the job
           await this.cancelScheduledJob(scheduledReportId);
         }
       }
 
-      // TODO: Implement actual update when model exists
-      // const updatedReport = await db.scheduledReport.update({
-      //   where: { id: scheduledReportId },
-      //   data: updateData,
-      // });
-
-      // Log the update
-      await AuditService.log({
-        action: "scheduled_report.updated",
-        resource: "scheduled_report",
-        resourceId: scheduledReportId,
+      logger.info('Scheduled report updated', 'scheduled-reports', {
+        scheduledReportId,
         userId,
-        metadata: {
-          updates: Object.keys(updateData),
-        },
+        updates: Object.keys(updateData)
       });
 
-      // Return mock data for now
-      return {
-        id: scheduledReportId,
-        name: updates.name || "Mock Report",
-        description: updates.description,
-        reportId: "mock-report-id",
-        organizationId: "mock-org-id",
-        createdBy: userId,
-        schedule: updates.schedule || {
-          frequency: "daily",
-          time: "09:00",
-          timezone: "UTC",
-        },
-        recipients: updates.recipients || [],
-        format: updates.format || "pdf",
-        options: updates.options || {},
-        isActive: updates.isActive !== undefined ? updates.isActive : true,
-        nextRun: new Date(),
-      };
+      return mapToScheduledReportConfig(updatedReport);
     } catch (error) {
-      console.error("Error updating scheduled report:", error);
-      throw error;
+      if (error instanceof ScheduledReportError) {
+        throw error;
+      }
+      
+      logger.error('Failed to update scheduled report', 'scheduled-reports', { error, scheduledReportId, userId, updates });
+      throw new DatabaseError('Failed to update scheduled report', { 
+        userId, 
+        operation: 'UPDATE_SCHEDULED_REPORT', 
+        metadata: { originalError: error, scheduledReportId, updates } 
+      });
     }
   }
 
@@ -337,48 +431,44 @@ export class ScheduledReportsService {
     userId: string,
   ): Promise<void> {
     try {
-      // TODO: Add scheduledReport model to Prisma schema
-      // const scheduledReport = await db.scheduledReport.findFirst({
-      //   where: {
-      //     id: scheduledReportId,
-      //     OR: [
-      //       { createdBy: userId },
-      //       {
-      //         organization: {
-      //           members: {
-      //             some: { userId: userId, role: { in: ["ADMIN", "OWNER"] } },
-      //           },
-      //         },
-      //       },
-      //     ],
-      //   },
-      // });
+      // Check if report exists and user has access
+      const existingReport = await db.scheduledReport.findFirst({
+        where: {
+          id: scheduledReportId,
+          OR: [
+            { userId: userId },
+            { organization: { members: { some: { userId: userId } } } }
+          ]
+        }
+      });
 
-      // if (!scheduledReport) {
-      //   throw new Error("Scheduled report not found or access denied");
-      // }
+      if (!existingReport) {
+        throw new ScheduledReportNotFoundError(scheduledReportId);
+      }
 
       // Cancel any scheduled jobs
       await this.cancelScheduledJob(scheduledReportId);
 
-      // TODO: Implement actual deletion when model exists
-      // await db.scheduledReport.delete({
-      //   where: { id: scheduledReportId },
-      // });
+      // Delete the scheduled report (this will cascade delete runs)
+      await db.scheduledReport.delete({
+        where: { id: scheduledReportId },
+      });
 
-      // Log the deletion
-      await AuditService.log({
-        action: "scheduled_report_deleted",
-        userId: userId,
-        resource: "scheduled_report",
-        resourceId: scheduledReportId,
-        metadata: {
-          name: "Mock Report",
-        },
+      logger.info('Scheduled report deleted', 'scheduled-reports', {
+        scheduledReportId,
+        userId
       });
     } catch (error) {
-      console.error("Error deleting scheduled report:", error);
-      throw error;
+      if (error instanceof ScheduledReportError) {
+        throw error;
+      }
+      
+      logger.error('Failed to delete scheduled report', 'scheduled-reports', { error, scheduledReportId, userId });
+      throw new DatabaseError('Failed to delete scheduled report', { 
+        userId, 
+        operation: 'DELETE_SCHEDULED_REPORT', 
+        metadata: { originalError: error, scheduledReportId } 
+      });
     }
   }
 
@@ -387,195 +477,213 @@ export class ScheduledReportsService {
    */
   static async executeScheduledReport(
     scheduledReportId: string,
-  ): Promise<ScheduledReportRun> {
+  ): Promise<ScheduledReportExecutionResult> {
+    const startTime = Date.now();
+    let runId: string | undefined;
+
     try {
-      // TODO: Add scheduledReport model to Prisma schema
       // Get the scheduled report
-      // const scheduledReport = await db.scheduledReport.findUnique({
-      //   where: { id: scheduledReportId },
-      //   include: {
-      //     report: true,
-      //     organization: true,
-      //   },
-      // });
+      const scheduledReport = await db.scheduledReport.findUnique({
+        where: { id: scheduledReportId },
+        include: {
+          report: true,
+          organization: true,
+        },
+      });
 
-      // if (!scheduledReport) {
-      //   throw new Error("Scheduled report not found");
-      // }
-
-      // if (!scheduledReport.isActive) {
-      //   throw new Error("Scheduled report is not active");
-      // }
-
-      // Mock scheduled report data
-      const scheduledReport = {
-        id: scheduledReportId,
-        isActive: true,
-        createdBy: "mock-user-id",
-        organizationId: "mock-org-id",
-        reportId: "mock-report-id",
-        format: "pdf",
-        options: "{}",
-        schedule: JSON.stringify({ frequency: "daily" }),
-        recipients: ["test@example.com"],
-        report: { name: "Mock Report" },
-        organization: { name: "Mock Organization" },
-      };
-
-      // TODO: Add scheduledReportRun model to Prisma schema
-      // Create a run record
-      // const run = await db.scheduledReportRun.create({
-      //   data: {
-      //     scheduledReportId: scheduledReportId,
-      //     status: "pending",
-      //     startedAt: new Date(),
-      //     recipientsSent: 0,
-      //     totalRecipients: scheduledReport.recipients.length,
-      //   },
-      // });
-
-      const run = {
-        id: "mock-run-id",
-        scheduledReportId: scheduledReportId,
-        status: "pending" as const,
-        startedAt: new Date(),
-        recipientsSent: 0,
-        totalRecipients: scheduledReport.recipients.length,
-      };
-
-      // TODO: Update run status to processing when model exists
-      // await db.scheduledReportRun.update({
-      //   where: { id: run.id },
-      //   data: { status: "processing" },
-      // });
-
-      try {
-        // Create export job
-        const exportJob = await ExportService.createExportJob(
-          scheduledReport.createdBy,
-          {
-            reportId: scheduledReport.reportId,
-            format: scheduledReport.format as any,
-            options: JSON.parse(scheduledReport.options || "{}"),
-          },
-        );
-
-        // Wait for export to complete (in a real implementation, this would be handled by the queue)
-        await this.waitForExportCompletion(exportJob.id);
-
-        // Get the completed export job
-        const completedExport = await ExportService.getExportJobById(
-          exportJob.id,
-          scheduledReport.createdBy,
-        );
-
-        if (!completedExport || completedExport.status !== "COMPLETED") {
-          throw new Error("Export job failed or not completed");
-        }
-
-        // Send emails to recipients
-        const schedule = JSON.parse(scheduledReport.schedule);
-        // const options = JSON.parse(scheduledReport.options || "{}");
-
-        let recipientsSent = 0;
-        for (const recipient of scheduledReport.recipients) {
-          try {
-            await EmailService.sendScheduledReport(recipient, {
-              reportName: scheduledReport.report.name,
-              organizationName: scheduledReport.organization.name,
-              period: this.getPeriodDescription(schedule.frequency),
-              summary: {
-                totalRecords: 0, // Would be calculated from actual data
-                generatedAt: new Date(),
-                format: scheduledReport.format,
-              },
-              metrics: [], // Would be populated with actual metrics
-              activities: [], // Would be populated with actual activities
-              alerts: [], // Would be populated with actual alerts
-              attachments: completedExport.downloadUrl
-                ? [
-                    {
-                      name: `${scheduledReport.report.name}.${scheduledReport.format}`,
-                      url: completedExport.downloadUrl,
-                      size: "0 KB", // Would be calculated
-                    },
-                  ]
-                : [],
-              dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-              unsubscribeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?report=${scheduledReportId}&email=${recipient}`,
-            });
-            recipientsSent++;
-          } catch (emailError) {
-            console.error(`Failed to send email to ${recipient}:`, emailError);
-          }
-        }
-
-        // TODO: Update run with success when model exists
-        // await db.scheduledReportRun.update({
-        //   where: { id: run.id },
-        //   data: {
-        //     status: "completed",
-        //     completedAt: new Date(),
-        //     exportJobId: exportJob.id,
-        //     recipientsSent: recipientsSent,
-        //   },
-        // });
-
-        // TODO: Update scheduled report with last run and next run when model exists
-        // const nextRun = this.calculateNextRun(schedule);
-        // await db.scheduledReport.update({
-        //   where: { id: scheduledReportId },
-        //   data: {
-        //     lastRun: new Date(),
-        //     nextRun: nextRun,
-        //   },
-        // });
-
-        // Schedule next run
-        const nextRun = this.calculateNextRun(schedule);
-        if (nextRun) {
-          await this.scheduleReportJob(scheduledReportId, nextRun);
-        }
-
-        // Log the execution
-        await AuditService.log({
-          action: "scheduled_report_executed",
-          userId: scheduledReport.createdBy,
-          resource: "scheduled_report",
-          resourceId: scheduledReportId,
-          metadata: {
-            runId: run.id,
-            recipientsSent: recipientsSent,
-            totalRecipients: scheduledReport.recipients.length,
-          },
-        });
-
-        return {
-          id: run.id,
-          scheduledReportId: scheduledReportId,
-          status: "completed",
-          startedAt: run.startedAt,
-          completedAt: new Date(),
-          exportJobId: exportJob.id,
-          recipientsSent: recipientsSent,
-          totalRecipients: scheduledReport.recipients.length,
-        };
-      } catch (error) {
-        // TODO: Update run with error when model exists
-        // await db.scheduledReportRun.update({
-        //   where: { id: run.id },
-        //   data: {
-        //     status: "failed",
-        //     completedAt: new Date(),
-        //     error: error instanceof Error ? error.message : "Unknown error",
-        //   },
-        // });
-
-        throw error;
+      if (!scheduledReport) {
+        throw new ScheduledReportNotFoundError(scheduledReportId);
       }
+
+      if (!scheduledReport.isActive) {
+        throw new ScheduledReportError('Scheduled report is not active', 'REPORT_INACTIVE');
+      }
+
+      // Parse recipients and options
+      const recipients = JSON.parse(scheduledReport.recipients);
+      const options = JSON.parse(scheduledReport.options || '{}');
+
+      // Create a run record
+      const run = await db.scheduledReportRun.create({
+        data: {
+          scheduledReportId,
+          status: 'pending',
+          startedAt: new Date(),
+          totalRecipients: recipients.length,
+          successfulSends: 0,
+          failedSends: 0,
+        },
+      });
+
+      runId = run.id;
+
+      // Update run status to running
+      await db.scheduledReportRun.update({
+        where: { id: run.id },
+        data: { status: 'running' },
+      });
+
+      // Create the job payload
+      const jobPayload: ScheduledReportJobPayload = {
+        scheduledReportId,
+        reportId: scheduledReport.reportId,
+        userId: scheduledReport.userId,
+        organizationId: scheduledReport.organizationId || undefined,
+        format: scheduledReport.format as 'pdf' | 'xlsx' | 'csv',
+        recipients,
+        options,
+        runId: run.id,
+      };
+
+      // Queue the export job
+      const exportJobId = await QueueHelpers.exportData({
+        exportType: scheduledReport.format as 'pdf' | 'csv' | 'excel',
+        reportType: 'scheduled_report',
+        filters: options.filters,
+        options: {
+          includeCharts: options.includeCharts,
+          includeImages: options.includeMetadata,
+          format: 'A4',
+          orientation: 'portrait',
+        },
+        notifyEmail: scheduledReport.recipients?.[0] || 'admin@example.com', // Use first recipient or fallback
+        fileName: `${scheduledReport.name}_${new Date().toISOString().split('T')[0]}`,
+      }, {
+        userId: scheduledReport.userId,
+        organizationId: scheduledReport.organizationId || undefined,
+      });
+
+      // Update run with export job ID
+      await db.scheduledReportRun.update({
+        where: { id: run.id },
+        data: { exportJobId: exportJobId?.id || null },
+      });
+
+      // Send notification emails to recipients
+      let successfulSends = 0;
+      let failedSends = 0;
+
+      for (const recipient of recipients) {
+        try {
+          const emailData: ScheduledReportEmailData = {
+            organizationName: scheduledReport.organization?.name || 'Your Organization',
+            reportName: scheduledReport.name,
+            reportType: scheduledReport.report?.name || 'Report',
+            reportPeriod: {
+              start: options.dateRange?.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              end: options.dateRange?.endDate || new Date().toISOString().split('T')[0],
+            },
+            summary: {
+              totalRecords: 0, // Will be updated by the export job
+              generatedAt: new Date().toISOString(),
+              fileSize: '0 KB', // Will be updated by the export job
+            },
+            customMessage: options.customMessage,
+            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+            appName: process.env.NEXT_PUBLIC_APP_NAME || 'Your App',
+            appUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://yourapp.com',
+          };
+
+          await emailService.sendEmail({
+            to: recipient,
+            subject: `Scheduled Report: ${scheduledReport.name}`,
+            template: 'scheduled-report',
+            templateData: emailData,
+          });
+
+          successfulSends++;
+        } catch (emailError) {
+          logger.error('Failed to send scheduled report email', 'scheduled-reports', {
+            recipient,
+            scheduledReportId,
+            error: emailError
+          });
+          failedSends++;
+        }
+      }
+
+      // Update run as completed
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      
+      await db.scheduledReportRun.update({
+        where: { id: run.id },
+        data: {
+          status: 'completed',
+          completedAt: new Date(),
+          duration,
+          successfulSends,
+          failedSends,
+        },
+      });
+
+      // Update scheduled report's last run and calculate next run
+      const nextRun = calculateNextRun(scheduledReport.schedule, scheduledReport.timezone);
+      
+      await db.scheduledReport.update({
+        where: { id: scheduledReportId },
+        data: {
+          lastRun: new Date(),
+          nextRun,
+        },
+      });
+
+      // Schedule the next run
+      await this.scheduleReportJob(scheduledReportId, nextRun);
+
+      logger.info('Scheduled report executed successfully', 'scheduled-reports', {
+        scheduledReportId,
+        runId: run.id,
+        duration,
+        successfulSends,
+        failedSends,
+      });
+
+      return {
+        success: true,
+        runId: run.id,
+        exportJobId: exportJobId?.id || undefined,
+        recipientsSent: successfulSends,
+        totalRecipients: recipients.length,
+        duration,
+      };
+
     } catch (error) {
-      console.error("Error executing scheduled report:", error);
-      throw error;
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Update run as failed if we have a run ID
+      if (runId) {
+        try {
+          await db.scheduledReportRun.update({
+            where: { id: runId },
+            data: {
+              status: 'failed',
+              completedAt: new Date(),
+              duration,
+              errorMessage,
+              errorDetails: error instanceof Error ? error.stack : undefined,
+            },
+          });
+        } catch (updateError) {
+          logger.error('Failed to update run status to failed', 'scheduled-reports', { updateError });
+        }
+      }
+
+      logger.error('Failed to execute scheduled report', 'scheduled-reports', {
+        scheduledReportId,
+        runId,
+        error,
+        duration,
+      });
+
+      return {
+        success: false,
+        runId: runId || '',
+        error: errorMessage,
+        recipientsSent: 0,
+        totalRecipients: 0,
+        duration,
+      };
     }
   }
 
@@ -585,61 +693,11 @@ export class ScheduledReportsService {
   private static calculateNextRun(
     schedule: ScheduledReportConfig["schedule"],
   ): Date {
-    const now = new Date();
-    const [hours, minutes] = schedule.time.split(":").map(Number);
-
-    let nextRun = new Date(now);
-    nextRun.setHours(hours, minutes, 0, 0);
-
-    // If the time has already passed today, move to next occurrence
-    if (nextRun <= now) {
-      switch (schedule.frequency) {
-        case "daily":
-          nextRun.setDate(nextRun.getDate() + 1);
-          break;
-        case "weekly":
-          const daysUntilNext =
-            (7 + (schedule.dayOfWeek || 0) - nextRun.getDay()) % 7;
-          nextRun.setDate(nextRun.getDate() + (daysUntilNext || 7));
-          break;
-        case "monthly":
-          nextRun.setMonth(nextRun.getMonth() + 1);
-          if (schedule.dayOfMonth) {
-            nextRun.setDate(
-              Math.min(
-                schedule.dayOfMonth,
-                new Date(
-                  nextRun.getFullYear(),
-                  nextRun.getMonth() + 1,
-                  0,
-                ).getDate(),
-              ),
-            );
-          }
-          break;
-        case "quarterly":
-          nextRun.setMonth(nextRun.getMonth() + 3);
-          break;
-      }
-    }
-
-    return nextRun;
+    // Since schedule is a cron expression string, use the existing calculateNextRun function
+    return calculateNextRun(schedule);
   }
 
-  /**
-   * Schedule a report job in the queue
-   */
-  private static async scheduleReportJob(
-    scheduledReportId: string,
-    runAt: Date,
-  ): Promise<void> {
-    const delay = runAt.getTime() - Date.now();
-    await queueService.addJob(
-      "scheduled-report",
-      { scheduledReportId },
-      { delay: Math.max(0, delay) },
-    );
-  }
+
 
   /**
    * Cancel a scheduled job
@@ -653,35 +711,337 @@ export class ScheduledReportsService {
   }
 
   /**
-   * Wait for export completion (simplified implementation)
+   * Get scheduled report runs with filtering and pagination
    */
-  private static async waitForExportCompletion(
-    _exportJobId: string,
-  ): Promise<void> {
-    let attempts = 0;
-    const maxAttempts = 60; // 5 minutes with 5-second intervals
+  static async getScheduledReportRuns(
+    scheduledReportId: string,
+    userId: string,
+    organizationId: string,
+    options: {
+      status?: ScheduledReportRunStatus;
+      limit?: number;
+      offset?: number;
+      sortBy?: 'startedAt' | 'completedAt' | 'duration';
+      sortOrder?: 'asc' | 'desc';
+    } = {}
+  ): Promise<{ runs: ScheduledReportRun[]; total: number }> {
+    try {
+      // Verify user has access to the scheduled report
+      const scheduledReport = await db.scheduledReport.findFirst({
+        where: {
+          id: scheduledReportId,
+          OR: [
+            { userId },
+            { organizationId },
+          ],
+        },
+      });
 
-    while (attempts < maxAttempts) {
-      const exportJob = await db.exportJob.findUnique();
-
-      if (!exportJob) {
-        throw new Error("Export job not found");
+      if (!scheduledReport) {
+        throw new ScheduledReportNotFoundError(scheduledReportId);
       }
 
-      if (exportJob.status === "COMPLETED") {
-        return;
-      }
+      const {
+        status,
+        limit = 20,
+        offset = 0,
+        sortBy = 'startedAt',
+        sortOrder = 'desc',
+      } = options;
 
-      if (exportJob.status === "FAILED") {
-        throw new Error(`Export job failed`);
-      }
+      const where = {
+        scheduledReportId,
+        ...(status && { status }),
+      };
 
-      // Wait 5 seconds before checking again
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      attempts++;
+      const [runs, total] = await Promise.all([
+        db.scheduledReportRun.findMany({
+          where,
+          orderBy: { [sortBy]: sortOrder },
+          take: limit,
+          skip: offset,
+        }),
+        db.scheduledReportRun.count({ where }),
+      ]);
+
+      return {
+         runs: runs.map(mapToScheduledReportRun),
+         total,
+       };
+    } catch (error) {
+      if (error instanceof ScheduledReportNotFoundError) {
+        throw error;
+      }
+      logger.error('Failed to get scheduled report runs', 'scheduled-reports', { error, scheduledReportId });
+      throw new ScheduledReportError('Failed to get scheduled report runs', 'FETCH_RUNS_ERROR');
     }
+  }
 
-    throw new Error("Export job timed out");
+  /**
+   * Cancel a scheduled report (disable and remove from queue)
+   */
+  static async cancelScheduledReport(
+    scheduledReportId: string,
+    userId: string,
+    organizationId: string,
+  ): Promise<void> {
+    try {
+      // Verify user has access to the scheduled report
+      const scheduledReport = await db.scheduledReport.findFirst({
+        where: {
+          id: scheduledReportId,
+          OR: [
+            { userId },
+            { organizationId },
+          ],
+        },
+      });
+
+      if (!scheduledReport) {
+        throw new ScheduledReportNotFoundError(scheduledReportId);
+      }
+
+      // Update the scheduled report to inactive
+      await db.scheduledReport.update({
+        where: { id: scheduledReportId },
+        data: {
+          isActive: false,
+          nextRun: null,
+        },
+      });
+
+      // Cancel any pending jobs
+      await this.cancelScheduledJob(scheduledReportId);
+
+      logger.info('Scheduled report cancelled', 'scheduled-reports', {
+        scheduledReportId,
+        userId,
+        organizationId,
+      });
+    } catch (error) {
+      if (error instanceof ScheduledReportNotFoundError) {
+        throw error;
+      }
+      logger.error('Failed to cancel scheduled report', 'scheduled-reports', { error, scheduledReportId });
+      throw new ScheduledReportError('Failed to cancel scheduled report', 'CANCELLATION_ERROR');
+    }
+  }
+
+  /**
+   * Activate a scheduled report
+   */
+  static async activateScheduledReport(
+    scheduledReportId: string,
+    userId: string,
+    organizationId: string,
+  ): Promise<ScheduledReportConfig> {
+    try {
+      // Verify user has access to the scheduled report
+      const scheduledReport = await db.scheduledReport.findFirst({
+        where: {
+          id: scheduledReportId,
+          OR: [
+            { userId },
+            { organizationId },
+          ],
+        },
+        include: {
+          report: true,
+          organization: true,
+        },
+      });
+
+      if (!scheduledReport) {
+        throw new ScheduledReportNotFoundError(scheduledReportId);
+      }
+
+      // Calculate next run time
+      const nextRun = calculateNextRun(scheduledReport.schedule, scheduledReport.timezone);
+
+      // Update the scheduled report to active
+      const updatedReport = await db.scheduledReport.update({
+        where: { id: scheduledReportId },
+        data: {
+          isActive: true,
+          nextRun,
+        },
+        include: {
+          report: true,
+          organization: true,
+        },
+      });
+
+      // Schedule the next run
+      await this.scheduleReportJob(scheduledReportId, nextRun);
+
+      logger.info('Scheduled report activated', 'scheduled-reports', {
+        scheduledReportId,
+        userId,
+        organizationId,
+        nextRun,
+      });
+
+      return mapToScheduledReportConfig(updatedReport);
+    } catch (error) {
+      if (error instanceof ScheduledReportNotFoundError) {
+        throw error;
+      }
+      logger.error('Failed to activate scheduled report', 'scheduled-reports', { error, scheduledReportId });
+      throw new ScheduledReportError('Failed to activate scheduled report', 'ACTIVATION_ERROR');
+    }
+  }
+
+  /**
+   * Get scheduled report statistics
+   */
+  static async getScheduledReportStats(
+    organizationId: string,
+    options: {
+      startDate?: Date;
+      endDate?: Date;
+    } = {}
+  ): Promise<ScheduledReportStats> {
+    try {
+      const { startDate, endDate } = options;
+      const dateFilter = startDate && endDate ? {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      } : {};
+
+      const [
+        totalReports,
+        activeReports,
+        totalRuns,
+        successfulRuns,
+        failedRuns,
+        recentRuns,
+      ] = await Promise.all([
+        db.scheduledReport.count({
+          where: { organizationId, ...dateFilter },
+        }),
+        db.scheduledReport.count({
+          where: { organizationId, isActive: true, ...dateFilter },
+        }),
+        db.scheduledReportRun.count({
+          where: {
+            scheduledReport: { organizationId },
+            ...(startDate && endDate && {
+              startedAt: {
+                gte: startDate,
+                lte: endDate,
+              },
+            }),
+          },
+        }),
+        db.scheduledReportRun.count({
+          where: {
+            scheduledReport: { organizationId },
+            status: 'completed',
+            ...(startDate && endDate && {
+              startedAt: {
+                gte: startDate,
+                lte: endDate,
+              },
+            }),
+          },
+        }),
+        db.scheduledReportRun.count({
+          where: {
+            scheduledReport: { organizationId },
+            status: 'failed',
+            ...(startDate && endDate && {
+              startedAt: {
+                gte: startDate,
+                lte: endDate,
+              },
+            }),
+          },
+        }),
+        db.scheduledReportRun.findMany({
+          where: {
+            scheduledReport: { organizationId },
+          },
+          include: {
+            scheduledReport: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: { startedAt: 'desc' },
+          take: 10,
+        }),
+      ]);
+
+      const successRate = totalRuns > 0 ? (successfulRuns / totalRuns) * 100 : 0;
+
+      return {
+        total: totalReports,
+        active: activeReports,
+        inactive: totalReports - activeReports,
+        totalRuns,
+        successfulRuns,
+        failedRuns,
+        lastRunDate: recentRuns.length > 0 ? recentRuns[0].startedAt || undefined : undefined,
+        nextRunDate: undefined, // Would need to calculate from active reports
+      };
+    } catch (error) {
+      logger.error('Failed to get scheduled report stats', 'scheduled-reports', { error, organizationId });
+      throw new ScheduledReportError('Failed to get scheduled report statistics', 'STATS_ERROR');
+    }
+  }
+
+  /**
+   * Schedule a report job using the queue system
+   */
+  private static async scheduleReportJob(
+    scheduledReportId: string,
+    nextRun: Date,
+  ): Promise<void> {
+    try {
+      // Calculate delay until next run
+      const delay = Math.max(0, nextRun.getTime() - Date.now());
+      
+      if (delay > 0) {
+        // Create a run record for this scheduled execution
+        const run = await db.scheduledReportRun.create({
+          data: {
+            scheduledReportId,
+            status: 'pending',
+            startedAt: nextRun,
+            totalRecipients: 0, // Will be updated when the job runs
+            successfulSends: 0,
+            failedSends: 0,
+          },
+        });
+
+        // Add job to queue with delay
+        await QueueHelpers.runScheduledReport(
+          { 
+            scheduledReportId,
+            runId: run.id 
+          },
+          {
+            delay,
+          },
+        );
+
+        logger.info('Scheduled report job queued', 'scheduled-reports', {
+          scheduledReportId,
+          nextRun: nextRun.toISOString(),
+          delay,
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to schedule report job', 'scheduled-reports', {
+        error,
+        scheduledReportId,
+        nextRun,
+      });
+      throw new ScheduledReportError('Failed to schedule report job', 'SCHEDULING_ERROR');
+    }
   }
 
   /**
@@ -709,65 +1069,5 @@ export class ScheduledReportsService {
       default:
         return now.toLocaleDateString();
     }
-  }
-
-  /**
-   * Get scheduled report runs
-   */
-  static async getScheduledReportRuns(
-    _scheduledReportId: string,
-    _organizationId: string,
-    _filters: {
-      status?: string;
-      page?: number;
-      limit?: number;
-    } = {},
-  ) {
-    // Mock implementation
-    return {
-      runs: [],
-      total: 0,
-      page: 1,
-      limit: 10,
-      totalPages: 0
-    };
-    /*
-    const page = filters.page || 1;
-    const limit = filters.limit || 10;
-    const skip = (page - 1) * limit;
-
-    // TODO: Add scheduledReport model to Prisma schema
-    // Verify access to the scheduled report
-    // const scheduledReport = await db.scheduledReport.findFirst({
-    //   where: {
-    //     id: scheduledReportId,
-    //     organizationId: organizationId,
-    //   },
-    // });
-
-    // if (!scheduledReport) {
-    //   throw new Error("Scheduled report not found or access denied");
-    // }
-
-    const where: any = { scheduledReportId };
-
-    if (filters.status) {
-      where.status = filters.status;
-    }
-
-    // TODO: Add scheduledReportRun model to Prisma schema
-    const [runs, total] = await Promise.all([
-      Promise.resolve([]),
-      Promise.resolve(0),
-    ]);
-
-    return {
-      runs,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
-    */
   }
 }

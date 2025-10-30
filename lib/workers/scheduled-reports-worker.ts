@@ -86,12 +86,12 @@ export class ScheduledReportsWorker {
         await ScheduledReportsService.executeScheduledReport(scheduledReportId);
 
       console.log(
-        `Scheduled report executed successfully: ${scheduledReportId}, run: ${run.id}`,
+        `Scheduled report executed successfully: ${scheduledReportId}, run: ${run.runId}`,
       );
 
       return {
         success: true,
-        runId: run.id,
+        runId: run.runId,
         recipientsSent: run.recipientsSent,
         totalRecipients: run.totalRecipients,
       };

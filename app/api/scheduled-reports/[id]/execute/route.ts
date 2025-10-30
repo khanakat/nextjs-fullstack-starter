@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ScheduledReportsService } from "@/lib/services/scheduled-reports-service";
+import { 
+  ScheduledReportError, 
+  ScheduledReportNotFoundError 
+} from "@/lib/types/scheduled-reports";
 
 interface RouteParams {
   params: {
@@ -17,26 +21,25 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     }
 
     // Execute the scheduled report
-    const run = await ScheduledReportsService.executeScheduledReport(params.id);
+    const result = await ScheduledReportsService.executeScheduledReport(params.id);
 
-    return NextResponse.json(run, { status: 201 });
+    return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    console.error("Error executing scheduled report:", error);
-
-    if (error instanceof Error && error.message.includes("not found")) {
+    if (error instanceof ScheduledReportNotFoundError) {
       return NextResponse.json(
         { error: "Scheduled report not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
-    if (error instanceof Error && error.message.includes("not active")) {
+    if (error instanceof ScheduledReportError) {
       return NextResponse.json(
-        { error: "Scheduled report is not active" },
-        { status: 400 },
+        { error: error.message, code: error.code },
+        { status: 400 }
       );
     }
 
+    console.error("Error executing scheduled report:", error);
     return NextResponse.json(
       { error: "Failed to execute scheduled report" },
       { status: 500 },
