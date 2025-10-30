@@ -10,9 +10,15 @@ const customJestConfig = {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   testEnvironment: "jest-environment-jsdom",
   testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/"],
-  moduleNameMapping: {
+  testEnvironmentOptions: {
+    customExportConditions: [""],
+  },
+  moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },
+  transformIgnorePatterns: [
+    "node_modules/(?!(node-cron|uuid)/)"
+  ],
   collectCoverageFrom: [
     "lib/**/*.{js,jsx,ts,tsx}",
     "components/**/*.{js,jsx,ts,tsx}",

@@ -50,3 +50,14 @@ jest.mock("next/navigation", () => ({
 
 // Mock environment variables
 process.env.NODE_ENV = "test";
+
+// Setup Web API globals for Next.js API routes
+import { TextEncoder, TextDecoder } from 'util';
+
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+
+// Mock fetch if not available
+if (!global.fetch) {
+  global.fetch = jest.fn();
+}
