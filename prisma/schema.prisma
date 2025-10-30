@@ -9,18 +9,18 @@ generator client {
 // IMPORTANT: Switch between PostgreSQL and SQLite according to your environment
 
 // For PostgreSQL (Recommended for production)
-// datasource db {
-//   provider = "postgresql"
-//   url      = env("DATABASE_URL")
-//   // Optional: Enable preview features
-//   // directUrl = env("DIRECT_URL")
-// }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Optional: Enable preview features
+  // directUrl = env("DIRECT_URL")
+}
 
 // For SQLite (Temporary development)
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
+// datasource db {
+//   provider = "sqlite"
+//   url      = env("DATABASE_URL")
+// }
 
 // For MySQL (Alternative)
 // datasource db {
@@ -326,6 +326,7 @@ model Organization {
   
   // Organization-scoped data
   reports     Report[]
+  scheduledReports ScheduledReport[]
   auditLogs   AuditLog[]
   analyticsDashboards AnalyticsDashboard[]
   analyticsQueries    AnalyticsQuery[]
@@ -510,6 +511,7 @@ model Report {
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   exportJobs  ExportJob[]
   permissions ReportPermission[]
+  scheduledReports ScheduledReport[]
   
   @@map("reports")
 }
@@ -519,22 +521,101 @@ model ExportJob {
   id           String    @id @default(cuid())
   reportId     String    @map("report_id")
   userId       String    @map("user_id")
-  format       String    // pdf, excel
-  status       String    @default("pending") // pending, processing, completed, failed
+  format       String    // pdf, excel, xlsx, csv, json
+  status       String    @default("pending") // pending, processing, completed, failed, cancelled
   downloadUrl  String?   @map("download_url")
   filePath     String?   @map("file_path") // Local file path for storage
+  filename     String?   // Original filename
   fileSize     Int?      @map("file_size") // File size in bytes
+  rowCount     Int?      @map("row_count") // Number of rows exported
+  progress     Int       @default(0) // Progress percentage (0-100)
+  statusMessage String?  @map("status_message") // Detailed status message
   options      String    @default("{}") // JSON string for export options
   errorMessage String?   @map("error_message")
   expiresAt    DateTime? @map("expires_at") // File expiration date
+  queueJobId   String?   @map("queue_job_id") // Reference to queue system job
   
   createdAt    DateTime  @default(now()) @map("created_at")
+  startedAt    DateTime? @map("started_at") // When processing started
   completedAt  DateTime? @map("completed_at")
   
   // Relations
   report       Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  scheduledReportRuns ScheduledReportRun[]
   
   @@map("export_jobs")
+}
+
+// Scheduled report model for automated report generation
+model ScheduledReport {
+  id             String    @id @default(cuid())
+  name           String
+  description    String?
+  reportId       String    @map("report_id")
+  userId         String    @map("user_id") // User who created the scheduled report
+  organizationId String?   @map("organization_id")
+  
+  // Schedule configuration
+  schedule       String    // Cron expression or JSON schedule configuration
+  timezone       String    @default("UTC")
+  
+  // Recipients and delivery
+  recipients     String    // JSON array of email addresses
+  format         String    @default("pdf") // pdf, xlsx, csv
+  
+  // Report options
+  options        String    @default("{}") // JSON string for report generation options
+  
+  // Status and control
+  isActive       Boolean   @default(true) @map("is_active")
+  lastRun        DateTime? @map("last_run")
+  nextRun        DateTime? @map("next_run")
+  
+  // Metadata
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  report         Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  runs           ScheduledReportRun[]
+  
+  @@map("scheduled_reports")
+}
+
+// Scheduled report run model for tracking execution history
+model ScheduledReportRun {
+  id                String    @id @default(cuid())
+  scheduledReportId String    @map("scheduled_report_id")
+  status            String    @default("pending") // pending, running, completed, failed, cancelled
+  
+  // Execution details
+  startedAt         DateTime? @map("started_at")
+  completedAt       DateTime? @map("completed_at")
+  duration          Int?      // Execution duration in seconds
+  
+  // Results
+  totalRecipients   Int       @default(0) @map("total_recipients")
+  successfulSends   Int       @default(0) @map("successful_sends")
+  failedSends       Int       @default(0) @map("failed_sends")
+  
+  // Export details
+  exportJobId       String?   @map("export_job_id") // Reference to the export job
+  downloadUrl       String?   @map("download_url")
+  fileSize          Int?      @map("file_size")
+  
+  // Error handling
+  errorMessage      String?   @map("error_message")
+  errorDetails      String?   @map("error_details") // JSON string for detailed error info
+  
+  // Metadata
+  createdAt         DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  scheduledReport   ScheduledReport @relation(fields: [scheduledReportId], references: [id], onDelete: Cascade)
+  exportJob         ExportJob? @relation(fields: [exportJobId], references: [id], onDelete: SetNull)
+  
+  @@map("scheduled_report_runs")
 }
 
 // Report permissions for access control
