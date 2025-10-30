@@ -1,13 +1,10 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
 import { WorkflowList } from "@/components/workflows/workflow-list";
 import { Workflow } from "@/lib/types/workflows";
 
 export default function WorkflowsPage() {
-  const router = useRouter();
-
   const handleCreateNew = () => {
     // Navigate to workflow creation page (placeholder)
     console.log("Create new workflow");

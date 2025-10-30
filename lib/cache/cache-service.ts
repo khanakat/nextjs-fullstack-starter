@@ -28,8 +28,8 @@ export class CacheService {
     if (config.redis) {
       try {
         // Check if we're in an environment that supports Redis
-        const isEdgeRuntime = typeof EdgeRuntime !== 'undefined' || 
-                             process.env.NEXT_RUNTIME === 'edge';
+        const isEdgeRuntime = process.env.NEXT_RUNTIME === 'edge' ||
+                             typeof window !== 'undefined';
         
         if (isEdgeRuntime) {
           console.warn("Redis not supported in Edge Runtime, using memory cache");
@@ -43,7 +43,6 @@ export class CacheService {
           db: config.redis.db || 0,
           maxRetriesPerRequest: 3,
           lazyConnect: true, // Don't connect immediately
-          retryDelayOnFailover: 100,
         });
 
         // Handle connection errors gracefully
@@ -234,8 +233,8 @@ let cacheService: CacheService;
 export function getCacheService(): CacheService {
   if (!cacheService) {
     // Check if we're in Edge Runtime environment
-    const isEdgeRuntime = typeof EdgeRuntime !== 'undefined' || 
-                         process.env.NEXT_RUNTIME === 'edge';
+    const isEdgeRuntime = process.env.NEXT_RUNTIME === 'edge' ||
+                         typeof window !== 'undefined';
     
     cacheService = new CacheService({
       redis: (!isEdgeRuntime && process.env.REDIS_URL)

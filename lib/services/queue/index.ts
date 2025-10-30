@@ -30,7 +30,7 @@ let redisConnection: IORedis | null = null;
 function getRedisConnection(): IORedis {
   if (!redisConnection) {
     // Check if we're in an environment that supports Redis
-    const isEdgeRuntime = typeof EdgeRuntime !== 'undefined' || 
+    const isEdgeRuntime = typeof globalThis !== 'undefined' && 'EdgeRuntime' in globalThis || 
                          process.env.NEXT_RUNTIME === 'edge';
     
     if (isEdgeRuntime) {

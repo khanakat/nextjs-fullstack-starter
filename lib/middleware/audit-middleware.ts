@@ -262,7 +262,7 @@ export class AuditMiddleware {
     const response = NextResponse.next();
 
     // Log the audit event after response (in background)
-    setImmediate(async () => {
+    setTimeout(async () => {
       const endTime = Date.now();
       const duration = endTime - startTime;
       const status = response.status || 200;
@@ -299,7 +299,7 @@ export class AuditMiddleware {
       } catch (error) {
         console.error("Failed to log audit event:", error);
       }
-    });
+    }, 0);
 
     return response;
   }

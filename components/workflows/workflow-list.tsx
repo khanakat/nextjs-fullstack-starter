@@ -233,36 +233,51 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
             name: "Customer Onboarding",
             description: "Automated workflow for new customer registration and setup",
             status: "active" as WorkflowStatus,
-            version: 1,
-            definition: "{}",
-            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            version: "1",
+            definition: { nodes: [], edges: [] },
+            settings: {},
+            variables: {},
             createdBy: "demo-user",
             organizationId: "demo-org",
+            isTemplate: false,
+            isPublic: false,
+            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+            executionCount: 0,
           },
           {
             id: "demo-2",
             name: "Invoice Processing",
             description: "Automated invoice validation and approval workflow",
             status: "active" as WorkflowStatus,
-            version: 2,
-            definition: "{}",
-            createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-            updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            version: "2",
+            definition: { nodes: [], edges: [] },
+            settings: {},
+            variables: {},
             createdBy: "demo-user",
             organizationId: "demo-org",
+            isTemplate: false,
+            isPublic: false,
+            createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+            executionCount: 0,
           },
           {
             id: "demo-3",
             name: "Content Review",
             description: "Multi-step content review and approval process",
             status: "draft" as WorkflowStatus,
-            version: 1,
-            definition: "{}",
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            version: "1",
+            definition: { nodes: [], edges: [] },
+            settings: {},
+            variables: {},
             createdBy: "demo-user",
             organizationId: "demo-org",
+            isTemplate: false,
+            isPublic: false,
+            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+            executionCount: 0,
           },
         ];
         setWorkflows(mockWorkflows);
@@ -282,11 +297,15 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
       params.append("sortBy", sortBy);
       params.append("sortOrder", "desc");
 
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/workflows?${params}`, {
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
+        headers,
       });
 
       if (!response.ok) {
@@ -322,12 +341,16 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
 
     try {
       const token = await getToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/workflows/${workflow.id}/execute`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
+        headers,
         body: JSON.stringify({
           data: {},
           triggeredBy: "manual",
@@ -363,12 +386,16 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
 
     try {
       const token = await getToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch("/api/workflows", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
+        headers,
         body: JSON.stringify({
           name: `${workflow.name} (Copy)`,
           description: workflow.description,
@@ -409,12 +436,16 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
 
     try {
       const token = await getToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/workflows/${workflow.id}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
+        headers,
       });
 
       if (!response.ok) {

@@ -72,7 +72,7 @@ const middlewareHandler = async (auth: any, req: any) => {
       const userId = authResult?.userId;
       if (userId) {
         // Apply audit middleware for authenticated requests
-        const auditResponse = await auditMiddleware(req);
+        const auditResponse = await auditMiddleware.middleware(req);
         if (auditResponse && auditResponse.status !== 200) {
           return auditResponse;
         }
