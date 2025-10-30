@@ -4,6 +4,8 @@ import {
   TemplateCategory,
   ExportJob,
   ReportPermission,
+  ScheduledReport,
+  ScheduledReportRun,
 } from "@prisma/client";
 
 // Base types from Prisma
@@ -12,6 +14,8 @@ export type TemplateType = Template;
 export type TemplateCategoryType = TemplateCategory;
 export type ExportJobType = ExportJob;
 export type ReportPermissionType = ReportPermission;
+export type ScheduledReportType = ScheduledReport;
+export type ScheduledReportRunType = ScheduledReportRun;
 
 // Extended types with relations
 export interface ReportWithRelations extends Report {
@@ -34,6 +38,17 @@ export interface TemplateCategoryWithTemplates extends TemplateCategory {
 
 export interface ExportJobWithReport extends ExportJob {
   report?: Report;
+}
+
+export interface ScheduledReportWithRelations extends ScheduledReport {
+  report?: Report;
+  organization?: any; // Organization type would be imported from organization types
+  runs?: ScheduledReportRun[];
+}
+
+export interface ScheduledReportRunWithRelations extends ScheduledReportRun {
+  scheduledReport?: ScheduledReport;
+  exportJob?: ExportJob;
 }
 
 // Report configuration types
@@ -147,6 +162,20 @@ export enum PermissionLevel {
   ADMIN = "ADMIN",
 }
 
+export enum ScheduledReportStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  PAUSED = "PAUSED",
+}
+
+export enum ScheduledReportRunStatus {
+  PENDING = "PENDING",
+  RUNNING = "RUNNING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+  CANCELLED = "CANCELLED",
+}
+
 // API request/response types
 export interface CreateReportRequest {
   title: string;
@@ -178,6 +207,27 @@ export interface ExportReportRequest {
   options?: ExportOptions;
 }
 
+export interface CreateScheduledReportRequest {
+  name: string;
+  description?: string;
+  reportId: string;
+  schedule: string; // Cron expression
+  format: ExportFormat;
+  recipients: string[];
+  isActive?: boolean;
+  options?: ExportOptions;
+}
+
+export interface UpdateScheduledReportRequest {
+  name?: string;
+  description?: string;
+  schedule?: string;
+  format?: ExportFormat;
+  recipients?: string[];
+  isActive?: boolean;
+  options?: ExportOptions;
+}
+
 export interface ExportOptions {
   includeCharts?: boolean;
   includeData?: boolean;
@@ -205,20 +255,48 @@ export interface TemplateFilters {
   createdBy?: string;
 }
 
+export interface ScheduledReportFilters {
+  search?: string;
+  reportId?: string;
+  isActive?: boolean;
+  status?: ScheduledReportStatus;
+  createdBy?: string;
+  dateRange?: {
+    from: Date;
+    to: Date;
+  };
+}
+
+export interface ScheduledReportRunFilters {
+  scheduledReportId?: string;
+  status?: ScheduledReportRunStatus;
+  dateRange?: {
+    from: Date;
+    to: Date;
+  };
+}
+
 // Dashboard types
 export interface ReportsDashboardData {
   totalReports: number;
   totalTemplates: number;
+  totalScheduledReports: number;
   recentReports: ReportWithRelations[];
   popularTemplates: TemplateWithRelations[];
+  scheduledReports: ScheduledReportWithRelations[];
   exportJobs: ExportJobWithReport[];
+  recentRuns: ScheduledReportRunWithRelations[];
   stats: ReportStats;
 }
 
 export interface ReportStats {
   reportsCreatedThisMonth: number;
   reportsCreatedLastMonth: number;
+  scheduledReportsCreatedThisMonth: number;
   totalExports: number;
+  totalScheduledRuns: number;
+  successfulRuns: number;
+  failedRuns: number;
   averageReportViews: number;
 }
 

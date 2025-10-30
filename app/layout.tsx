@@ -1,4 +1,4 @@
-import { ConditionalClerkProvider } from "@/components/providers/clerk-provider";
+import { ConditionalClerkProvider } from "@/components/conditional-clerk";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { QueryProvider } from "@/lib/react-query";
