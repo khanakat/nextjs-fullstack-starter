@@ -9,10 +9,17 @@ const isProtectedRoute = createRouteMatcher(protectedRoutes);
 // Initialize performance and security middleware
 const auditMiddleware = createAuditMiddleware();
 
-// Check if Clerk is properly configured
-const hasValidClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && 
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY !== "pk_test_development_key" &&
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_");
+// Check if Clerk is properly configured (both publishable and secret keys present and not placeholders)
+const hasValidClerkKeys = Boolean(
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
+    process.env.CLERK_SECRET_KEY &&
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_") &&
+    process.env.CLERK_SECRET_KEY.startsWith("sk_") &&
+    !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_test") &&
+    !process.env.CLERK_SECRET_KEY.startsWith("sk_test") &&
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY !== "pk_test_development_key" &&
+    process.env.CLERK_SECRET_KEY !== "sk_test_development_key",
+);
 
 const middlewareHandler = async (auth: any, req: any) => {
   // Only protect routes if Clerk is properly configured
@@ -126,7 +133,5 @@ export const config = {
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     // Always run for API routes
     "/(api|trpc)(.*)",
-    // Exclude drag-drop-demo from middleware
-    "/((?!drag-drop-demo).*)",
   ],
 };

@@ -90,8 +90,13 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    // TODO: Add admin check here
-    // For now, allow any authenticated user to create categories
+    const roleHeader = _request.headers.get("x-user-role") || "";
+    if (roleHeader.toLowerCase() !== "admin") {
+      return StandardErrorResponse.forbidden(
+        "Only admins can create template categories",
+        requestId,
+      );
+    }
 
     const body = await _request.json();
     const validatedData = createCategorySchema.parse(body);

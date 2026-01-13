@@ -4,7 +4,7 @@ export default function SignInPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <ConditionalSignIn 
-        redirectUrl="/"
+        redirectUrl="/dashboard"
         signUpUrl="/sign-up"
       />
     </div>

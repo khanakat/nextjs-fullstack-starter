@@ -5,11 +5,14 @@ import { ScheduledReportsService } from "@/lib/services/scheduled-reports-servic
 import { ScheduledReportError } from "@/lib/types/scheduled-reports";
 import { statsRateLimiter, createRateLimitResponse } from "@/lib/utils/rate-limiter";
 import { logger } from "@/lib/logger";
+import { createSuccessResponse, handleScheduledReportsError, validateRequestAuth } from "@/lib/middleware/scheduled-reports-error-handler";
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   const { searchParams } = new URL(request.url);
-  const organizationId = searchParams.get("organizationId");
+  // Prefer query param, fallback to header `x-organization-id`
+  const organizationId =
+    searchParams.get("organizationId") || request.headers.get("x-organization-id");
 
   // Support demo mode - if no session, use demo data
   const userId = session?.user?.id || "demo-user";
@@ -24,11 +27,10 @@ export async function GET(request: NextRequest) {
       return createRateLimitResponse(statsRateLimiter.getResetTime(rateLimitKey));
     }
 
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "Organization ID is required" },
-        { status: 400 },
-      );
+    // Only validate auth when not in demo mode
+    if (!isDemo) {
+      // Validate auth and organization access consistently
+      validateRequestAuth(session?.user?.id, organizationId || undefined);
     }
 
     const startDate = searchParams.get("startDate") 
@@ -67,53 +69,21 @@ export async function GET(request: NextRequest) {
           }
         ]
       };
-      return NextResponse.json(demoStats);
+      return createSuccessResponse(demoStats, "Scheduled reports stats retrieved successfully (demo mode)");
     }
 
     const stats = await ScheduledReportsService.getScheduledReportStats(
-      organizationId,
+      organizationId!,
       { startDate, endDate }
     );
 
-    return NextResponse.json(stats);
+    return createSuccessResponse(stats, "Scheduled reports stats retrieved successfully");
   } catch (error) {
-    const requestId = crypto.randomUUID();
-    
-    if (error instanceof ScheduledReportError) {
-      logger.warn("Scheduled report stats error", "API", {
-        error: error.message,
-        code: error.code,
-        requestId,
-        organizationId: orgId,
-        userId
-      });
-      
-      return NextResponse.json(
-        { 
-          error: error.message, 
-          code: error.code,
-          requestId,
-          timestamp: new Date().toISOString()
-        },
-        { status: 400 }
-      );
-    }
-
-    logger.error("Error fetching scheduled report stats", "API", {
-      error: error instanceof Error ? error.message : error,
-      stack: error instanceof Error ? error.stack : undefined,
-      requestId,
+    return handleScheduledReportsError(error, {
+      operation: 'get_scheduled_reports_stats',
+      userId,
       organizationId: orgId,
-      userId
+      path: request.url,
     });
-    
-    return NextResponse.json(
-      { 
-        error: "Internal server error",
-        requestId,
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    );
   }
 }

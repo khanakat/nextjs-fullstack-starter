@@ -155,10 +155,10 @@ const ScheduledReportsListComponent = ({
     setInternalRefreshTrigger(prev => prev + 1);
   }, []);
 
-  // Separate useEffect for initial load and refreshTrigger
+  // Separate useEffect for initial load and refresh triggers
   useEffect(() => {
     fetchScheduledReports();
-  }, [organizationId, page, statusFilter, refreshTrigger, internalRefreshTrigger]); // Remove fetchScheduledReports from dependencies
+  }, [fetchScheduledReports, refreshTrigger, internalRefreshTrigger]);
 
   const handleToggleStatus = async (
     reportId: string,

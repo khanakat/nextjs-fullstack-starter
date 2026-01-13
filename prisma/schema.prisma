@@ -3,37 +3,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
 }
 
-// Database configuration
-// IMPORTANT: Switch between PostgreSQL and SQLite according to your environment
-
-// For PostgreSQL (Recommended for production)
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // Optional: Enable preview features
-  // directUrl = env("DIRECT_URL")
 }
-
-// For SQLite (Temporary development)
-// datasource db {
-//   provider = "sqlite"
-//   url      = env("DATABASE_URL")
-// }
-
-// For MySQL (Alternative)
-// datasource db {
-//   provider = "mysql"
-//   url = env("DATABASE_URL")
-//   relationMode = "prisma"
-// }
-
-// For SQLite (Development only)
-// datasource db {
-//   provider = "sqlite"
-//   url      = env("DATABASE_URL")
-// }
 
 // User model - Core entity for authentication and user management (Clerk integration)
 model User {
@@ -62,6 +38,7 @@ model User {
   followers Follow[] @relation("UserFollowers")
   subscription UserSubscription?
   notifications Notification[]
+  sessions     Session[]
   
   // Organization relations
   organizationMemberships OrganizationMember[]
@@ -78,6 +55,40 @@ model User {
   securityEvents          SecurityEvent[] @relation("UserSecurityEvents")
   
   @@map("users")
+}
+
+
+// ============================================================================
+// AUTHENTICATION & SESSION MANAGEMENT MODELS
+// ============================================================================
+
+// Session model for managing user authentication sessions
+model Session {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  sessionId    String   @unique @map("session_id")
+  accessToken  String   @map("access_token")
+  refreshToken String?  @map("refresh_token")
+  type         String   // web, mobile, api
+  status       String   @default("active") // active, expired, revoked
+  
+  // Request context
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  
+  // Timing
+  expiresAt    DateTime @map("expires_at")
+  lastActivityAt DateTime @default(now()) @map("last_activity_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, status])
+  @@index([sessionId])
+  @@index([expiresAt])
+  @@map("sessions")
 }
 
 

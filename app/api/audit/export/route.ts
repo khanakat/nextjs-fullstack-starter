@@ -10,6 +10,9 @@ import { StandardErrorResponse } from "@/lib/standardized-error-responses";
 import { handleZodError } from "@/lib/error-handlers";
 import { ApiError } from "@/lib/api-utils";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // Define the query parameters schema
 const exportQuerySchema = z.object({
   format: z.enum(["csv", "json", "pdf"]).default("csv"),

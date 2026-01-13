@@ -1,4 +1,4 @@
-import { useToastStore } from "@/store";
+import { useToastStore } from "../store";
 
 export function useToast() {
   const { addToast } = useToastStore();

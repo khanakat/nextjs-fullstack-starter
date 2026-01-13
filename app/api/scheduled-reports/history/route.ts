@@ -88,15 +88,66 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(demoHistory);
     }
 
-    // For now, return empty result since getExecutionHistory doesn't exist
-    // TODO: Implement proper execution history method
-    const result = {
-      executions: [],
-      total: 0,
-      page,
-      limit,
-      totalPages: 0
-    };
+    // Use the scheduled reports service to get execution history
+    // Si hay un scheduledReportId específico, obtener las ejecuciones de ese reporte
+    // Si no, obtener todas las ejecuciones de la organización
+    let result;
+    
+    if (scheduledReportId) {
+      // Obtener ejecuciones de un reporte específico
+      const offset = (page - 1) * limit;
+      const runsResult = await ScheduledReportsService.getScheduledReportRuns(
+        scheduledReportId,
+        userId,
+        orgId,
+        {
+          status: status as any,
+          limit,
+          offset,
+          sortBy: 'startedAt',
+          sortOrder: 'desc',
+        }
+      );
+      
+      // Mapear los runs al formato esperado por el frontend
+      result = {
+        executions: runsResult.runs.map(run => ({
+          id: run.id,
+          scheduledReportId: run.scheduledReportId,
+          reportName: 'Scheduled Report',
+          status: run.status,
+          startedAt: run.startedAt,
+          completedAt: run.completedAt,
+          duration: run.duration,
+          fileSize: run.fileSize,
+          downloadUrl: run.downloadUrl,
+          error: run.errorMessage,
+        })),
+        pagination: {
+          page,
+          limit,
+          total: runsResult.total,
+          totalPages: Math.ceil(runsResult.total / limit),
+        }
+      };
+    } else {
+      // Para obtener todas las ejecuciones de la organización, necesitaríamos un método diferente
+      // Por ahora, devolver array vacío con mensaje informativo
+      result = {
+        executions: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        }
+      };
+      
+      logger.warn('Getting all execution history for organization not yet implemented', 'API', {
+        organizationId: orgId,
+        userId
+      });
+    }
 
     return NextResponse.json(result);
   } catch (error) {

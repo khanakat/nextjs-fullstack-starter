@@ -16,6 +16,7 @@ import {
   OAuthAuthorizationUrl,
   IntegrationAnalytics,
 } from "../../shared/types/integration";
+import crypto from "crypto";
 import { AuditService } from "../../lib/services/audit";
 import { BaseIntegrationProvider } from "./integrations/BaseIntegrationProvider";
 import { SlackProvider } from "./integrations/SlackProvider";
@@ -24,7 +25,6 @@ import { JiraProvider } from "./integrations/JiraProvider";
 import { GoogleDriveProvider } from "./integrations/GoogleDriveProvider";
 import { StripeProvider } from "./integrations/StripeProvider";
 import { WebhookProvider } from "./integrations/WebhookProvider";
-import crypto from "crypto";
 
 export class IntegrationService {
   private prisma: PrismaClient;
@@ -788,7 +788,15 @@ export class IntegrationService {
           successfulRequests,
           failedRequests,
           averageResponseTime,
-          dataTransferred: 0, // TODO: Calculate from logs
+          dataTransferred: logs.reduce((sum, log) => {
+            const reqSize = log.requestData
+              ? Buffer.byteLength(log.requestData, "utf8")
+              : 0;
+            const resSize = log.responseData
+              ? Buffer.byteLength(log.responseData, "utf8")
+              : 0;
+            return sum + reqSize + resSize;
+          }, 0),
           webhooksTriggered,
           syncOperations,
         },
@@ -856,17 +864,63 @@ export class IntegrationService {
   private encryptCredentials(
     credentials: Record<string, any>,
   ): Record<string, any> {
-    // TODO: Implement proper encryption
-    // For now, just return as-is (in production, use proper encryption)
-    return credentials;
+    const secret = process.env.INTEGRATION_CREDENTIALS_SECRET;
+    if (!secret) {
+      throw new Error(
+        "INTEGRATION_CREDENTIALS_SECRET is not configured for credential encryption",
+      );
+    }
+
+    const iv = crypto.randomBytes(12);
+    const key = crypto.createHash("sha256").update(secret).digest();
+    const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+
+    const serialized = JSON.stringify(credentials);
+    const encrypted = Buffer.concat([
+      cipher.update(serialized, "utf8"),
+      cipher.final(),
+    ]);
+    const authTag = cipher.getAuthTag();
+
+    return {
+      iv: iv.toString("base64"),
+      data: encrypted.toString("base64"),
+      tag: authTag.toString("base64"),
+    };
   }
 
   private decryptCredentials(
     encryptedCredentials: Record<string, any>,
   ): Record<string, any> {
-    // TODO: Implement proper decryption
-    // For now, just return as-is (in production, use proper decryption)
-    return encryptedCredentials;
+    const secret = process.env.INTEGRATION_CREDENTIALS_SECRET;
+    if (!secret) {
+      throw new Error(
+        "INTEGRATION_CREDENTIALS_SECRET is not configured for credential decryption",
+      );
+    }
+
+    if (
+      !encryptedCredentials ||
+      !encryptedCredentials.iv ||
+      !encryptedCredentials.data ||
+      !encryptedCredentials.tag
+    ) {
+      // Backward compatibility: if credentials are not encrypted, return as-is
+      return encryptedCredentials;
+    }
+
+    const key = crypto.createHash("sha256").update(secret).digest();
+    const iv = Buffer.from(encryptedCredentials.iv, "base64");
+    const tag = Buffer.from(encryptedCredentials.tag, "base64");
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+    decipher.setAuthTag(tag);
+
+    const decrypted = Buffer.concat([
+      decipher.update(Buffer.from(encryptedCredentials.data, "base64")),
+      decipher.final(),
+    ]).toString("utf8");
+
+    return JSON.parse(decrypted);
   }
 
   private async logIntegrationAction(

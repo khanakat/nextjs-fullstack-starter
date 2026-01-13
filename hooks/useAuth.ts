@@ -1,6 +1,6 @@
 import React from "react";
 import { useConditionalUser } from "@/components/conditional-clerk";
-import { useAuthStore } from "@/store";
+import { useAuthStore } from "../store";
 
 export function useAuth() {
   const { user: clerkUser, isLoaded, isSignedIn } = useConditionalUser();

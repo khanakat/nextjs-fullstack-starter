@@ -13,6 +13,9 @@ import {
 import { handleZodError } from "@/lib/error-handlers";
 import { ApiError } from "@/lib/api-utils";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // ============================================================================
 // VALIDATION SCHEMAS
 // ============================================================================

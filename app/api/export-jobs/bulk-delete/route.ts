@@ -10,6 +10,7 @@ import { z } from "zod";
 import { generateRequestId } from "@/lib/utils";
 import { handleZodError } from "@/lib/error-handlers";
 import { FileStorageService } from "@/lib/services/file-storage-service";
+import { queueService } from "@/lib/services/queue";
 
 const bulkDeleteSchema = z.object({
   jobIds: z.array(z.string()).min(1, "At least one job ID is required"),
@@ -46,6 +47,43 @@ export async function POST(_request: NextRequest) {
       );
     }
 
+    // Cancel any running/pending jobs before deletion to avoid orphaned workers
+    const pendingIds = jobs
+      .filter((job) => ["pending", "processing"].includes(job.status))
+      .map((job) => job.id);
+
+    if (pendingIds.length) {
+      await db.exportJob.updateMany({
+        where: {
+          id: { in: pendingIds },
+          userId,
+          status: { in: ["pending", "processing"] },
+        },
+        data: {
+          status: "cancelled",
+          completedAt: new Date(),
+          errorMessage: "Cancelled via bulk delete",
+        },
+      });
+    }
+
+    // Best-effort queue cancellation for any job that has queueJobId
+    await Promise.all(
+      jobs
+        .filter((job) => job.queueJobId)
+        .map(async (job) => {
+          try {
+            await queueService.cancelJob(job.queueJobId!);
+          } catch (err) {
+            logger.warn("Failed to cancel queue job during bulk delete", "export-jobs", {
+              jobId: job.id,
+              queueJobId: job.queueJobId,
+              error: err instanceof Error ? err.message : err,
+            });
+          }
+        }),
+    );
+
     // Delete the jobs
     const deleteResult = await db.exportJob.deleteMany({
       where: {
@@ -74,8 +112,12 @@ export async function POST(_request: NextRequest) {
       await FileStorageService.deleteFiles(filePaths);
     }
 
-    // TODO: Cancel any running export processes
-    // TODO: Clean up any temporary resources
+    // Best-effort cleanup hook for future process/queue integration
+    logger.info("Export jobs cancelled and files cleaned", "export-jobs", {
+      requestId,
+      userId,
+      jobCount: jobs.length,
+    });
 
     return StandardSuccessResponse.ok({
       success: true,

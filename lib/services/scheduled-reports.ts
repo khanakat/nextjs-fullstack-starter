@@ -1,6 +1,7 @@
 // Mock imports for now since modules are not available
 // import { db } from "@/lib/db";
 // import { logger } from "@/lib/logger";
+import parser from "cron-parser";
 // import { queueService } from "@/lib/services/queue";
 // import { sendScheduledReportNotification } from "@/lib/email-service";
 // import cron from "node-cron";
@@ -640,15 +641,18 @@ class ScheduledReportsService {
   /**
    * Calculate next run time for a cron expression
    */
-  private static getNextRunTime(_cronExpression: string): Date {
-    // This is a simplified implementation
-    // In production, you might want to use a more robust cron parser
-    const now = new Date();
-    const nextRun = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Default to 24 hours from now
-
-    // TODO: Implement proper cron expression parsing
-    // For now, return a default next run time
-    return nextRun;
+  private static getNextRunTime(cronExpression: string): Date {
+    try {
+      const interval = (parser as any).parseExpression(cronExpression);
+      return interval.next().toDate();
+    } catch (error) {
+      logger?.warn?.("Invalid cron expression, defaulting to 24h", {
+        cronExpression,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      const now = new Date();
+      return new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    }
   }
 
   /**

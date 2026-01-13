@@ -13,6 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { SecurityMetricsCard } from "@/components/security/security-metrics-card";
 import { SecurityEventsTable } from "@/components/security/security-events-table";
 import { SecurityChart } from "@/components/security/security-chart";
@@ -38,6 +47,8 @@ export default function SecurityDashboard() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("24h");
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<SecurityEvent | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const fetchSecurityData = useCallback(async () => {
     if (!organization?.id) return;
@@ -117,8 +128,8 @@ export default function SecurityDashboard() {
   };
 
   const handleViewEventDetails = (event: SecurityEvent) => {
-    // TODO: Implement event details modal
-    console.log("View event details:", event);
+    setSelectedEvent(event);
+    setDetailsOpen(true);
   };
 
   const handleExportData = () => {
@@ -375,6 +386,108 @@ export default function SecurityDashboard() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Security Event Details</DialogTitle>
+            <DialogDescription>
+              Review the context of this event to decide next actions.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedEvent ? (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline">{selectedEvent.type}</Badge>
+                <Badge
+                  variant="outline"
+                  className={
+                    {
+                      LOW: "bg-green-100 text-green-800 border-green-200",
+                      MEDIUM: "bg-yellow-100 text-yellow-800 border-yellow-200",
+                      HIGH: "bg-orange-100 text-orange-800 border-orange-200",
+                      CRITICAL: "bg-red-100 text-red-800 border-red-200",
+                    }[selectedEvent.severity]
+                  }
+                >
+                  {selectedEvent.severity}
+                </Badge>
+                {selectedEvent.resolved ? (
+                  <Badge variant="secondary">Resolved</Badge>
+                ) : (
+                  <Badge variant="outline">Pending</Badge>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Timestamp</p>
+                  <p className="font-medium">
+                    {new Date(selectedEvent.timestamp).toLocaleString()}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Endpoint</p>
+                  <code className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                    {selectedEvent.endpoint}
+                  </code>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">IP Address</p>
+                  <p className="font-medium">{selectedEvent.ipAddress}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">User Agent</p>
+                  <p className="font-medium break-words">
+                    {selectedEvent.userAgent || "Unknown"}
+                  </p>
+                </div>
+                {selectedEvent.userId && (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground">User ID</p>
+                    <p className="font-medium">{selectedEvent.userId}</p>
+                  </div>
+                )}
+                {selectedEvent.organizationId && (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground">Organization ID</p>
+                    <p className="font-medium">{selectedEvent.organizationId}</p>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Additional details</p>
+                <div className="rounded-lg border bg-muted/50 p-3">
+                  <pre className="text-xs whitespace-pre-wrap">
+                    {JSON.stringify(selectedEvent.details ?? {}, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailsOpen(false)}>
+              Close
+            </Button>
+            {!selectedEvent?.resolved && (
+              <Button
+                onClick={() => {
+                  if (!selectedEvent) return;
+                  handleResolveEvent(selectedEvent.id);
+                  setDetailsOpen(false);
+                }}
+              >
+                Mark as Resolved
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

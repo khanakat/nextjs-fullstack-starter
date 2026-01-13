@@ -8,6 +8,7 @@ import {
   ExportFormat,
 } from "@/lib/types/audit";
 import { format, subMonths } from "date-fns";
+import * as XLSX from "xlsx";
 
 // ============================================================================
 // COMPLIANCE SERVICE
@@ -675,8 +676,7 @@ export class ComplianceService {
       case ExportFormat.CSV:
         return this.exportReportAsCSV(report);
       case ExportFormat.XLSX:
-        // TODO: Implement XLSX export
-        throw new Error("XLSX export not yet implemented");
+        return this.exportReportAsXLSX(report);
       default:
         throw new Error(`Unsupported export format: ${format}`);
     }
@@ -735,5 +735,74 @@ export class ComplianceService {
     lines.push("");
 
     return lines.join("\n");
+  }
+
+  private static exportReportAsXLSX(report: ComplianceReport): Buffer {
+    const workbook = XLSX.utils.book_new();
+    const lines: any[] = [];
+
+    // Summary sheet data
+    const summaryRows = [
+      ["Compliance Report", report.standard],
+      ["Generated", format(report.generatedAt, "PPpp")],
+      [
+        "Period",
+        `${format(report.period.start, "PPP")} - ${format(report.period.end, "PPP")}`,
+      ],
+      [],
+      ["Metric", "Value"],
+      ["Total Events", report.summary.totalEvents],
+      ["Critical Events", report.summary.criticalEvents],
+      ["Compliance Score", `${report.summary.complianceScore}%`],
+      ["Risk Level", report.summary.riskLevel],
+    ];
+
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryRows);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+
+    // Findings sheet
+    if (report.findings.length > 0) {
+      const findingsSheet = XLSX.utils.json_to_sheet(
+        report.findings.map((f) => ({
+          ID: f.id,
+          Type: f.type,
+          Severity: f.severity,
+          Title: f.title,
+          Description: f.description,
+          Status: f.status,
+        })),
+      );
+      XLSX.utils.book_append_sheet(workbook, findingsSheet, "Findings");
+    }
+
+    // Recommendations sheet
+    if (report.recommendations.length > 0) {
+      const recsSheet = XLSX.utils.aoa_to_sheet([
+        ["#", "Recommendation"],
+        ...report.recommendations.map((rec, idx) => [idx + 1, rec]),
+      ]);
+      XLSX.utils.book_append_sheet(workbook, recsSheet, "Recommendations");
+    }
+
+    // Events sheet (optional)
+    // Note: ComplianceReport doesn't have an 'events' property
+    // if (report.events && report.events.length > 0) {
+    //   const eventsSheet = XLSX.utils.json_to_sheet(
+    //     report.events.map((e: any) => ({
+    //       ID: e.id,
+    //       Timestamp: format(new Date(e.timestamp), "PPpp"),
+    //       Category: e.category,
+    //       Severity: e.severity,
+    //       Action: e.action,
+    //       Status: e.status,
+    //       Resource: e.resource,
+    //       Actor: e.actor,
+    //     })),
+    //   );
+    //   XLSX.utils.book_append_sheet(workbook, eventsSheet, "Events");
+    // }
+
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    return buffer as Buffer;
   }
 }

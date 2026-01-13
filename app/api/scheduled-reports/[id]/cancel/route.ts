@@ -23,7 +23,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get("organizationId");
+    const organizationId =
+      searchParams.get("organizationId") || request.headers.get("x-organization-id");
 
     // Validate authentication and required parameters
     validateRequestAuth(session?.user?.id, organizationId || undefined);
@@ -52,7 +53,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return handleScheduledReportsError(error, {
       operation: 'cancel_scheduled_report',
       userId: (await getServerSession(authOptions))?.user?.id,
-      organizationId: new URL(request.url).searchParams.get("organizationId") || undefined,
+      organizationId: (
+        new URL(request.url).searchParams.get("organizationId") ||
+        request.headers.get("x-organization-id") || undefined
+      ),
       scheduledReportId: params.id,
       path: request.url,
     });

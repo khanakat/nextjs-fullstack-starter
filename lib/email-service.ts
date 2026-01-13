@@ -6,15 +6,14 @@ import {
   EmailProvider,
 } from "@/lib/email";
 import { logger } from "@/lib/logger";
-// TODO: Fix email template imports when templates are available
-// import {
-//   welcomeEmailTemplate,
-//   WelcomeEmailData,
-// } from "@/lib/email-templates/welcome";
-// import {
-//   passwordResetEmailTemplate,
-//   PasswordResetEmailData,
-// } from "@/lib/email-templates/password-reset";
+import {
+  welcomeEmailTemplate,
+  WelcomeEmailData,
+} from "@/lib/email-templates/welcome";
+import {
+  passwordResetEmailTemplate,
+  PasswordResetEmailData,
+} from "@/lib/email-templates/password-reset";
 import {
   emailVerificationEmailTemplate,
 } from "@/lib/email-templates/email-verification";
@@ -40,12 +39,13 @@ export class EmailService {
     priority: EmailPriority = "normal",
   ) {
     try {
-      // TODO: Implement welcome email template
-      const template = {
-        subject: `Welcome to ${APP_NAME}!`,
-        html: `<h1>Welcome ${name}!</h1><p>Thank you for joining ${APP_NAME}.</p>`,
-        text: `Welcome ${name}! Thank you for joining ${APP_NAME}.`
-      };
+      const template = welcomeEmailTemplate({
+        userName: name,
+        userEmail: to,
+        appName: APP_NAME,
+        appUrl: process.env.NEXT_PUBLIC_APP_URL || "",
+        dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+      } as WelcomeEmailData);
 
       return await sendEmail({
         to,
@@ -77,12 +77,10 @@ export class EmailService {
   ) {
     try {
       const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`;
-      // TODO: Implement password reset email template
-      const template = {
-        subject: `Reset your ${APP_NAME} password`,
-        html: `<h1>Password Reset</h1><p>Hi ${name},</p><p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`,
-        text: `Hi ${name}, click here to reset your password: ${resetUrl}`
-      };
+      const template = passwordResetEmailTemplate({
+        name,
+        resetUrl,
+      } as PasswordResetEmailData);
 
       return await sendEmail({
         to,
@@ -151,18 +149,15 @@ export class EmailService {
     priority: EmailPriority = "normal",
   ) {
     try {
-      // TODO: Implement notification email template
-      const template = {
-        subject: title,
-        html: `<h1>${title}</h1><p>${message}</p>${actionUrl ? `<p><a href="${actionUrl}">${actionText || 'Click here'}</a></p>` : ''}`,
-        text: `${title}\n\n${message}${actionUrl ? `\n\n${actionText || 'Click here'}: ${actionUrl}` : ''}`
-      };
+      const subject = title || `${APP_NAME} Notification`;
+      const html = `<h1>${title}</h1><p>${message}</p>${actionUrl ? `<p><a href="${actionUrl}">${actionText || "View details"}</a></p>` : ""}`;
+      const text = `${title}\n\n${message}${actionUrl ? `\n\n${actionText || "View details"}: ${actionUrl}` : ""}`;
 
       return await sendEmail({
         to,
-        subject: template.subject,
-        html: template.html,
-        text: template.text,
+        subject,
+        html,
+        text,
         type: "notification",
         priority,
         metadata: { title, actionUrl },
@@ -189,18 +184,16 @@ export class EmailService {
     priority: EmailPriority = "normal",
   ) {
     try {
-      // TODO: Implement report email template
-      const template = {
-        subject: `${reportName} Report - ${reportType}`,
-        html: `<h1>${reportName} Report</h1><p>Type: ${reportType}</p><p>Generated: ${new Date().toLocaleString()}</p><p>${summary}</p>${downloadUrl ? `<p><a href="${downloadUrl}">Download Report</a></p>` : ''}`,
-        text: `${reportName} Report\n\nType: ${reportType}\nGenerated: ${new Date().toLocaleString()}\n\n${summary}${downloadUrl ? `\n\nDownload: ${downloadUrl}` : ''}`
-      };
+      const generatedAt = new Date().toLocaleString();
+      const subject = `${reportName} Report - ${reportType}`;
+      const html = `<h1>${reportName} Report</h1><p>Type: ${reportType}</p><p>Generated: ${generatedAt}</p><p>${summary}</p>${downloadUrl ? `<p><a href="${downloadUrl}">Download Report</a></p>` : ""}`;
+      const text = `${reportName} Report\n\nType: ${reportType}\nGenerated: ${generatedAt}\n\n${summary}${downloadUrl ? `\n\nDownload: ${downloadUrl}` : ""}`;
 
       return await sendEmail({
         to,
-        subject: template.subject,
-        html: template.html,
-        text: template.text,
+        subject,
+        html,
+        text,
         type: "report",
         priority,
         metadata: { reportName, reportType, downloadUrl },
@@ -230,18 +223,15 @@ export class EmailService {
     priority: EmailPriority = "high",
   ) {
     try {
-      // TODO: Implement system alert email template
-      const template = {
-        subject: `${alertType.toUpperCase()}: ${title}`,
-        html: `<h1>${alertType.toUpperCase()}: ${title}</h1><p>${message}</p>${details ? `<p><strong>Details:</strong> ${details}</p>` : ''}${actionRequired && actionUrl ? `<p><a href="${actionUrl}">Action Required</a></p>` : ''}`,
-        text: `${alertType.toUpperCase()}: ${title}\n\n${message}${details ? `\n\nDetails: ${details}` : ''}${actionRequired && actionUrl ? `\n\nAction Required: ${actionUrl}` : ''}`
-      };
+      const subject = `${alertType.toUpperCase()}: ${title}`;
+      const html = `<h1>${alertType.toUpperCase()}: ${title}</h1><p>${message}</p>${details ? `<p><strong>Details:</strong> ${details}</p>` : ""}${actionRequired && actionUrl ? `<p><a href="${actionUrl}">Action Required</a></p>` : ""}`;
+      const text = `${alertType.toUpperCase()}: ${title}\n\n${message}${details ? `\n\nDetails: ${details}` : ""}${actionRequired && actionUrl ? `\n\nAction Required: ${actionUrl}` : ""}`;
 
       return await sendEmail({
         to,
-        subject: template.subject,
-        html: template.html,
-        text: template.text,
+        subject,
+        html,
+        text,
         type: "system-alert",
         priority: alertType === "error" ? "critical" : priority,
         metadata: { alertType, title, actionRequired },
@@ -334,18 +324,15 @@ export class EmailService {
     priority: EmailPriority = "low",
   ) {
     try {
-      // TODO: Implement notification email template
-      const template = {
-        subject: `Scheduled Report: ${reportName}`,
-        html: `<h1>Scheduled Report: ${reportName}</h1><p>Your scheduled report "${reportName}" is configured to run ${schedule}. The next execution is scheduled for ${nextRun.toLocaleString()}.</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL}/reports">View Reports</a></p>`,
-        text: `Scheduled Report: ${reportName}\n\nYour scheduled report "${reportName}" is configured to run ${schedule}. The next execution is scheduled for ${nextRun.toLocaleString()}.\n\nView Reports: ${process.env.NEXT_PUBLIC_APP_URL}/reports`
-      };
+      const subject = `Scheduled Report: ${reportName}`;
+      const html = `<h1>Scheduled Report: ${reportName}</h1><p>Your scheduled report "${reportName}" is configured to run ${schedule}. The next execution is scheduled for ${nextRun.toLocaleString()}.</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL}/reports">View Reports</a></p>`;
+      const text = `Scheduled Report: ${reportName}\n\nYour scheduled report "${reportName}" is configured to run ${schedule}. The next execution is scheduled for ${nextRun.toLocaleString()}.\n\nView Reports: ${process.env.NEXT_PUBLIC_APP_URL}/reports`;
 
       return await sendEmail({
         to,
-        subject: template.subject,
-        html: template.html,
-        text: template.text,
+        subject,
+        html,
+        text,
         type: "notification",
         priority,
         metadata: { reportName, schedule, nextRun: nextRun.toISOString() },
@@ -426,7 +413,7 @@ export class EmailService {
         filename: string;
         content: Buffer;
         contentType: string;
-      }>;
+      }>; 
     } = {},
   ): Promise<void> {
     try {
@@ -440,7 +427,7 @@ export class EmailService {
         type: "scheduled-report",
         priority: options.priority || "normal",
         provider: options.provider as EmailProvider,
-        // attachments: options.attachments, // TODO: Add attachments support to sendEmail
+        attachments: options.attachments,
         metadata: {
           organizationId: options.organizationId,
           reportType: data.reportType,

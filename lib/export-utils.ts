@@ -1,4 +1,6 @@
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { logger } from "@/lib/logger";
 import { queueService } from "@/lib/services/queue";
 import fs from "fs/promises";
@@ -228,21 +230,57 @@ export async function exportToXLSX(
  * Export data to PDF format (placeholder - requires additional PDF library)
  */
 export async function exportToPDF(
-  _data: any[],
+  data: any[],
   options: ExportOptions = { format: "pdf" },
 ): Promise<ExportResult> {
   try {
-    const { filename = "export.pdf" } = options;
+    const { filename = "export.pdf", headers, maxRows } = options;
 
-    // TODO: Implement PDF export using a library like jsPDF or PDFKit
-    // For now, return a placeholder implementation
+    const limitedData = maxRows ? data.slice(0, maxRows) : data;
+    if (limitedData.length === 0) {
+      return { success: false, error: "No data to export" };
+    }
 
-    logger.warn("PDF export not fully implemented", "export", { filename });
+    // Build PDF
+    const doc = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
+
+    // Title
+    doc.setFontSize(16);
+    doc.text(filename, 40, 40);
+
+    // Table data
+    const tableHeaders =
+      headers || Object.keys(limitedData[0] || {}).map((h) => String(h));
+    const tableRows = limitedData.map((row) =>
+      tableHeaders.map((key) => {
+        const value = row[key];
+        if (value === null || value === undefined) return "";
+        if (typeof value === "object") return JSON.stringify(value);
+        return String(value);
+      }),
+    );
+
+    autoTable(doc, {
+      head: [tableHeaders],
+      body: tableRows,
+      startY: 70,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [52, 152, 219] },
+    });
+
+    const buffer = doc.output("arraybuffer");
+
+    logger.info("PDF export completed", "export", {
+      filename,
+      rowCount: limitedData.length,
+      size: buffer.byteLength,
+    });
 
     return {
-      success: false,
-      error:
-        "PDF export is not yet implemented. Please use CSV, JSON, or XLSX formats.",
+      success: true,
+      filename,
+      size: buffer.byteLength,
+      rowCount: limitedData.length,
     };
   } catch (error) {
     logger.error("PDF export failed", "export", {

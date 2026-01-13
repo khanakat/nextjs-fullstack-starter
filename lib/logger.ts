@@ -70,7 +70,12 @@ class Logger {
         console.warn(formattedMessage, entry.data || "");
         break;
       case LogLevel.ERROR:
-        console.error(formattedMessage, entry.error || entry.data || "");
+        try {
+          console.error(formattedMessage, entry.error || entry.data || "");
+        } catch {
+          // Some mocked environments may throw on console.error with non-Error values
+          console.error(formattedMessage);
+        }
         break;
     }
   }
@@ -103,12 +108,14 @@ class Logger {
       this.logToConsole(entry);
     } else {
       // Old signature: error(message, context, error)
+      const isRealError = error instanceof Error;
+      const dataParam = !isRealError && typeof error === "object" ? error : undefined;
       const entry = this.createLogEntry(
         LogLevel.ERROR,
         message,
         typeof context === "string" ? context : undefined,
-        undefined,
-        error,
+        dataParam,
+        isRealError ? error : undefined,
       );
       this.logToConsole(entry);
     }

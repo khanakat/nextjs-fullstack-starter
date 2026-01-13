@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,11 +59,7 @@ export function ScheduledReportsHistory({ organizationId, refreshTrigger }: Sche
 
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    fetchHistory();
-  }, [organizationId, refreshTrigger, currentPage, statusFilter]);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -91,7 +87,13 @@ export function ScheduledReportsHistory({ organizationId, refreshTrigger }: Sche
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId, currentPage, statusFilter, searchTerm, itemsPerPage]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory, refreshTrigger]);
+
+  
 
   const handleSearch = () => {
     setCurrentPage(1);

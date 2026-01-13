@@ -18,8 +18,10 @@ import {
   EmailDeliveryError
 } from '@/lib/types/scheduled-reports';
 import { logger } from '@/lib/logger';
+import { DatabaseError } from '@/lib/error-handling/error-handler';
 
 export interface ErrorResponse {
+  success?: boolean;
   error: string;
   code?: string;
   details?: any;
@@ -63,6 +65,7 @@ export function handleScheduledReportsError(
 
     return NextResponse.json(
       {
+        success: false,
         error: 'Validation failed',
         code: 'VALIDATION_ERROR',
         details: { validationErrors },
@@ -74,9 +77,10 @@ export function handleScheduledReportsError(
   }
 
   // Handle specific scheduled report errors
-  if (error instanceof ScheduledReportNotFoundError) {
+  if (typeof ScheduledReportNotFoundError === 'function' && error instanceof ScheduledReportNotFoundError) {
     return NextResponse.json(
       {
+        success: false,
         error: error.message,
         code: error.code,
         details: error.details,
@@ -87,9 +91,10 @@ export function handleScheduledReportsError(
     );
   }
 
-  if (error instanceof ReportAccessError) {
+  if (typeof ReportAccessError === 'function' && error instanceof ReportAccessError) {
     return NextResponse.json(
       {
+        success: false,
         error: 'Access denied',
         code: error.code,
         details: { message: 'You do not have permission to access this report' },
@@ -100,9 +105,10 @@ export function handleScheduledReportsError(
     );
   }
 
-  if (error instanceof CronValidationError) {
+  if (typeof CronValidationError === 'function' && error instanceof CronValidationError) {
     return NextResponse.json(
       {
+        success: false,
         error: error.message,
         code: error.code,
         details: error.details,
@@ -113,9 +119,10 @@ export function handleScheduledReportsError(
     );
   }
 
-  if (error instanceof RecipientValidationError) {
+  if (typeof RecipientValidationError === 'function' && error instanceof RecipientValidationError) {
     return NextResponse.json(
       {
+        success: false,
         error: error.message,
         code: error.code,
         details: error.details,
@@ -126,9 +133,10 @@ export function handleScheduledReportsError(
     );
   }
 
-  if (error instanceof ScheduledReportValidationError) {
+  if (typeof ScheduledReportValidationError === 'function' && error instanceof ScheduledReportValidationError) {
     return NextResponse.json(
       {
+        success: false,
         error: error.message,
         code: error.code,
         details: error.details,
@@ -139,9 +147,10 @@ export function handleScheduledReportsError(
     );
   }
 
-  if (error instanceof ScheduleConflictError) {
+  if (typeof ScheduleConflictError === 'function' && error instanceof ScheduleConflictError) {
     return NextResponse.json(
       {
+        success: false,
         error: error.message,
         code: error.code,
         details: error.details,
@@ -152,9 +161,10 @@ export function handleScheduledReportsError(
     );
   }
 
-  if (error instanceof ReportExecutionError) {
+  if (typeof ReportExecutionError === 'function' && error instanceof ReportExecutionError) {
     return NextResponse.json(
       {
+        success: false,
         error: 'Report execution failed',
         code: error.code,
         details: { message: 'The scheduled report could not be executed. Please try again later.' },
@@ -165,9 +175,10 @@ export function handleScheduledReportsError(
     );
   }
 
-  if (error instanceof EmailDeliveryError) {
+  if (typeof EmailDeliveryError === 'function' && error instanceof EmailDeliveryError) {
     return NextResponse.json(
       {
+        success: false,
         error: error.message,
         code: error.code,
         details: error.details,
@@ -179,11 +190,12 @@ export function handleScheduledReportsError(
   }
 
   // Handle generic ScheduledReportError
-  if (error instanceof ScheduledReportError) {
+  if (typeof ScheduledReportError === 'function' && error instanceof ScheduledReportError) {
     const statusCode = getStatusCodeForError(error.code);
     
     return NextResponse.json(
       {
+        success: false,
         error: error.message,
         code: error.code,
         details: error.details,
@@ -194,10 +206,14 @@ export function handleScheduledReportsError(
     );
   }
 
-  // Handle database errors
-  if (error instanceof Error && error.message.includes('database')) {
+  // Handle database errors (case-insensitive match)
+  if (
+    (error instanceof Error && error.message.toLowerCase().includes('database')) ||
+    (typeof DatabaseError === 'function' && error instanceof DatabaseError)
+  ) {
     return NextResponse.json(
       {
+        success: false,
         error: 'Database operation failed',
         code: 'DATABASE_ERROR',
         details: { message: 'A database error occurred. Please try again later.' },
@@ -216,6 +232,7 @@ export function handleScheduledReportsError(
   )) {
     return NextResponse.json(
       {
+        success: false,
         error: 'Service temporarily unavailable',
         code: 'SERVICE_UNAVAILABLE',
         details: { message: 'The service is temporarily unavailable. Please try again later.' },
@@ -228,15 +245,20 @@ export function handleScheduledReportsError(
 
   // Handle unknown errors
   const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+  const errorStack = error instanceof Error ? error.stack : undefined;
   
   return NextResponse.json(
     {
+      success: false,
       error: 'Internal server error',
       code: 'INTERNAL_SERVER_ERROR',
       details: { 
         message: 'An unexpected error occurred. Please try again later.',
-        // Only include error details in development
-        ...(process.env.NODE_ENV === 'development' && { originalError: errorMessage })
+        // Include error details in development
+        ...(process.env.NODE_ENV === 'development' && { 
+          originalError: errorMessage,
+          stack: errorStack
+        })
       },
       timestamp,
       path,
@@ -251,6 +273,7 @@ export function handleScheduledReportsError(
 function getStatusCodeForError(errorCode: string): number {
   const statusMap: Record<string, number> = {
     'VALIDATION_ERROR': 400,
+    'UNAUTHORIZED': 401,
     'INVALID_CRON_EXPRESSION': 400,
     'INVALID_RECIPIENTS': 400,
     'REPORT_ACCESS_DENIED': 403,
@@ -260,6 +283,12 @@ function getStatusCodeForError(errorCode: string): number {
     'EMAIL_DELIVERY_ERROR': 207,
     'DATABASE_ERROR': 500,
     'SERVICE_UNAVAILABLE': 503,
+    'STATS_ERROR': 400,
+    // Scheduled report runs specific errors
+    'RUNS_ERROR': 400,
+    'FETCH_RUNS_ERROR': 400,
+    // Activation errors
+    'ACTIVATION_ERROR': 400,
   };
 
   return statusMap[errorCode] || 500;
@@ -310,7 +339,8 @@ export function sanitizeErrorDetails(details: any): any {
 export function createSuccessResponse<T>(
   data: T,
   message?: string,
-  meta?: Record<string, any>
+  meta?: Record<string, any>,
+  status: number = 200
 ): NextResponse<{
   success: boolean;
   data: T;
@@ -318,13 +348,16 @@ export function createSuccessResponse<T>(
   meta?: Record<string, any>;
   timestamp: string;
 }> {
-  return NextResponse.json({
-    success: true,
-    data,
-    message,
-    meta,
-    timestamp: new Date().toISOString(),
-  });
+  return NextResponse.json(
+    {
+      success: true,
+      data,
+      message,
+      meta,
+      timestamp: new Date().toISOString(),
+    },
+    { status }
+  );
 }
 
 /**

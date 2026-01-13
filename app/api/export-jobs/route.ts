@@ -166,7 +166,7 @@ export async function POST(_request: NextRequest) {
 
     // ✅ Fixed: Queue the export job for processing
     try {
-      await queueService.addJob("export-job", {
+      const queueJobId = await queueService.addJob("export-job", {
         jobId: exportJob.id,
         userId: auth().userId,
         type: exportJob.format.toLowerCase(),
@@ -174,11 +174,17 @@ export async function POST(_request: NextRequest) {
         options: exportJob.options,
       });
 
+      await db.exportJob.update({
+        where: { id: exportJob.id },
+        data: { queueJobId },
+      });
+
       logger.info("Export job queued for processing", "export-jobs", {
         requestId,
         jobId: exportJob.id,
         format: exportJob.format,
         reportId: exportJob.reportId,
+        queueJobId,
       });
     } catch (queueError) {
       logger.error("Failed to queue export job", "export-jobs", queueError);

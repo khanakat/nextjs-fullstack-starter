@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
 // import { SendGrid } from "@sendgrid/mail"; // Commented out - incorrect import
 // import { Mailgun } from "mailgun.js";
 // import formData from "form-data"; // Commented out - not used
@@ -106,6 +107,11 @@ export interface EmailJobData {
   subject: string;
   html: string;
   text?: string;
+  attachments?: Array<{
+    filename: string;
+    content: string | Buffer;
+    contentType?: string;
+  }>;
   from?: string;
   replyTo?: string;
   type: EmailType;
@@ -123,7 +129,7 @@ async function sendWithResend(emailData: EmailJobData): Promise<any> {
     throw new Error("Resend is not configured");
   }
 
-  const { to, subject, html, text, from, replyTo } = emailData;
+  const { to, subject, html, text, from, replyTo, attachments } = emailData;
 
   const result = await resend.emails.send({
     from: from!,
@@ -132,6 +138,12 @@ async function sendWithResend(emailData: EmailJobData): Promise<any> {
     html,
     text,
     replyTo,
+    attachments:
+      attachments?.map((file) => ({
+        filename: file.filename,
+        content: file.content,
+        contentType: file.contentType,
+      })) || undefined,
   });
 
   if (result.error) {
@@ -151,7 +163,7 @@ async function sendWithMailgun(emailData: EmailJobData): Promise<any> {
     throw new Error("Mailgun is not configured");
   }
 
-  const { to, subject, html, text, from, replyTo } = emailData;
+  const { to, subject, html, text, from, replyTo, attachments } = emailData;
 
   const messageData = {
     from: from!,
@@ -160,6 +172,12 @@ async function sendWithMailgun(emailData: EmailJobData): Promise<any> {
     html,
     text,
     "h:Reply-To": replyTo,
+    attachment:
+      attachments?.map((file) => ({
+        filename: file.filename,
+        data: file.content,
+        contentType: file.contentType,
+      })) || undefined,
   };
 
   const result = await mailgun.messages.create(
@@ -167,6 +185,43 @@ async function sendWithMailgun(emailData: EmailJobData): Promise<any> {
     messageData,
   );
   return result;
+}
+
+async function sendWithSMTP(emailData: EmailJobData): Promise<any> {
+  const { host, port, secure, user, password } = emailConfig.smtp;
+
+  if (!host || !user || !password) {
+    throw new Error("SMTP is not configured");
+  }
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: {
+      user,
+      pass: password,
+    },
+  });
+
+  const { to, subject, html, text, from, replyTo, attachments } = emailData;
+
+  const info = await transporter.sendMail({
+    from,
+    to,
+    subject,
+    html,
+    text,
+    replyTo,
+    attachments:
+      attachments?.map((file) => ({
+        filename: file.filename,
+        content: file.content,
+        contentType: file.contentType,
+      })) || undefined,
+  });
+
+  return { id: info.messageId };
 }
 
 // ============================================================================
@@ -196,8 +251,7 @@ async function sendWithProvider(
     case "mailgun":
       return await sendWithMailgun(emailData);
     case "smtp":
-      // TODO: Implement SMTP provider
-      throw new Error("SMTP provider not yet implemented");
+      return await sendWithSMTP(emailData);
     default:
       throw new Error(`Unknown email provider: ${provider}`);
   }
@@ -212,6 +266,7 @@ export async function sendEmail({
   subject,
   html,
   text,
+  attachments,
   from = emailConfig.from,
   replyTo = emailConfig.replyTo,
   type = "notification",
@@ -233,12 +288,18 @@ export async function sendEmail({
   retries?: number;
   metadata?: Record<string, any>;
   provider?: EmailProvider;
+  attachments?: Array<{
+    filename: string;
+    content: string | Buffer;
+    contentType?: string;
+  }>;
 }): Promise<any> {
   const emailData: EmailJobData = {
     to,
     subject,
     html,
     text,
+    attachments,
     from,
     replyTo,
     type,

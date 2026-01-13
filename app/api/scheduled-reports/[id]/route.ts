@@ -15,6 +15,7 @@ import {
 import { 
   validateUpdateScheduledReportRequest 
 } from "@/lib/utils/scheduled-reports-validation";
+import { safeRequestJson, getOrganizationId } from "@/lib/utils/request-helpers";
 import { z } from "zod";
 
 const updateScheduledReportSchema = z.object({
@@ -59,7 +60,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get("organizationId");
+    const organizationId =
+      searchParams.get("organizationId") || request.headers.get("x-organization-id");
 
     // Validate authentication and required parameters
     validateRequestAuth(session?.user?.id, organizationId || undefined);
@@ -80,7 +82,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return handleScheduledReportsError(error, {
       operation: 'get_scheduled_report',
       userId: (await getServerSession(authOptions))?.user?.id,
-      organizationId: new URL(request.url).searchParams.get("organizationId") || undefined,
+      organizationId: (
+        new URL(request.url).searchParams.get("organizationId") ||
+        request.headers.get("x-organization-id") || undefined
+      ),
       scheduledReportId: params.id,
       path: request.url,
     });
@@ -88,10 +93,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
+  let organizationId: string | undefined = undefined;
+  
   try {
     const session = await getServerSession(authOptions);
-    const body = await request.json();
-    const { organizationId, ...updates } = body;
+    
+    // Safely parse request body
+    const body = await safeRequestJson<{ organizationId?: string; [key: string]: any }>(request);
+    const { organizationId: orgId, ...updates } = body;
+    organizationId = orgId || getOrganizationId(request);
 
     // Validate authentication and required parameters
     validateRequestAuth(session?.user?.id, organizationId);
@@ -123,7 +133,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return handleScheduledReportsError(error, {
       operation: 'update_scheduled_report',
       userId: (await getServerSession(authOptions))?.user?.id,
-      organizationId: (await request.json().catch(() => ({})))?.organizationId,
+      organizationId: organizationId,
       scheduledReportId: params.id,
       path: request.url,
     });
@@ -131,10 +141,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  let organizationId: string | undefined = undefined;
+  
   try {
     const session = await getServerSession(authOptions);
-    const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get("organizationId");
+    organizationId = getOrganizationId(request);
 
     // Validate authentication and required parameters
     validateRequestAuth(session?.user?.id, organizationId || undefined);
@@ -159,7 +170,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return handleScheduledReportsError(error, {
       operation: 'delete_scheduled_report',
       userId: (await getServerSession(authOptions))?.user?.id,
-      organizationId: new URL(request.url).searchParams.get("organizationId") || undefined,
+      organizationId: organizationId || undefined,
       scheduledReportId: params.id,
       path: request.url,
     });

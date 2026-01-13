@@ -1,4 +1,5 @@
 import { logger } from "@/lib/logger";
+import { sendEmail } from "@/lib/email";
 
 export interface EmailTemplate {
   subject: string;
@@ -36,21 +37,20 @@ export class EmailService {
     try {
       const template = this.generatePaymentFailedTemplate(data);
 
-      // TODO: Integrate with actual email provider (SendGrid, Resend, etc.)
-      // For now, we'll log the email content
-      logger.info("Payment failed email would be sent", "email", {
+      await sendEmail({
         to: data.customerEmail,
         subject: template.subject,
-        subscriptionId: data.subscriptionId,
-        amount: data.amount,
-        currency: data.currency,
+        html: template.html,
+        text: template.text,
+        type: "notification",
+        priority: "high",
+        metadata: {
+          subscriptionId: data.subscriptionId,
+          invoiceId: data.invoiceId,
+          amount: data.amount,
+          currency: data.currency,
+        },
       });
-
-      // Simulate email sending
-      console.log(`📧 Payment Failed Email:
-To: ${data.customerEmail}
-Subject: ${template.subject}
-Content: ${template.text}`);
     } catch (error) {
       logger.error("Failed to send payment failed email", "email", error);
       throw error;
@@ -64,21 +64,21 @@ Content: ${template.text}`);
     try {
       const template = this.generateInvitationTemplate(data);
 
-      // TODO: Integrate with actual email provider (SendGrid, Resend, etc.)
-      // For now, we'll log the email content
-      logger.info("Invitation email would be sent", "email", {
+      await sendEmail({
         to: data.inviteeEmail,
         subject: template.subject,
-        organizationName: data.organizationName,
-        role: data.role,
-        inviterName: data.inviterName,
+        html: template.html,
+        text: template.text,
+        type: "notification",
+        priority: "normal",
+        metadata: {
+          organizationName: data.organizationName,
+          role: data.role,
+          inviterName: data.inviterName,
+          inviteToken: data.inviteToken,
+          expiresAt: data.expiresAt.toISOString(),
+        },
       });
-
-      // Simulate email sending
-      console.log(`📧 Invitation Email:
-To: ${data.inviteeEmail}
-Subject: ${template.subject}
-Content: ${template.text}`);
     } catch (error) {
       logger.error("Failed to send invitation email", "email", error);
       throw error;

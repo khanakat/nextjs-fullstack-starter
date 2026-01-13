@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCacheService } from "@/lib/cache/cache-service";
+import { apiKeyManager } from "@/lib/security/api-key-manager";
 
 export interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -318,12 +319,24 @@ export const tieredApiLimiter = new TieredRateLimiter(
     },
   },
   async (request) => {
-    // This would typically check the user's subscription tier from database
-    // For now, return 'free' as default
+    // Prefer API key based tier
     const apiKey = request.headers.get("x-api-key");
-    if (!apiKey) return "default";
+    if (apiKey) {
+      const validation = await apiKeyManager.validateApiKey(apiKey);
+      if (validation.valid && validation.apiKey) {
+        const requests = validation.apiKey.rateLimit?.requests || 0;
+        if (requests >= 5000) return "enterprise";
+        if (requests >= 500) return "pro";
+        return "free";
+      }
+    }
 
-    // TODO: Implement actual tier lookup based on API key or user session
-    return "free";
+    // Allow an explicit hint header when session middleware sets it
+    const hinted = request.headers.get("x-subscription-plan");
+    if (hinted && ["free", "pro", "enterprise"].includes(hinted)) {
+      return hinted;
+    }
+
+    return "default";
   },
 );

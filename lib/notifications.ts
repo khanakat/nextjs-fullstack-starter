@@ -37,6 +37,8 @@ export interface Notification {
   // Scheduling
   deliverAt?: Date;
   expiresAt?: Date;
+  // Delivery status lifecycle
+  status?: "scheduled" | "delivered" | "read";
 }
 
 export interface NotificationPreferences {
@@ -90,6 +92,7 @@ class NotificationStore {
       ...notification,
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date(),
+      status: notification.deliverAt ? "scheduled" : notification.read ? "read" : "delivered",
     };
 
     this.notifications.set(newNotification.id, newNotification);
@@ -106,6 +109,10 @@ class NotificationStore {
     return newNotification;
   }
 
+  async getNotificationById(notificationId: string): Promise<Notification | null> {
+    return this.notifications.get(notificationId) || null;
+  }
+
   async getUserNotifications(
     userId: string,
     options: {
@@ -113,14 +120,16 @@ class NotificationStore {
       offset?: number;
       unreadOnly?: boolean;
       type?: Notification["type"];
+      status?: "scheduled" | "delivered" | "read";
     } = {},
   ): Promise<Notification[]> {
-    const { limit = 50, offset = 0, unreadOnly = false, type } = options;
+    const { limit = 50, offset = 0, unreadOnly = false, type, status } = options;
 
     const userNotifications = Array.from(this.notifications.values())
       .filter((n) => n.userId === userId)
       .filter((n) => !unreadOnly || !n.read)
       .filter((n) => !type || n.type === type)
+      .filter((n) => !status || n.status === status)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(offset, offset + limit);
 
@@ -136,6 +145,7 @@ class NotificationStore {
 
     notification.read = true;
     notification.readAt = new Date();
+    notification.status = "read";
 
     // Broadcast update
     this.broadcastEvent({
@@ -147,6 +157,29 @@ class NotificationStore {
     });
 
     return true;
+  }
+
+  async markManyAsRead(notificationIds: string[], userId: string): Promise<number> {
+    let updated = 0;
+    for (const id of notificationIds) {
+      const n = this.notifications.get(id);
+      if (n && n.userId === userId && !n.read) {
+        n.read = true;
+        n.readAt = new Date();
+        n.status = "read";
+        updated++;
+      }
+    }
+    if (updated > 0) {
+      this.broadcastEvent({
+        id: `event_${Date.now()}`,
+        type: "notifications:bulk_read",
+        userId,
+        data: { updated, notificationIds },
+        timestamp: new Date(),
+      });
+    }
+    return updated;
   }
 
   async markAllAsRead(userId: string): Promise<number> {
@@ -310,6 +343,12 @@ class NotificationStore {
     ).length;
   }
 
+  async getTotalCount(userId: string, status?: "scheduled" | "delivered" | "read"): Promise<number> {
+    return Array.from(this.notifications.values()).filter(
+      (n) => n.userId === userId && (!status || n.status === status),
+    ).length;
+  }
+
   async cleanup(olderThanDays: number = 30): Promise<number> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
@@ -324,6 +363,15 @@ class NotificationStore {
     }
 
     return deletedCount;
+  }
+
+  /**
+   * Test-only helper: reset in-memory store between tests
+   */
+  resetForTests(): void {
+    this.notifications.clear();
+    this.preferences.clear();
+    this.subscribers.clear();
   }
 }
 

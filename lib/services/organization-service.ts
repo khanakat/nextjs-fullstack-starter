@@ -1,4 +1,6 @@
 import { db } from "@/lib/db";
+import { promises as fs } from "fs";
+import path from "path";
 import {
   Organization,
   OrganizationMember,
@@ -409,9 +411,47 @@ export class OrganizationService {
         membersUsed: organization._count.members,
         membersLimit: organization.maxMembers,
         reportsUsed: organization._count.reports,
-        storageUsed: 0, // TODO: Calculate actual storage usage
+        storageUsed: await this.calculateStorageUsed(id),
       },
     };
+  }
+
+  private static async calculateStorageUsed(
+    organizationId: string,
+  ): Promise<number> {
+    // Estimate storage from files under storage/exports/<orgId> and storage/uploads/<orgId>
+    const baseDirs = [
+      path.join(process.cwd(), "storage", "exports", organizationId),
+      path.join(process.cwd(), "storage", "uploads", organizationId),
+    ];
+
+    let total = 0;
+
+    for (const dir of baseDirs) {
+      total += await this.getDirectorySizeSafe(dir);
+    }
+
+    return total; // bytes
+  }
+
+  private static async getDirectorySizeSafe(dir: string): Promise<number> {
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      let size = 0;
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          size += await this.getDirectorySizeSafe(fullPath);
+        } else if (entry.isFile()) {
+          const stats = await fs.stat(fullPath);
+          size += stats.size;
+        }
+      }
+      return size;
+    } catch (error) {
+      // Directory may not exist yet; treat as zero
+      return 0;
+    }
   }
 
   /**

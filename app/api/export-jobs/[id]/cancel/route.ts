@@ -7,7 +7,7 @@ import { logger } from "@/lib/logger";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { generateRequestId } from "@/lib/utils";
-// import { queueService } from '@/lib/services/queue';
+import { queueService } from "@/lib/services/queue";
 
 // POST /api/export-jobs/[id]/cancel - Cancel an export job
 export async function POST(
@@ -51,22 +51,20 @@ export async function POST(
 
     // Cancel the job in the queue system if it exists
     let queueJobCancelled = false;
-    // Note: queueJobId field is not available in current schema
-    // TODO: Add queueJobId field to ExportJob model if queue integration is needed
-    /*
     if (exportJob.queueJobId) {
       try {
-        const queueJob = await queueService.getJob(exportJob.queueJobId);
-        if (queueJob && !queueJob.finishedOn) {
-          await queueJob.remove();
-          queueJobCancelled = true;
-          logger.info('Queue job cancelled successfully', 'export-jobs');
+        queueJobCancelled = await queueService.cancelJob(exportJob.queueJobId);
+        if (queueJobCancelled) {
+          logger.info("Queue job cancelled successfully", "export-jobs");
         }
       } catch (queueError) {
-        logger.warn('Failed to cancel queue job, proceeding with database update', 'export-jobs');
+        logger.warn(
+          "Failed to cancel queue job, proceeding with database update",
+          "export-jobs",
+          queueError,
+        );
       }
     }
-    */
 
     // Update job status to cancelled
     const updatedJob = await db.exportJob.update({

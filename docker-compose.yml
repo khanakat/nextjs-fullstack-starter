@@ -1,10 +1,28 @@
-# Docker Compose para PostgreSQL
-# Uso: docker-compose up -d
-
-version: "3.8"
-
 services:
-  # PostgreSQL Database
+  web:
+    container_name: fullstack_web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres123@postgres:5432/fullstack_template
+      REDIS_URL: redis://redis:6379
+      NEXTAUTH_URL: http://localhost:3010
+      NEXT_PUBLIC_APP_URL: http://localhost:3010
+    ports:
+      - "3010:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - fullstack_network
+
   postgres:
     image: postgres:15-alpine
     container_name: fullstack_postgres
@@ -18,7 +36,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/init:/docker-entrypoint-initdb.d # Scripts de inicialización
+      - ./docker/init:/docker-entrypoint-initdb.d
     networks:
       - fullstack_network
     healthcheck:
@@ -27,7 +45,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Adminer para administración visual (opcional)
   adminer:
     image: adminer:latest
     container_name: fullstack_adminer
@@ -37,17 +54,17 @@ services:
     networks:
       - fullstack_network
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       ADMINER_DEFAULT_SERVER: postgres
 
-  # PgAdmin para administración avanzada (opcional)
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: fullstack_pgadmin
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@fullstack.local
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin123
       PGADMIN_CONFIG_SERVER_MODE: "False"
     ports:
@@ -57,7 +74,23 @@ services:
     networks:
       - fullstack_network
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    container_name: fullstack_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - fullstack_network
+    command: ["redis-server", "--save", "20", "1", "--loglevel", "notice"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

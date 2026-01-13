@@ -445,7 +445,7 @@ export function useRealtimeNotifications() {
 
             case "error":
               logger.error("SSE error event received", "notifications", data);
-              setError(data.message || "Stream error");
+              setError(data.data?.error || "Stream error");
               break;
 
             default:

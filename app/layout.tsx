@@ -10,6 +10,11 @@ import "./showcase/components/drag-drop/styles.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// Force dynamic rendering to keep Docker builds from prerendering pages that rely on live services
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 export const metadata: Metadata = {
   metadataBase: new URL(seoConfig.siteUrl),
   title: {

@@ -308,7 +308,7 @@ export async function GET() {
         customDateRanges: true,
         organizationFiltering: true,
         realTimeGeneration: true,
-        scheduledReports: false, // TODO: Implement scheduled reports
+        scheduledReports: true,
       },
     };
 

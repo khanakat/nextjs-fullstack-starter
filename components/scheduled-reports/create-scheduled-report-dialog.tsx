@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -93,14 +93,7 @@ export function CreateScheduledReportDialog({
       format: "pdf",
     },
   });
-
-  useEffect(() => {
-    if (open) {
-      fetchReports();
-    }
-  }, [open, organizationId]);
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setReportsLoading(true);
       const response = await fetch(`/api/reports?organizationId=${organizationId}`);
@@ -121,7 +114,13 @@ export function CreateScheduledReportDialog({
     } finally {
       setReportsLoading(false);
     }
-  };
+  }, [organizationId, toast]);
+
+  useEffect(() => {
+    if (open) {
+      fetchReports();
+    }
+  }, [open, fetchReports]);
 
   const onSubmit = async (data: CreateScheduledReportForm) => {
     try {

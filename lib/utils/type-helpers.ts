@@ -126,8 +126,25 @@ export const safeParseDate = (
   defaultValue?: Date,
 ): Date | undefined => {
   if (isDate(value)) return value;
-  if (isString(value) || isNumber(value)) {
-    const parsed = new Date(value);
+  // Handle string inputs
+  if (isString(value)) {
+    const trimmed = (value as string).trim();
+    // Treat YYYY-MM-DD as a local date to avoid timezone shifts
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const [yearStr, monthStr, dayStr] = trimmed.split('-');
+      const year = Number(yearStr);
+      const month = Number(monthStr) - 1; // JS months are 0-based
+      const day = Number(dayStr);
+      const parsedLocal = new Date(year, month, day);
+      return isDate(parsedLocal) ? parsedLocal : defaultValue;
+    }
+    // Fallback to native parsing for other formats
+    const parsed = new Date(trimmed);
+    return isDate(parsed) ? parsed : defaultValue;
+  }
+  // Handle numeric timestamps
+  if (isNumber(value)) {
+    const parsed = new Date(value as number);
     return isDate(parsed) ? parsed : defaultValue;
   }
   return defaultValue;
@@ -257,11 +274,20 @@ export const capitalize = (str: string): string => {
 };
 
 export const camelCase = (str: string): string => {
+  // If there are no separators, just ensure first char is lowercased
+  if (!/[\s_-]/.test(str)) {
+    return str.charAt(0).toLowerCase() + str.slice(1);
+  }
+  // Normalize separators and build camelCase
   return str
-    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
-      return index === 0 ? word.toLowerCase() : word.toUpperCase();
-    })
-    .replace(/\s+/g, "");
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((word, index) =>
+      index === 0
+        ? word.toLowerCase()
+        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join("");
 };
 
 export const kebabCase = (str: string): string => {

@@ -50,9 +50,10 @@ export class WebhookService {
     headers: Record<string, string>,
     organizationId: string,
   ): Promise<WebhookProcessingResult> {
+    let webhook: any;
     try {
       // Get webhook configuration
-      const webhook = await prisma.integrationWebhook.findFirst({
+      webhook = await prisma.integrationWebhook.findFirst({
         where: {
           id: webhookId,
           status: "active",
@@ -86,6 +87,9 @@ export class WebhookService {
             headers: this.sanitizeHeaders(headers),
           },
           organizationId,
+          webhook.integrationId,
+          webhook.id,
+          "error",
         );
 
         return {
@@ -114,6 +118,9 @@ export class WebhookService {
             allowedEvents,
           },
           organizationId,
+          webhook.integrationId,
+          webhook.id,
+          "info",
         );
 
         return {
@@ -142,6 +149,9 @@ export class WebhookService {
           result: processingResult,
         },
         organizationId,
+        webhook.integrationId,
+        webhook.id,
+        "success",
       );
 
       return {
@@ -161,6 +171,9 @@ export class WebhookService {
           stack: error instanceof Error ? error.stack : undefined,
         },
         organizationId,
+        webhook?.integrationId,
+        webhook?.id,
+        "error",
       );
 
       return {
@@ -535,15 +548,37 @@ export class WebhookService {
     _action: string,
     _data: any,
     _organizationId: string,
+    integrationId?: string,
+    webhookId?: string,
+    status: "success" | "error" | "info" = "info",
   ): Promise<void> {
     try {
-      // TODO: Implement webhook event logging
-      console.log("Webhook event logged:", {
-        _provider,
-        _event,
-        _action,
-        _data,
-        _organizationId,
+      if (!integrationId) {
+        console.log("Webhook event (no integrationId):", {
+          _provider,
+          _event,
+          _action,
+          _data,
+          _organizationId,
+        });
+        return;
+      }
+
+      await prisma.integrationLog.create({
+        data: {
+          integrationId,
+          webhookId,
+          action: _action,
+          endpoint: typeof _data?.endpoint === "string" ? _data.endpoint : undefined,
+          requestData: JSON.stringify({
+            provider: _provider,
+            event: _event,
+            payload: _data,
+          }),
+          status,
+          errorMessage: status === "error" ? _data?.error : undefined,
+          timestamp: new Date(),
+        },
       });
     } catch (error) {
       console.error("Failed to log webhook event:", error);

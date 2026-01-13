@@ -9,6 +9,9 @@ import {
   StandardSuccessResponse,
 } from "@/lib/standardized-error-responses";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(_request: NextRequest) {
   const requestId = crypto.randomUUID();
 

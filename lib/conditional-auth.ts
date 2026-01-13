@@ -5,23 +5,45 @@
  * When Clerk is not properly configured, it returns null/empty values instead of throwing errors.
  */
 
-import { auth as clerkAuth, currentUser as clerkCurrentUser, redirectToSignIn as clerkRedirectToSignIn } from "@clerk/nextjs/server";
+import {
+  auth as clerkAuth,
+  currentUser as clerkCurrentUser,
+  redirectToSignIn as clerkRedirectToSignIn,
+} from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import React from "react";
+import { cookies } from "next/headers";
 
-// Check if Clerk is properly configured
+// Check if Clerk is properly configured (publishable + secret present)
 const hasValidClerkKeys = Boolean(
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && 
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY !== "pk_test_development_key" &&
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_")
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
+    process.env.CLERK_SECRET_KEY &&
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_") &&
+    process.env.CLERK_SECRET_KEY.startsWith("sk_") &&
+    !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_test") &&
+    !process.env.CLERK_SECRET_KEY.startsWith("sk_test") &&
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY !== "pk_test_development_key" &&
+    process.env.CLERK_SECRET_KEY !== "sk_test_development_key",
 );
+
+const mockUser = {
+  id: "mock-user-id",
+  firstName: "Demo",
+  lastName: "User",
+  fullName: "Demo User",
+  emailAddresses: [{ emailAddress: "demo@example.com" }],
+  primaryEmailAddress: { emailAddress: "demo@example.com" },
+  imageUrl: "/placeholder-avatar.png",
+  username: "demo-user",
+};
 
 /**
  * Conditional auth function that returns user ID if Clerk is configured, null otherwise
  */
 export function auth() {
   if (!hasValidClerkKeys) {
-    return { userId: null };
+    const demo = cookies().get("demo_auth")?.value === "1";
+    return { userId: demo ? mockUser.id : null };
   }
 
   try {
@@ -37,7 +59,8 @@ export function auth() {
  */
 export async function currentUser() {
   if (!hasValidClerkKeys) {
-    return null;
+    const demo = cookies().get("demo_auth")?.value === "1";
+    return demo ? (mockUser as any) : null;
   }
 
   try {

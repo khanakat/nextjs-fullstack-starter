@@ -1,15 +1,10 @@
 {
   "extends": ["next/core-web-vitals"],
   "rules": {
-    // Turn off problematic rules for build
-    "@typescript-eslint/no-explicit-any": "off",
-    "@typescript-eslint/no-unused-expressions": "off",
     "prefer-spread": "off",
     "no-console": "off",
     "import/order": "off",
     "prefer-destructuring": "off",
-
-    // Keep essential rules only
     "react/no-unescaped-entities": "off",
     "react/display-name": "off"
   },

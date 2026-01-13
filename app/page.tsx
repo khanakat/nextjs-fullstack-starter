@@ -23,39 +23,24 @@ export default function HomePage() {
           <span className="font-bold">FullStack Template</span>
         </div>
         <nav className="ml-auto flex gap-4 sm:gap-6 items-center">
-          <Link
-            className="text-sm font-medium hover:underline underline-offset-4"
-            href="/docs"
-          >
+          <Link className="text-sm font-medium hover:underline underline-offset-4" href="/docs">
             Docs
           </Link>
           {userId ? (
             <>
-              <Link
-                className="text-sm font-medium hover:underline underline-offset-4"
-                href="/dashboard"
-              >
+              <Link className="text-sm font-medium hover:underline underline-offset-4" href="/dashboard">
                 Dashboard
               </Link>
-              <Link
-                className="text-sm font-medium hover:underline underline-offset-4"
-                href="/api/auth/signout"
-              >
+              <Link className="text-sm font-medium hover:underline underline-offset-4" href="/sign-out">
                 Sign Out
               </Link>
             </>
           ) : (
             <>
-              <Link
-                className="text-sm font-medium hover:underline underline-offset-4"
-                href="/sign-in"
-              >
+              <Link className="text-sm font-medium hover:underline underline-offset-4" href="/sign-in">
                 Sign In
               </Link>
-              <Link
-                className="text-sm font-medium hover:underline underline-offset-4"
-                href="/sign-up"
-              >
+              <Link className="text-sm font-medium hover:underline underline-offset-4" href="/sign-up">
                 Sign Up
               </Link>
             </>

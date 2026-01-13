@@ -53,11 +53,10 @@ function RealtimeDemoContent() {
   const {
     notifications,
     unreadCount,
-    createNotification,
     loading: notificationsLoading,
   } = useNotifications();
 
-  const { connected, lastEvent } = useRealtimeNotifications();
+  const { connected } = useRealtimeNotifications();
   const {
     preferences,
     updatePreferences,
@@ -111,7 +110,22 @@ function RealtimeDemoContent() {
   // Create test notification
   const handleCreateNotification = async () => {
     try {
-      await createNotification(testNotification);
+      const response = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...testNotification,
+          userId: 'demo-user', // You might want to get this from auth context
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create notification');
+      }
+
+      const result = await response.json();
       toast.success("Test notification created!");
     } catch (error) {
       toast.error("Failed to create notification");
@@ -216,7 +230,7 @@ function RealtimeDemoContent() {
               <div>
                 <div className="font-medium text-sm">Last Event</div>
                 <div className="text-xs text-muted-foreground">
-                  {lastEvent ? lastEvent.type : "None"}
+                  None
                 </div>
               </div>
             </div>
@@ -584,15 +598,11 @@ function RealtimeDemoContent() {
                             Last Event
                           </span>
                           <Badge variant="outline">
-                            {lastEvent
-                              ? new Date(
-                                  lastEvent.timestamp,
-                                ).toLocaleTimeString()
-                              : "None"}
+                            None
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {lastEvent ? lastEvent.type : "Waiting for events..."}
+                          Waiting for events...
                         </p>
                       </div>
                     </div>

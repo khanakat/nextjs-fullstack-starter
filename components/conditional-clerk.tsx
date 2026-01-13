@@ -1,12 +1,18 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 
-// Check if Clerk is properly configured
+// Check if Clerk is properly configured (both publishable and secret keys present and not placeholders)
 const hasValidClerkKeys = Boolean(
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && 
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY !== "pk_test_development_key" &&
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_")
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
+    process.env.CLERK_SECRET_KEY &&
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_") &&
+    process.env.CLERK_SECRET_KEY.startsWith("sk_") &&
+    !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_test") &&
+    !process.env.CLERK_SECRET_KEY.startsWith("sk_test") &&
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY !== "pk_test_development_key" &&
+    process.env.CLERK_SECRET_KEY !== "sk_test_development_key",
 );
 
 /**
@@ -14,7 +20,11 @@ const hasValidClerkKeys = Boolean(
  */
 export function ConditionalSignedIn({ children }: { children: React.ReactNode }) {
   if (!hasValidClerkKeys) {
-    return null; // Don't render anything if Clerk is not configured
+    if (typeof document !== "undefined") {
+      const hasDemo = document.cookie.includes("demo_auth=1");
+      return hasDemo ? <>{children}</> : null;
+    }
+    return null;
   }
 
   // Import Clerk components dynamically to avoid errors
@@ -24,7 +34,11 @@ export function ConditionalSignedIn({ children }: { children: React.ReactNode })
 
 export function ConditionalSignedOut({ children }: { children: React.ReactNode }) {
   if (!hasValidClerkKeys) {
-    return <>{children}</>; // Always render children if Clerk is not configured (user is "signed out")
+    if (typeof document !== "undefined") {
+      const hasDemo = document.cookie.includes("demo_auth=1");
+      return hasDemo ? null : <>{children}</>;
+    }
+    return <>{children}</>;
   }
 
   // Import Clerk components dynamically to avoid errors
@@ -34,7 +48,15 @@ export function ConditionalSignedOut({ children }: { children: React.ReactNode }
 
 export function ConditionalUserButton({ afterSignOutUrl }: { afterSignOutUrl?: string }) {
   if (!hasValidClerkKeys) {
-    return null; // Don't render anything if Clerk is not configured
+    // Demo fallback: simple sign-out link
+    return (
+      <Link
+        href={afterSignOutUrl || "/sign-out"}
+        className="text-sm font-medium hover:underline underline-offset-4"
+      >
+        Sign Out
+      </Link>
+    );
   }
 
   // Import Clerk components dynamically to avoid errors
@@ -70,9 +92,14 @@ export function ConditionalSignIn({
           </div>
           
           <button
-            onClick={() => {
-              // In demo mode, just redirect to the main app
-              window.location.href = redirectUrl || '/';
+            onClick={async () => {
+              // In demo mode, mark demo session and redirect
+              try {
+                await fetch("/api/demo-auth", { method: "POST" });
+              } catch (e) {
+                console.warn("Demo auth set failed", e);
+              }
+              window.location.href = redirectUrl || "/";
             }}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
           >

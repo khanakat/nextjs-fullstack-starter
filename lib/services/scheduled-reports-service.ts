@@ -228,13 +228,14 @@ export class ScheduledReportsService {
       const limit = Math.min(filters.limit || 10, 100); // Cap at 100
       const skip = (page - 1) * limit;
 
-      // Build where clause
+      // Build where clause using AND for userId and organizationId
       const where: any = {
-        OR: [
-          { userId: userId },
-          ...(filters.organizationId ? [{ organizationId: filters.organizationId }] : [])
-        ]
+        userId: userId,
       };
+
+      if (filters.organizationId) {
+        where.organizationId = filters.organizationId;
+      }
 
       if (filters.isActive !== undefined) {
         where.isActive = filters.isActive;

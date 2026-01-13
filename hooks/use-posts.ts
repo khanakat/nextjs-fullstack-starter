@@ -1,12 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getPosts,
-  getPostById,
-  getUserPosts,
-  getPublishedPosts,
-} from "@/actions/get-posts";
+
 // Define types locally since they're not exported from @/types
 type CreatePostData = {
   title: string;
@@ -33,31 +28,54 @@ type PaginationParams = {
   pageSize?: number;
 };
 
-// Import PostWithAuthorAndTags from actions
 type PostWithAuthorAndTags = {
   id: string;
-  title: string | null;
-  content: string | null;
+  title: string;
+  content: string;
   published: boolean;
   authorId: string;
   createdAt: Date;
   updatedAt: Date;
-  author: {
+  author?: {
     id: string;
+    name: string;
     email: string;
-    name: string | null;
-    username: string | null;
   };
-  tags: {
+  tags?: Array<{
     id: string;
-    postId: string;
-    tagId: string;
-    tag: {
-      id: string;
-      name: string;
-    };
-  }[];
+    name: string;
+  }>;
 };
+
+type GetPostsParams = {
+  userId?: string;
+  published?: boolean;
+  searchTerm?: string;
+  limit?: number;
+  offset?: number;
+};
+
+// Stub functions for @/actions/get-posts module
+// TODO: Implement actual API calls when backend is ready
+async function getPosts(params: GetPostsParams = {}): Promise<PostWithAuthorAndTags[]> {
+  // Stub implementation - returns empty array
+  return [];
+}
+
+async function getPostById(postId: string): Promise<PostWithAuthorAndTags | null> {
+  // Stub implementation - returns null
+  return null;
+}
+
+async function getUserPosts(userId: string): Promise<PostWithAuthorAndTags[]> {
+  // Stub implementation - returns empty array
+  return [];
+}
+
+async function getPublishedPosts(limit?: number): Promise<PostWithAuthorAndTags[]> {
+  // Stub implementation - returns empty array
+  return [];
+}
 
 // Query keys
 const POSTS_QUERY_KEY = "posts";
@@ -230,8 +248,7 @@ export function useTogglePostStatus() {
         queryKey: [POSTS_QUERY_KEY, "detail", variables.postId],
       });
       queryClient.invalidateQueries({ queryKey: [POSTS_QUERY_KEY, "list"] });
-      queryClient.invalidateQueries({
-        queryKey: [POSTS_QUERY_KEY, "published"],
+      queryClient.invalidateQueries({ queryKey: [POSTS_QUERY_KEY, "published"],
       });
     },
     onError: (error) => {
@@ -280,7 +297,7 @@ export function useOptimisticPostUpdate() {
           old ? { ...old, ...newPost } : undefined,
       );
 
-      return { previousPost };
+      return { previousPost, postId: newPost.id };
     },
     onError: (_, newPost, context) => {
       // Revert on error
@@ -291,11 +308,14 @@ export function useOptimisticPostUpdate() {
         );
       }
     },
-    onSettled: (_, __, variables) => {
+    onSettled: (_, __, context: any) => {
       // Always refetch after error or success
-      queryClient.invalidateQueries({
-        queryKey: [POSTS_QUERY_KEY, "detail", variables.id],
-      });
+      const postId = context?.postId;
+      if (postId) {
+        queryClient.invalidateQueries({
+          queryKey: [POSTS_QUERY_KEY, "detail", postId],
+        });
+      }
     },
   });
 }

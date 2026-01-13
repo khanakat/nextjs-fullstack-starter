@@ -5,13 +5,14 @@
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "allowJs": true,
     "checkJs": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
 
     /* Modules */
     "module": "ESNext",
     "moduleResolution": "Node",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
       "@/components/*": ["./components/*"],
       "@/lib/*": ["./lib/*"],
       "@/hooks/*": ["./hooks/*"],
@@ -19,7 +20,10 @@
       "@/store/*": ["./store/*"],
       "@/app/*": ["./app/*"],
       "@/prisma/*": ["./prisma/*"],
-      "@/public/*": ["./public/*"]
+      "@/public/*": ["./public/*"],
+      "@/shared/*": ["./src/shared/*"],
+      "@/slices/*": ["./src/slices/*"],
+      "@/src/*": ["./src/*"]
     },
     "resolveJsonModule": true,
 

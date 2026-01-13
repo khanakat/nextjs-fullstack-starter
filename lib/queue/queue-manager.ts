@@ -27,9 +27,16 @@ export class QueueManager {
   private workers: Map<string, Worker> = new Map();
   private queueEvents: Map<string, QueueEvents> = new Map();
   private isInitialized = false;
+  private autoStart: boolean;
 
   constructor() {
-    this.initialize();
+    this.autoStart = process.env.QUEUE_AUTOSTART !== 'false';
+
+    if (this.autoStart) {
+      void this.initialize();
+    } else {
+      console.log('[QueueManager] Auto-start disabled; initialization skipped');
+    }
   }
 
   /**
@@ -66,6 +73,23 @@ export class QueueManager {
   }
 
   /**
+   * Ensure queues are ready before operating
+   */
+  private async ensureInitialized(): Promise<boolean> {
+    if (!this.autoStart) {
+      console.warn('[QueueManager] Queue auto-start disabled; skipping queue operations');
+      return false;
+    }
+
+    if (this.isInitialized) {
+      return true;
+    }
+
+    await this.initialize();
+    return this.isInitialized;
+  }
+
+  /**
    * Add job to queue
    */
   async addJob(
@@ -74,6 +98,11 @@ export class QueueManager {
     options: QueueJobOptions = {}
   ): Promise<Job | null> {
     try {
+      const ready = await this.ensureInitialized();
+      if (!ready) {
+        return null;
+      }
+
       const queue = this.queues.get(queueName);
       if (!queue) {
         throw new Error(`Queue '${queueName}' not found`);
@@ -152,6 +181,11 @@ export class QueueManager {
     concurrency = 5
   ): Worker | null {
     try {
+      if (!this.autoStart || !this.isInitialized) {
+        console.warn('[QueueManager] Cannot create worker because queues are not initialized');
+        return null;
+      }
+
       const queueKey = queueConfig.queues[queueName as keyof typeof queueConfig.queues];
       if (!queueKey) {
         throw new Error(`Queue configuration for '${queueName}' not found`);
@@ -211,6 +245,13 @@ export class QueueManager {
    * Get queue statistics
    */
   async getQueueStats(queueName: string): Promise<any> {
+    const ready = await this.ensureInitialized();
+    if (!ready) {
+      return {
+        error: 'Queue system disabled',
+      };
+    }
+
     const queue = this.queues.get(queueName);
     if (!queue) {
       throw new Error(`Queue '${queueName}' not found`);
@@ -239,6 +280,11 @@ export class QueueManager {
   async getAllQueueStats(): Promise<Record<string, any>> {
     const stats: Record<string, any> = {};
 
+    const ready = await this.ensureInitialized();
+    if (!ready) {
+      return stats;
+    }
+
     for (const queueName of this.queues.keys()) {
       try {
         stats[queueName] = await this.getQueueStats(queueName);
@@ -255,6 +301,11 @@ export class QueueManager {
    * Pause queue
    */
   async pauseQueue(queueName: string): Promise<void> {
+    const ready = await this.ensureInitialized();
+    if (!ready) {
+      return;
+    }
+
     const queue = this.queues.get(queueName);
     if (!queue) {
       throw new Error(`Queue '${queueName}' not found`);
@@ -268,6 +319,11 @@ export class QueueManager {
    * Resume queue
    */
   async resumeQueue(queueName: string): Promise<void> {
+    const ready = await this.ensureInitialized();
+    if (!ready) {
+      return;
+    }
+
     const queue = this.queues.get(queueName);
     if (!queue) {
       throw new Error(`Queue '${queueName}' not found`);
@@ -281,6 +337,11 @@ export class QueueManager {
    * Clean queue (remove completed/failed jobs)
    */
   async cleanQueue(queueName: string, grace = 24 * 60 * 60 * 1000): Promise<void> {
+    const ready = await this.ensureInitialized();
+    if (!ready) {
+      return;
+    }
+
     const queue = this.queues.get(queueName);
     if (!queue) {
       throw new Error(`Queue '${queueName}' not found`);
@@ -298,6 +359,11 @@ export class QueueManager {
    * Shutdown queue manager
    */
   async shutdown(): Promise<void> {
+    const ready = await this.ensureInitialized();
+    if (!ready) {
+      return;
+    }
+
     console.log('[QueueManager] Shutting down...');
 
     // Close all workers

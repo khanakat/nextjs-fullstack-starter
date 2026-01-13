@@ -1,6 +1,7 @@
 import { auth } from "@/lib/conditional-auth";
 import { NextResponse } from "next/server";
 import { SubscriptionService } from "@/lib/subscription-service";
+import { logger } from "@/lib/logger";
 
 /**
  * Middleware to check subscription status and plan limits
@@ -10,6 +11,66 @@ import { SubscriptionService } from "@/lib/subscription-service";
 export interface SubscriptionRequirement {
   plans: string[]; // Required plans: ['pro', 'enterprise']
   feature?: string; // Feature name for limit checking
+}
+
+type FeatureKey = "uploads" | "emails" | "apiCalls";
+
+type PlanLimits = Record<
+  "free" | "pro" | "enterprise",
+  Record<FeatureKey, number>
+>;
+
+const planLimits: PlanLimits = {
+  free: {
+    uploads: 5,
+    emails: 10,
+    apiCalls: 100,
+  },
+  pro: {
+    uploads: -1,
+    emails: 1000,
+    apiCalls: 10000,
+  },
+  enterprise: {
+    uploads: -1,
+    emails: -1,
+    apiCalls: -1,
+  },
+};
+
+type UsageCounters = {
+  [userId: string]: {
+    windowStart: number;
+    uploads: number;
+    emails: number;
+    apiCalls: number;
+  };
+};
+
+const usageCounters: UsageCounters = {};
+const USAGE_WINDOW_MS = 24 * 60 * 60 * 1000; // reset daily
+
+function getUsageCounter(userId: string) {
+  const now = Date.now();
+  const existing = usageCounters[userId];
+  if (!existing || now - existing.windowStart > USAGE_WINDOW_MS) {
+    usageCounters[userId] = {
+      windowStart: now,
+      uploads: 0,
+      emails: 0,
+      apiCalls: 0,
+    };
+  }
+  return usageCounters[userId];
+}
+
+export function recordUsage(
+  userId: string,
+  feature: FeatureKey,
+  amount: number = 1,
+) {
+  const counter = getUsageCounter(userId);
+  counter[feature] += amount;
 }
 
 export async function requireSubscription(
@@ -75,29 +136,10 @@ export async function requireSubscription(
  * Check feature usage against plan limits
  */
 async function checkFeatureUsage(
-  _userId: string,
+  userId: string,
   feature: string,
   plan: string,
 ): Promise<boolean> {
-  // Define plan limits
-  const planLimits = {
-    free: {
-      uploads: 5,
-      emails: 10,
-      apiCalls: 100,
-    },
-    pro: {
-      uploads: -1, // unlimited
-      emails: 1000,
-      apiCalls: 10000,
-    },
-    enterprise: {
-      uploads: -1, // unlimited
-      emails: -1, // unlimited
-      apiCalls: -1, // unlimited
-    },
-  };
-
   const limits = planLimits[plan as keyof typeof planLimits];
 
   if (!limits) {
@@ -114,11 +156,10 @@ async function checkFeatureUsage(
     return false; // feature not available
   }
 
-  // TODO: Implement actual usage tracking
-  // This is where you'd query your database for current usage
-  // For now, we'll return true (assuming usage is within limits)
+  // Simple in-memory usage tracking with daily reset
+  const usage = getUsageCounter(userId)[feature as FeatureKey] || 0;
 
-  return true;
+  return limit === -1 ? true : usage < limit;
 }
 
 /**
