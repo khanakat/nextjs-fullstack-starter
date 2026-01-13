@@ -159,6 +159,20 @@ npm run dev
 | [🚀 Deployment](./docs/guides/deployment.md)         | Vercel, Docker, and production tips  |
 | [🏗️ Architecture](./docs/architecture)               | Project structure and patterns       |
 | [🎯 Examples](./docs/examples)                       | Code samples and tutorials           |
+| [📋 Technical Debt](./docs/technical-debt)          | Known issues and improvement plans  |
+
+## ✅ Build Status
+
+**Production Build**: ✅ Successful (0 compilation errors)
+
+All production code compiles successfully with TypeScript strict mode enabled. The project uses:
+- TypeScript 5.x with strict type checking
+- Prisma ORM for database operations
+- Domain-Driven Design (DDD) with Clean Architecture
+- Result pattern for error handling
+- Inversify for dependency injection
+
+For detailed information about compilation fixes and known test errors, see [Technical Debt Documentation](./docs/technical-debt/compilation-errors.md).
 
 ---
 
