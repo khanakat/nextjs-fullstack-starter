@@ -1,56 +1,26 @@
-import { NextRequest, NextResponse } from "next/server";
-import { ApiError, errorResponse } from "@/lib/api-utils";
-import { logger } from "@/lib/logger";
-import { auth } from "@/lib/auth";
-import { workflowService } from "@/lib/services/workflow";
-import { db } from "@/lib/db";
+import { NextRequest } from 'next/server';
+import { DIContainer } from '@/shared/infrastructure/di/container';
+import { WorkflowsApiController } from '@/slices/workflows/presentation/api/workflows-api.controller';
+import { TYPES } from '@/shared/infrastructure/di/types';
 
+/**
+ * Workflow Execution API Routes
+ * Handles HTTP requests for workflow execution using clean architecture
+ */
+
+// POST /api/workflows/[id]/execute - Execute a workflow
 export async function POST(
-  _request: NextRequest,
-  { params }: { params: { id: string } },
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { id } = params;
-    const body = await _request.json();
-    const { inputs } = body;
-
-    // Get user's primary organization (first organization they're a member of)
-    const userMembership = await db.organizationMember.findFirst({
-      where: { userId },
-      include: { organization: true },
-    });
-
-    const organizationId = userMembership?.organizationId || "default-org";
-
-    // Execute the workflow
-    const result = await workflowService.executeWorkflow(
-      {
-        workflowId: id,
-        data: inputs,
-        variables: {},
-        priority: "normal",
-      },
-      userId || "anonymous",
-      organizationId,
-    );
-
-    return NextResponse.json(result);
+    const controller = DIContainer.get<WorkflowsApiController>(TYPES.WorkflowsApiController);
+    return await controller.executeWorkflow(params.id, request);
   } catch (error) {
-    logger.apiError("Error processing workflow request", "workflow", error, {
-      resourceId: params.id,
-      endpoint: "/api/workflows/:id/execute",
-    });
-
-    if (error instanceof ApiError) {
-      return errorResponse(error);
-    }
-
-    return errorResponse("Failed to process workflow request", 500);
+    console.error('Error in POST /api/workflows/[id]/execute:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

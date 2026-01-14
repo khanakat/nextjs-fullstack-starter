@@ -3,11 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { CreateWorkflowCommand } from '../../application/commands/create-workflow-command';
 import { UpdateWorkflowCommand } from '../../application/commands/update-workflow-command';
 import { DeleteWorkflowCommand } from '../../application/commands/delete-workflow-command';
+import { ExecuteWorkflowCommand } from '../../application/commands/execute-workflow-command';
 import { GetWorkflowQuery } from '../../application/queries/get-workflow-query';
 import { GetWorkflowsQuery } from '../../application/queries/get-workflows-query';
 import { CreateWorkflowHandler } from '../../application/handlers/create-workflow-handler';
 import { UpdateWorkflowHandler } from '../../application/handlers/update-workflow-handler';
 import { DeleteWorkflowHandler } from '../../application/handlers/delete-workflow-handler';
+import { ExecuteWorkflowHandler } from '../../application/handlers/execute-workflow-handler';
 import { GetWorkflowHandler } from '../../application/handlers/get-workflow-handler';
 import { GetWorkflowsHandler } from '../../application/handlers/get-workflows-handler';
 import { TYPES } from '@/shared/infrastructure/di/types';
@@ -24,6 +26,7 @@ export class WorkflowsApiController {
     @inject(TYPES.CreateWorkflowHandler) private createWorkflowHandler: CreateWorkflowHandler,
     @inject(TYPES.UpdateWorkflowHandler) private updateWorkflowHandler: UpdateWorkflowHandler,
     @inject(TYPES.DeleteWorkflowHandler) private deleteWorkflowHandler: DeleteWorkflowHandler,
+    @inject(TYPES.ExecuteWorkflowHandler) private executeWorkflowHandler: ExecuteWorkflowHandler,
     @inject(TYPES.GetWorkflowHandler) private getWorkflowHandler: GetWorkflowHandler,
     @inject(TYPES.GetWorkflowsHandler) private getWorkflowsHandler: GetWorkflowsHandler
   ) {}
@@ -162,8 +165,8 @@ export class WorkflowsApiController {
         isTemplate: body.isTemplate,
         isPublic: body.isPublic,
         status: body.status,
-        userId,
-      });
+        updatedBy: userId,
+      }, userId);
 
       const result = await this.updateWorkflowHandler.handle(command);
 
@@ -191,11 +194,12 @@ export class WorkflowsApiController {
    * DELETE /api/workflows/[id]
    * Delete a workflow
    */
-  async deleteWorkflow(workflowId: string): Promise<NextResponse> {
+  async deleteWorkflow(workflowId: string, userId?: string): Promise<NextResponse> {
     try {
       const command = new DeleteWorkflowCommand({
         workflowId,
-      });
+        deletedBy: userId || 'system',
+      }, userId);
 
       const result = await this.deleteWorkflowHandler.handle(command);
 
@@ -212,6 +216,45 @@ export class WorkflowsApiController {
       );
     } catch (error) {
       console.error('Error in WorkflowsApiController.deleteWorkflow:', error);
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      );
+    }
+  }
+
+  /**
+   * POST /api/workflows/[id]/execute
+   * Execute a workflow
+   */
+  async executeWorkflow(workflowId: string, request: NextRequest): Promise<NextResponse> {
+    try {
+      const body = await request.json();
+      const userId = request.headers.get('x-user-id') || undefined;
+
+      const command = new ExecuteWorkflowCommand({
+        workflowId,
+        inputs: body.inputs,
+        variables: body.variables,
+        priority: body.priority,
+        triggeredBy: userId,
+      }, userId);
+
+      const result = await this.executeWorkflowHandler.handle(command);
+
+      if (result.isFailure) {
+        return NextResponse.json(
+          { error: result.error?.message || 'Failed to execute workflow' },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json(
+        result.value.toObject(),
+        { status: 201 }
+      );
+    } catch (error) {
+      console.error('Error in WorkflowsApiController.executeWorkflow:', error);
       return NextResponse.json(
         { error: 'Internal server error' },
         { status: 500 }

@@ -101,6 +101,31 @@ export const TYPES = {
   GetWorkflowsUseCase: Symbol.for('GetWorkflowsUseCase'),
   WorkflowsApiController: Symbol.for('WorkflowsApiController'),
 
+  // Workflow Instances
+  WorkflowInstanceRepository: Symbol.for('WorkflowInstanceRepository'),
+  CreateWorkflowInstanceHandler: Symbol.for('CreateWorkflowInstanceHandler'),
+  UpdateWorkflowInstanceHandler: Symbol.for('UpdateWorkflowInstanceHandler'),
+  PerformWorkflowActionHandler: Symbol.for('PerformWorkflowActionHandler'),
+  ExecuteWorkflowHandler: Symbol.for('ExecuteWorkflowHandler'),
+  GetWorkflowInstanceHandler: Symbol.for('GetWorkflowInstanceHandler'),
+  ListWorkflowInstancesHandler: Symbol.for('ListWorkflowInstancesHandler'),
+  WorkflowInstancesApiController: Symbol.for('WorkflowInstancesApiController'),
+
+  // Workflow Tasks
+  WorkflowTaskRepository: Symbol.for('WorkflowTaskRepository'),
+  UpdateWorkflowTaskHandler: Symbol.for('UpdateWorkflowTaskHandler'),
+  CompleteWorkflowTaskHandler: Symbol.for('CompleteWorkflowTaskHandler'),
+  GetWorkflowTaskHandler: Symbol.for('GetWorkflowTaskHandler'),
+  ListWorkflowTasksHandler: Symbol.for('ListWorkflowTasksHandler'),
+  WorkflowTasksApiController: Symbol.for('WorkflowTasksApiController'),
+
+  // Workflow Templates
+  WorkflowTemplateRepository: Symbol.for('WorkflowTemplateRepository'),
+  CreateWorkflowTemplateHandler: Symbol.for('CreateWorkflowTemplateHandler'),
+  GetWorkflowTemplateHandler: Symbol.for('GetWorkflowTemplateHandler'),
+  ListWorkflowTemplatesHandler: Symbol.for('ListWorkflowTemplatesHandler'),
+  WorkflowTemplatesApiController: Symbol.for('WorkflowTemplatesApiController'),
+
   // Integrations
   IntegrationRepository: Symbol.for('IntegrationRepository'),
   CreateIntegrationHandler: Symbol.for('CreateIntegrationHandler'),
