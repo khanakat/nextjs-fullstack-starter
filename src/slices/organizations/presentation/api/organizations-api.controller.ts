@@ -153,7 +153,6 @@ export class OrganizationsApiController {
       const command = new UpdateOrganizationCommand({
         id: organizationId,
         name: body.name,
-        slug: body.slug,
         description: body.description,
         imageUrl: body.imageUrl,
         website: body.website,

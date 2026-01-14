@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import { CommandHandler, Result } from '@/shared/application/base';
-import { GetTestHistoryQuery } from '../../queries/get-test-history-query';
+import { GetTestHistoryQuery } from '../../queries';
 import { ConnectionTestService } from '../../../../api/services/integrations/ConnectionTestService';
 import { db } from '@/lib/db';
 

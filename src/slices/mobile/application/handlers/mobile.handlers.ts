@@ -4,7 +4,7 @@
  */
 
 import { injectable, inject } from 'inversify';
-import { Result } from '@/shared/domain/result';
+import { Result } from '@/shared/application/base';
 import { db as prisma } from '@/lib/db';
 
 // Commands

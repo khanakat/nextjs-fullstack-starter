@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import { CommandHandler, Result } from '@/shared/application/base';
-import { DisconnectIntegrationCommand } from '../../commands/disconnect-integration-command';
+import { DisconnectIntegrationCommand } from '../../commands';
 import { OAuthService } from '../../../../api/services/integrations/OAuthService';
 import { CredentialService } from '../../../../api/services/integrations/CredentialService';
 import { db } from '@/lib/db';

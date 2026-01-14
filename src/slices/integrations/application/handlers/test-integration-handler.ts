@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import { CommandHandler, Result } from '@/shared/application/base';
-import { TestIntegrationCommand } from '../../commands/test-integration-command';
+import { TestIntegrationCommand } from '../../commands';
 import { ConnectionTestService } from '../../../../api/services/integrations/ConnectionTestService';
 import { db } from '@/lib/db';
 

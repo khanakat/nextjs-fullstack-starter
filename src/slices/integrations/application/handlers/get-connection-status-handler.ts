@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import { CommandHandler, Result } from '@/shared/application/base';
-import { GetConnectionStatusQuery } from '../../queries/get-connection-status-query';
+import { GetConnectionStatusQuery } from '../../queries';
 import { db } from '@/lib/db';
 
 /**
