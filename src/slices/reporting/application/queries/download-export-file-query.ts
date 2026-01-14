@@ -5,8 +5,11 @@ export interface DownloadExportFileProps {
   userId: string;
 }
 
-export class DownloadExportFileQuery extends Query<DownloadExportFileProps> {
+export class DownloadExportFileQuery extends Query {
+  public readonly props: DownloadExportFileProps;
+
   constructor(props: DownloadExportFileProps) {
-    super(props);
+    super(props.userId);
+    this.props = props;
   }
 }

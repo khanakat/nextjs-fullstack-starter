@@ -13,8 +13,11 @@ export interface GetExportJobsProps {
   sortOrder?: 'asc' | 'desc';
 }
 
-export class GetExportJobsQuery extends Query<GetExportJobsProps> {
+export class GetExportJobsQuery extends Query {
+  public readonly props: GetExportJobsProps;
+
   constructor(props: GetExportJobsProps) {
-    super(props);
+    super(props.userId);
+    this.props = props;
   }
 }

@@ -17,8 +17,11 @@ export interface CreateExportJobProps {
   notificationEmail?: string;
 }
 
-export class CreateExportJobCommand extends Command<CreateExportJobProps> {
+export class CreateExportJobCommand extends Command {
+  public readonly props: CreateExportJobProps;
+
   constructor(props: CreateExportJobProps) {
-    super(props);
+    super(props.userId);
+    this.props = props;
   }
 }

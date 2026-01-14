@@ -15,8 +15,11 @@ export interface GenerateDirectExportProps {
   };
 }
 
-export class GenerateDirectExportCommand extends Command<GenerateDirectExportProps> {
+export class GenerateDirectExportCommand extends Command {
+  public readonly props: GenerateDirectExportProps;
+
   constructor(props: GenerateDirectExportProps) {
-    super(props);
+    super(props.userId);
+    this.props = props;
   }
 }

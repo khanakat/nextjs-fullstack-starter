@@ -5,8 +5,11 @@ export interface BulkDeleteExportJobsProps {
   userId: string;
 }
 
-export class BulkDeleteExportJobsCommand extends Command<BulkDeleteExportJobsProps> {
+export class BulkDeleteExportJobsCommand extends Command {
+  public readonly props: BulkDeleteExportJobsProps;
+
   constructor(props: BulkDeleteExportJobsProps) {
-    super(props);
+    super(props.userId);
+    this.props = props;
   }
 }

@@ -5,8 +5,11 @@ export interface GetExportJobProps {
   userId: string;
 }
 
-export class GetExportJobQuery extends Query<GetExportJobProps> {
+export class GetExportJobQuery extends Query {
+  public readonly props: GetExportJobProps;
+
   constructor(props: GetExportJobProps) {
-    super(props);
+    super(props.userId);
+    this.props = props;
   }
 }

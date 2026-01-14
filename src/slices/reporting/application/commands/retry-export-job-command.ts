@@ -5,8 +5,11 @@ export interface RetryExportJobProps {
   userId: string;
 }
 
-export class RetryExportJobCommand extends Command<RetryExportJobProps> {
+export class RetryExportJobCommand extends Command {
+  public readonly props: RetryExportJobProps;
+
   constructor(props: RetryExportJobProps) {
-    super(props);
+    super(props.userId);
+    this.props = props;
   }
 }

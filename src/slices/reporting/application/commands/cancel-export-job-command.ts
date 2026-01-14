@@ -5,8 +5,11 @@ export interface CancelExportJobProps {
   userId: string;
 }
 
-export class CancelExportJobCommand extends Command<CancelExportJobProps> {
+export class CancelExportJobCommand extends Command {
+  public readonly props: CancelExportJobProps;
+
   constructor(props: CancelExportJobProps) {
-    super(props);
+    super(props.userId);
+    this.props = props;
   }
 }
