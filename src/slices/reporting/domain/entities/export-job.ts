@@ -1,4 +1,4 @@
-import { Entity } from '../../../../shared/domain/entities/entity';
+import { Entity } from '../../../../shared/domain/base/entity';
 import { UniqueId } from '../../../../shared/domain/value-objects/unique-id';
 
 export enum ExportFormat {

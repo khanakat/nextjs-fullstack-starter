@@ -1,10 +1,11 @@
 import { injectable } from 'inversify';
-import { BulkDeleteExportJobsCommand } from '../commands/bulk-delete-export-jobs-command';
+import { BulkDeleteExportJobsCommand } from '../../commands/bulk-delete-export-jobs-command';
 import { ExportJob, ExportJobStatus } from '../../domain/entities/export-job';
 import type { IExportJobRepository } from '../../domain/repositories/export-job-repository';
-import { Result } from '../../../../shared/application/base/result';
-import { CommandHandler } from '../../../../shared/application/base/command-handler';
-import { ValidationError } from '../../../../shared/domain/exceptions/validation-error';
+import { Result } from '@/shared/application/base';
+import { CommandHandler } from '@/shared/application/base';
+import { ValidationError } from '@/shared/domain/exceptions/validation-error';
+import { UniqueId } from '@/shared/domain/value-objects/unique-id';
 import { queueService } from '@/lib/services/queue';
 import { FileStorageService } from '@/lib/services/file-storage-service';
 
