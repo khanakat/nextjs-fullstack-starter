@@ -1,4 +1,4 @@
-import { Command } from '@/shared/domain/command';
+import { Command } from '@/shared/application/base/command';
 
 /**
  * Command to handle OAuth callback from external provider

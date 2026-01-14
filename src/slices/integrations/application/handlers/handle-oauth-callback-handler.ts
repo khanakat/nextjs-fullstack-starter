@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { Handler, Result } from '@/shared/domain/handler';
+import { Handler, Result } from '@/shared/application/base/handler';
 import { HandleOAuthCallbackCommand } from '../../commands/handle-oauth-callback-command';
 import { OAuthService } from '../../../../api/services/integrations/OAuthService';
 

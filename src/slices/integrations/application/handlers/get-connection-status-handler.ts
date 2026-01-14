@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
-import { Handler, Result } from '@/shared/domain/handler';
+import { Handler, Result } from '@/shared/application/base/handler';
 import { GetConnectionStatusQuery } from '../../queries/get-connection-status-query';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 
 /**
  * Handler for getting connection status
@@ -13,7 +13,7 @@ export class GetConnectionStatusHandler implements Handler<GetConnectionStatusQu
 
     try {
       // Get integration with connections
-      const integration = await prisma.integration.findFirst({
+      const integration = await db.integration.findFirst({
         where: {
           id: integrationId,
           organizationId,

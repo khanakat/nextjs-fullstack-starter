@@ -1,9 +1,9 @@
 import { injectable } from 'inversify';
-import { Handler, Result } from '@/shared/domain/handler';
+import { Handler, Result } from '@/shared/application/base/handler';
 import { ConnectIntegrationCommand } from '../../commands/connect-integration-command';
 import { OAuthService } from '../../../../api/services/integrations/OAuthService';
 import { CredentialService } from '../../../../api/services/integrations/CredentialService';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 
 /**
  * Handler for connecting integrations (OAuth or direct credentials)
@@ -15,7 +15,7 @@ export class ConnectIntegrationHandler implements Handler<ConnectIntegrationComm
 
     try {
       // Get integration to verify access
-      const integration = await prisma.integration.findFirst({
+      const integration = await db.integration.findFirst({
         where: {
           id: integrationId,
           organization: {

@@ -11,6 +11,7 @@ import { DeleteDashboardHandler } from '../../application/handlers/delete-dashbo
 import { GetDashboardHandler } from '../../application/handlers/get-dashboard-handler';
 import { GetDashboardsHandler } from '../../application/handlers/get-dashboards-handler';
 import { TYPES } from '@/shared/infrastructure/di/types';
+import { UniqueId } from '@/shared/domain/value-objects/unique-id';
 
 /**
  * Dashboards API Controller
@@ -37,7 +38,7 @@ export class DashboardsApiController {
       const query = new GetDashboardsQuery({
         organizationId: searchParams.get('organizationId') || undefined,
         createdBy: searchParams.get('createdBy') || undefined,
-        status: searchParams.get('status') || undefined,
+        status: searchParams.get('status') as any || undefined,
         isPublic: searchParams.get('isPublic') === 'true' ? true : undefined,
         isTemplate: searchParams.get('isTemplate') === 'true' ? true : undefined,
         page: searchParams.get('page') ? parseInt(searchParams.get('page')!) : undefined,
@@ -72,7 +73,7 @@ export class DashboardsApiController {
    */
   async getDashboard(dashboardId: string): Promise<NextResponse> {
     try {
-      const query = new GetDashboardQuery({ dashboardId });
+      const query = new GetDashboardQuery(UniqueId.create(dashboardId));
       const result = await this.getDashboardHandler.handle(query);
 
       if (result.isFailure) {
@@ -145,15 +146,17 @@ export class DashboardsApiController {
     try {
       const body = await request.json();
 
-      const command = new UpdateDashboardCommand({
-        dashboardId,
-        name: body.name,
-        description: body.description,
-        layout: body.layout ? JSON.stringify(body.layout) : undefined,
-        settings: body.settings ? JSON.stringify(body.settings) : undefined,
-        isPublic: body.isPublic,
-        tags: body.tags,
-      });
+      const command = new UpdateDashboardCommand(
+        UniqueId.create(dashboardId),
+        {
+          name: body.name,
+          description: body.description,
+          layout: body.layout ? JSON.stringify(body.layout) : undefined,
+          settings: body.settings ? JSON.stringify(body.settings) : undefined,
+          isPublic: body.isPublic,
+          tags: body.tags,
+        }
+      );
 
       const result = await this.updateDashboardHandler.handle(command);
 
@@ -183,7 +186,7 @@ export class DashboardsApiController {
    */
   async deleteDashboard(dashboardId: string): Promise<NextResponse> {
     try {
-      const command = new DeleteDashboardCommand({ dashboardId });
+      const command = new DeleteDashboardCommand(UniqueId.create(dashboardId));
       const result = await this.deleteDashboardHandler.handle(command);
 
       if (result.isFailure) {

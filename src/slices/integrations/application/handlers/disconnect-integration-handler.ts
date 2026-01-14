@@ -1,8 +1,9 @@
 import { injectable } from 'inversify';
-import { Handler, Result } from '@/shared/domain/handler';
+import { Handler, Result } from '@/shared/application/base/handler';
 import { DisconnectIntegrationCommand } from '../../commands/disconnect-integration-command';
 import { OAuthService } from '../../../../api/services/integrations/OAuthService';
 import { CredentialService } from '../../../../api/services/integrations/CredentialService';
+import { db } from '@/lib/db';
 
 /**
  * Handler for disconnecting integration connections
@@ -17,8 +18,7 @@ export class DisconnectIntegrationHandler implements Handler<DisconnectIntegrati
       // This ensures proper cleanup and logging
 
       // First, we need to get the organizationId from the integration
-      const { prisma } = await import('@/lib/db');
-      const integration = await prisma.integration.findUnique({
+      const integration = await db.integration.findUnique({
         where: { id: integrationId },
         select: { organizationId: true },
       });

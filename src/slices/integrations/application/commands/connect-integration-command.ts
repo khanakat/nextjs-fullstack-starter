@@ -1,4 +1,4 @@
-import { Command } from '@/shared/domain/command';
+import { Command } from '@/shared/application/base/command';
 
 /**
  * Connection types supported

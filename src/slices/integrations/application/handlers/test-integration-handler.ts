@@ -1,8 +1,8 @@
 import { injectable } from 'inversify';
-import { Handler, Result } from '@/shared/domain/handler';
+import { Handler, Result } from '@/shared/application/base/handler';
 import { TestIntegrationCommand } from '../../commands/test-integration-command';
 import { ConnectionTestService } from '../../../../api/services/integrations/ConnectionTestService';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 
 /**
  * Handler for testing integration connections
@@ -14,7 +14,7 @@ export class TestIntegrationHandler implements Handler<TestIntegrationCommand, R
 
     try {
       // Get integration with connections
-      const integration = await prisma.integration.findFirst({
+      const integration = await db.integration.findFirst({
         where: {
           id: integrationId,
           organization: {
