@@ -1,17 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { ScheduledReportsService } from "@/lib/services/scheduled-reports-service";
-import { 
-  ScheduledReportError, 
-  ScheduledReportNotFoundError, 
-  ScheduledReportValidationError 
-} from "@/lib/types/scheduled-reports";
-import { 
-  handleScheduledReportsError, 
-  validateRequestAuth,
-  createSuccessResponse 
-} from "@/lib/middleware/scheduled-reports-error-handler";
+import { NextRequest } from 'next/server';
+import { DIContainer } from '@/shared/infrastructure/di/container';
+import { ReportTypes } from '@/shared/infrastructure/di/reporting.types';
+import { ScheduledReportsApiController } from '@/slices/reporting/presentation/api/scheduled-reports-api.controller';
+
+/**
+ * Scheduled Reports API Routes
+ * Handles HTTP requests for cancelling scheduled reports using clean architecture
+ */
 
 interface RouteParams {
   params: {
@@ -19,46 +14,16 @@ interface RouteParams {
   };
 }
 
+// POST /api/scheduled-reports/[id]/cancel - Cancel a scheduled report
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions);
-    const { searchParams } = new URL(request.url);
-    const organizationId =
-      searchParams.get("organizationId") || request.headers.get("x-organization-id");
-
-    // Validate authentication and required parameters
-    validateRequestAuth(session?.user?.id, organizationId || undefined);
-
-    // Validate scheduled report ID format
-    if (!params.id || typeof params.id !== 'string') {
-      throw new ScheduledReportValidationError('id', params.id, 'Invalid scheduled report ID');
-    }
-
-    // Cancel the scheduled report
-    const cancelledReport = await ScheduledReportsService.cancelScheduledReport(
-      params.id,
-      session!.user!.id,
-      organizationId!,
-    );
-
-    return createSuccessResponse(
-      cancelledReport, 
-      "Scheduled report cancelled successfully",
-      { 
-        scheduledReportId: params.id,
-        status: 'cancelled'
-      }
-    );
+    const controller = DIContainer.get<ScheduledReportsApiController>(ReportTypes.ScheduledReportsApiController);
+    return await controller.cancelScheduledReport(params.id);
   } catch (error) {
-    return handleScheduledReportsError(error, {
-      operation: 'cancel_scheduled_report',
-      userId: (await getServerSession(authOptions))?.user?.id,
-      organizationId: (
-        new URL(request.url).searchParams.get("organizationId") ||
-        request.headers.get("x-organization-id") || undefined
-      ),
-      scheduledReportId: params.id,
-      path: request.url,
-    });
+    console.error('Error in POST /api/scheduled-reports/[id]/cancel:', error);
+    return new Response(
+      JSON.stringify({ success: false, error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

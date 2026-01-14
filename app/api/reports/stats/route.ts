@@ -1,32 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ApiError, errorResponse } from "@/lib/api-utils";
-import { logger } from "@/lib/logger";
 import { auth } from "@clerk/nextjs/server";
-import { ReportService } from "@/lib/services/report-service";
+import { container } from "@/shared/infrastructure/di/container";
+import { ReportTypes } from "@/shared/infrastructure/di/reporting.types";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
 
 // Force dynamic rendering for this route
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
+  const requestId = crypto.randomUUID();
+
   try {
     const { userId } = await auth();
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return StandardErrorResponse.unauthorized(
+        "Authentication required",
+        requestId,
+      );
     }
 
-    const stats = await ReportService.getReportStats(userId);
+    // Get controller from DI container
+    const controller = container.get<any>(ReportTypes.ReportsApiController);
 
-    return NextResponse.json(stats);
+    const result = await controller.getReportStats({ userId });
+
+    if (!result.success) {
+      return StandardErrorResponse.internal(
+        result.error || "Failed to fetch report statistics",
+        requestId,
+      );
+    }
+
+    return StandardSuccessResponse.ok(result.data, requestId);
   } catch (error) {
-    logger.apiError("Error processing report request", "report", error, {
-      endpoint: "/api/reports/stats",
-    });
-
-    if (error instanceof ApiError) {
-      return errorResponse(error);
-    }
-
-    return errorResponse("Failed to process report request", 500);
+    return StandardErrorResponse.internal(
+      "Failed to process report request",
+      requestId,
+    );
   }
 }

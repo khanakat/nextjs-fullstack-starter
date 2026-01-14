@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@clerk/nextjs/server";
 import { generalRateLimiter, createRateLimitResponse } from "@/lib/utils/rate-limiter";
 
 // Store active connections with metadata
@@ -24,14 +23,22 @@ export async function OPTIONS() {
   });
 }
 
+/**
+ * GET /api/scheduled-reports/stream
+ * Server-Sent Events (SSE) endpoint for real-time scheduled report updates
+ */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const { userId } = await auth();
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get("organizationId");
-
-    // Support demo mode - if no session, use demo data
-    const userId = session?.user?.id || "demo-user";
     const orgId = organizationId || "demo-org";
 
     // Rate limiting for SSE connections
@@ -40,7 +47,7 @@ export async function GET(request: NextRequest) {
     if (!generalRateLimiter.isAllowed(rateLimitKey, isDemo)) {
       const resetTime = generalRateLimiter.getResetTime(rateLimitKey);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: "Too Many Requests",
           message: "SSE connection rate limit exceeded. Please try again later.",
           resetTime: new Date(resetTime).toISOString()
@@ -57,8 +64,8 @@ export async function GET(request: NextRequest) {
 
     if (!organizationId) {
       return new Response(
-        JSON.stringify({ error: "Organization ID is required" }), 
-        { 
+        JSON.stringify({ error: "Organization ID is required" }),
+        {
           status: 400,
           headers: { "Content-Type": "application/json" }
         }
@@ -69,7 +76,7 @@ export async function GET(request: NextRequest) {
     const existingConnections = Array.from(connections.entries()).filter(
       ([id, conn]) => conn.userId === userId && conn.organizationId === orgId
     );
-    
+
     // Close old connections if there are too many (max 3 per user/org)
     if (existingConnections.length >= 3) {
       existingConnections.slice(0, -2).forEach(([id, conn]) => {
@@ -113,7 +120,7 @@ export async function GET(request: NextRequest) {
             clearInterval(heartbeat);
             return;
           }
-          
+
           try {
             connection.controller.enqueue(`data: ${JSON.stringify({
               type: "heartbeat",
@@ -138,7 +145,7 @@ export async function GET(request: NextRequest) {
         };
 
         request.signal.addEventListener("abort", cleanup);
-        
+
         // Also clean up on error
         controller.error = (error: any) => {
           console.error("SSE controller error:", error);
@@ -233,13 +240,13 @@ export function broadcastEvent(organizationId: string, event: any) {
 setInterval(() => {
   const now = Date.now();
   const staleConnections: string[] = [];
-  
+
   connections.forEach((connection, connectionId) => {
     if (now - connection.connectedAt > 60 * 60 * 1000) { // 1 hour
       staleConnections.push(connectionId);
     }
   });
-  
+
   staleConnections.forEach(id => {
     const connection = connections.get(id);
     if (connection) {
@@ -251,7 +258,7 @@ setInterval(() => {
       connections.delete(id);
     }
   });
-  
+
   if (staleConnections.length > 0) {
     console.log(`Cleaned up ${staleConnections.length} stale SSE connections`);
   }

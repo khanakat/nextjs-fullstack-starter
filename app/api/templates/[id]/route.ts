@@ -1,14 +1,11 @@
 import { NextRequest } from "next/server";
-import {
-  StandardErrorResponse,
-  StandardSuccessResponse,
-} from "@/lib/standardized-error-responses";
-import { logger } from "@/lib/logger";
 import { auth } from "@clerk/nextjs/server";
 import { container } from "@/shared/infrastructure/di/container";
 import { ReportTypes } from "@/shared/infrastructure/di/reporting.types";
-import { z } from "zod";
+import { StandardErrorResponse, StandardSuccessResponse } from "@/lib/standardized-error-responses";
+import { logger } from "@/lib/logger";
 import { generateRequestId } from "@/lib/utils";
+import { z } from "zod";
 
 // Validation schema for updates
 const updateTemplateSchema = z.object({

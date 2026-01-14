@@ -188,6 +188,11 @@ export const TYPES = {
   CreateScheduledReportHandler: Symbol.for('CreateScheduledReportHandler'),
   GetScheduledReportHandler: Symbol.for('GetScheduledReportHandler'),
   GetScheduledReportsHandler: Symbol.for('GetScheduledReportsHandler'),
+  ActivateScheduledReportHandler: Symbol.for('ActivateScheduledReportHandler'),
+  CancelScheduledReportHandler: Symbol.for('CancelScheduledReportHandler'),
+  ExecuteScheduledReportHandler: Symbol.for('ExecuteScheduledReportHandler'),
+  GetScheduledReportRunsHandler: Symbol.for('GetScheduledReportRunsHandler'),
+  GetScheduledReportStatsHandler: Symbol.for('GetScheduledReportStatsHandler'),
 
   // Reporting - Use Cases
   ReportManagementUseCase: Symbol.for('ReportManagementUseCase'),
@@ -204,6 +209,21 @@ export const TYPES = {
   TemplatesController: Symbol.for('TemplatesController'),
   ScheduledReportsController: Symbol.for('ScheduledReportsController'),
   ExportsController: Symbol.for('ExportsController'),
+  ExportsApiController: Symbol.for('ExportsApiController'),
+
+  // Reporting - Export Handlers
+  CreateExportJobHandler: Symbol.for('CreateExportJobHandler'),
+  CancelExportJobHandler: Symbol.for('CancelExportJobHandler'),
+  RetryExportJobHandler: Symbol.for('RetryExportJobHandler'),
+  DeleteExportJobHandler: Symbol.for('DeleteExportJobHandler'),
+  BulkDeleteExportJobsHandler: Symbol.for('BulkDeleteExportJobsHandler'),
+  GenerateDirectExportHandler: Symbol.for('GenerateDirectExportHandler'),
+  GetExportJobHandler: Symbol.for('GetExportJobHandler'),
+  GetExportJobsHandler: Symbol.for('GetExportJobsHandler'),
+  DownloadExportFileHandler: Symbol.for('DownloadExportFileHandler'),
+
+  // Reporting - Export Repository
+  ExportJobRepository: Symbol.for('ExportJobRepository'),
 
   // Notifications
   NotificationRepository: Symbol.for('NotificationRepository'),
@@ -262,6 +282,52 @@ export const TYPES = {
   GetAuditLogsHandler: Symbol.for('GetAuditLogsHandler'),
   GetAuditStatisticsHandler: Symbol.for('GetAuditStatisticsHandler'),
   AuditApiController: Symbol.for('AuditApiController'),
+
+  // Email
+  EmailApiController: Symbol.for('EmailApiController'),
+  EmailListsApiController: Symbol.for('EmailListsApiController'),
+  EmailTemplatesApiController: Symbol.for('EmailTemplatesApiController'),
+
+  // Mobile
+  RegisterDeviceHandler: Symbol.for('RegisterDeviceHandler'),
+  UpdateDeviceHandler: Symbol.for('UpdateDeviceHandler'),
+  DeleteDeviceHandler: Symbol.for('DeleteDeviceHandler'),
+  GetDeviceHandler: Symbol.for('GetDeviceHandler'),
+  GetDevicesHandler: Symbol.for('GetDevicesHandler'),
+  SubscribePushHandler: Symbol.for('SubscribePushHandler'),
+  UnsubscribePushHandler: Symbol.for('UnsubscribePushHandler'),
+  SendPushNotificationHandler: Symbol.for('SendPushNotificationHandler'),
+  QueueOfflineActionHandler: Symbol.for('QueueOfflineActionHandler'),
+  GetOfflineActionsHandler: Symbol.for('GetOfflineActionsHandler'),
+  UpdateOfflineActionHandler: Symbol.for('UpdateOfflineActionHandler'),
+  DeleteOfflineActionHandler: Symbol.for('DeleteOfflineActionHandler'),
+  UpdateNotificationPreferencesHandler: Symbol.for('UpdateNotificationPreferencesHandler'),
+  GetNotificationPreferencesHandler: Symbol.for('GetNotificationPreferencesHandler'),
+  SyncDataHandler: Symbol.for('SyncDataHandler'),
+  GetServerUpdatesHandler: Symbol.for('GetServerUpdatesHandler'),
+  GetVapidKeyHandler: Symbol.for('GetVapidKeyHandler'),
+  MobileApiController: Symbol.for('MobileApiController'),
+
+  // UI
+  ComponentsApiController: Symbol.for('ComponentsApiController'),
+  PreferencesApiController: Symbol.for('PreferencesApiController'),
+  TemplatesApiController: Symbol.for('TemplatesApiController'),
+  ThemesApiController: Symbol.for('ThemesApiController'),
+
+  // Security
+  ListApiKeysHandler: Symbol.for('ListApiKeysHandler'),
+  CreateApiKeyHandler: Symbol.for('CreateApiKeyHandler'),
+  GetPermissionAnalyticsHandler: Symbol.for('GetPermissionAnalyticsHandler'),
+  GetViolationsHandler: Symbol.for('GetViolationsHandler'),
+  AuditUserPermissionsHandler: Symbol.for('AuditUserPermissionsHandler'),
+  GetComplianceReportHandler: Symbol.for('GetComplianceReportHandler'),
+  ResolveViolationHandler: Symbol.for('ResolveViolationHandler'),
+  LogPermissionCheckHandler: Symbol.for('LogPermissionCheckHandler'),
+  CreateViolationHandler: Symbol.for('CreateViolationHandler'),
+  ListSecurityEventsHandler: Symbol.for('ListSecurityEventsHandler'),
+  UpdateSecurityEventHandler: Symbol.for('UpdateSecurityEventHandler'),
+  GetSecurityMetricsHandler: Symbol.for('GetSecurityMetricsHandler'),
+  SecurityApiController: Symbol.for('SecurityApiController'),
 } as const;
 
 // Event Bus

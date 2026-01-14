@@ -1,3 +1,9 @@
+/**
+ * PWA Manifest API Routes
+ * Note: This route serves a dynamic PWA manifest and doesn't follow standard CRUD patterns
+ * Keeping original logic as it's UI-specific
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import {
   StandardErrorResponse,

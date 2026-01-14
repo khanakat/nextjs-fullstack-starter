@@ -16,6 +16,10 @@ import { configureSettingsContainer } from '../../../slices/settings/infrastruct
 import { configureAuditContainer } from '../../../slices/audit/infrastructure/di/audit-container';
 import { configureWorkflowsContainer } from '../../../slices/workflows/infrastructure/di/workflows-container';
 import { configureOrganizationsContainer } from '../../../slices/organizations/infrastructure/di/organizations-container';
+import { configureEmailContainer } from '../../../slices/email/infrastructure/di/email-container';
+import { configureMobileContainer } from '../../../slices/mobile/infrastructure/di/mobile-container';
+import { configureUIContainer } from '../../../slices/ui/infrastructure/di/ui-container';
+import { configureSecurityContainer } from '../../../slices/security/infrastructure/di/security-container';
 
 /**
  * IoC Container configuration
@@ -57,6 +61,10 @@ export class DIContainer {
     configureAuditContainer(container);
     configureWorkflowsContainer(container);
     configureOrganizationsContainer(container);
+    configureEmailContainer(container);
+    configureMobileContainer(container);
+    configureUIContainer(container);
+    configureSecurityContainer(container);
 
     // Note: Additional vertical slices will be registered here as they are implemented
   }

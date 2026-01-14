@@ -59,7 +59,7 @@ export async function GET(
     // Get controller from DI container
     const controller = container.get<any>(ReportTypes.ReportsApiController);
 
-    const result = await controller.getReport(params.id);
+    const result = await controller.getReport({ reportId: params.id });
 
     if (!result.success || !result.data) {
       return NextResponse.json(
@@ -107,7 +107,10 @@ export async function PUT(
     // Get controller from DI container
     const controller = container.get<any>(ReportTypes.ReportsApiController);
 
-    const result = await controller.updateReport(params.id, userId, validatedData);
+    const result = await controller.updateReport({
+      reportId: params.id,
+      ...validatedData,
+    });
 
     if (!result.success) {
       return StandardErrorResponse.internal(
@@ -148,7 +151,10 @@ export async function DELETE(
     // Get controller from DI container
     const controller = container.get<any>(ReportTypes.ReportsApiController);
 
-    const result = await controller.deleteReport(params.id, userId);
+    const result = await controller.deleteReport({
+      reportId: params.id,
+      userId,
+    });
 
     if (!result.success) {
       return StandardErrorResponse.internal(

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ApiError, errorResponse } from "@/lib/api-utils";
-import { logger } from "@/lib/logger";
 import { auth } from "@clerk/nextjs/server";
-import { db } from "@/lib/db";
 import { z } from "zod";
+import { container } from "@/shared/infrastructure/di/container";
+import { ReportTypes } from "@/shared/infrastructure/di/reporting.types";
+import {
+  StandardErrorResponse,
+  StandardSuccessResponse,
+} from "@/lib/standardized-error-responses";
 
 const createPermissionSchema = z.object({
   reportId: z.string(),
@@ -12,155 +15,96 @@ const createPermissionSchema = z.object({
 });
 
 // GET /api/reports/permissions - Get report permissions for a user
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
+  const requestId = crypto.randomUUID();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(_request.url);
-    const reportId = searchParams.get("reportId");
-
-    if (!reportId) {
-      return NextResponse.json(
-        { error: "Report ID is required" },
-        { status: 400 },
+      return StandardErrorResponse.unauthorized(
+        "Authentication required",
+        requestId,
       );
     }
 
-    // Get all permissions for the report
-    const permissions = await db.reportPermission.findMany({
-      where: { reportId },
-      include: {
-        report: {
-          select: {
-            id: true,
-            name: true,
-            createdBy: true,
-          },
-        },
-      },
+    const { searchParams } = new URL(request.url);
+    const reportId = searchParams.get("reportId");
+
+    if (!reportId) {
+      return StandardErrorResponse.validation(
+        {
+          issues: [{ message: "Report ID is required" }],
+        } as any,
+        requestId,
+      );
+    }
+
+    // Get controller from DI container
+    const controller = container.get<any>(ReportTypes.ReportsApiController);
+
+    const result = await controller.getReportPermissions({
+      reportId,
+      userId,
     });
 
-    // Check if user has access to view permissions
-    const report = permissions[0]?.report;
-    if (!report) {
-      return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: result.error?.includes("Access denied") ? 403 : 404 },
+      );
     }
 
-    const userPermission = permissions.find((p) => p.userId === userId);
-    const isOwner = report.createdBy === userId;
-    const hasAdminAccess =
-      userPermission?.permissionType === "admin" || isOwner;
-
-    if (!hasAdminAccess) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
-    }
-
-    return NextResponse.json({ permissions });
+    return StandardSuccessResponse.ok(result.data, requestId);
   } catch (error) {
-    logger.apiError("Error processing report request", "report", error, {
-      endpoint: "/api/reports/permissions",
-    });
-
-    if (error instanceof ApiError) {
-      return errorResponse(error);
-    }
-
-    return errorResponse("Failed to process report request", 500);
+    return StandardErrorResponse.internal(
+      "Failed to process report permissions request",
+      requestId,
+    );
   }
 }
 
 // POST /api/reports/permissions - Create a new permission
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
+  const requestId = crypto.randomUUID();
+
   try {
     const { userId } = auth();
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return StandardErrorResponse.unauthorized(
+        "Authentication required",
+        requestId,
+      );
     }
 
-    const body = await _request.json();
+    const body = await request.json();
     const validatedData = createPermissionSchema.parse(body);
 
-    // Check if user has admin access to the report
-    const report = await db.report.findUnique({
-      where: { id: validatedData.reportId },
+    // Get controller from DI container
+    const controller = container.get<any>(ReportTypes.ReportsApiController);
+
+    const result = await controller.createReportPermission({
+      reportId: validatedData.reportId,
+      userId,
+      targetUserId: validatedData.userId,
+      permission: validatedData.permission,
     });
 
-    if (!report) {
-      return NextResponse.json({ error: "Report not found" }, { status: 404 });
-    }
-
-    const userPermission = await db.reportPermission.findFirst({
-      where: {
-        userId,
-        reportId: validatedData.reportId,
-      },
-    });
-
-    const isOwner = report.createdBy === userId;
-    const hasAdminAccess =
-      userPermission?.permissionType === "admin" || isOwner;
-
-    if (!hasAdminAccess) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
-    }
-
-    // Check if permission already exists
-    const existingPermission = await db.reportPermission.findFirst({
-      where: {
-        userId: validatedData.userId,
-        reportId: validatedData.reportId,
-      },
-    });
-
-    if (existingPermission) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: "Permission already exists" },
-        { status: 409 },
+        { success: false, error: result.error },
+        { status: result.error?.includes("Access denied") ? 403 : 404 },
       );
     }
 
-    // Create permission
-    const permission = await db.reportPermission.create({
-      data: {
-        userId: validatedData.userId,
-        reportId: validatedData.reportId,
-        permissionType: validatedData.permission,
-      },
-      include: {
-        report: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    return NextResponse.json(permission, { status: 201 });
+    return StandardSuccessResponse.created(result.data, requestId);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation error", details: error.errors },
-        { status: 400 },
-      );
+      return StandardErrorResponse.validation(error, requestId);
     }
 
-    logger.apiError(
-      "Error processing report permissions request",
-      "report",
-      error,
-      {
-        endpoint: "/api/reports/permissions",
-      },
+    return StandardErrorResponse.internal(
+      "Failed to process report permissions request",
+      requestId,
     );
-
-    if (error instanceof ApiError) {
-      return errorResponse(error);
-    }
-
-    return errorResponse("Failed to process report permissions request", 500);
   }
 }

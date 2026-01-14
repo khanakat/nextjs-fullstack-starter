@@ -9,3 +9,4 @@ export * from './notifications';
 export * from './files';
 export * from './settings';
 export * from './audit';
+export * from './security';

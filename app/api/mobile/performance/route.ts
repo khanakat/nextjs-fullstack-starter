@@ -1,3 +1,9 @@
+/**
+ * Performance Metrics API Routes
+ * Note: This route logs performance metrics but doesn't persist them yet
+ * Keeping original logic as it's monitoring-specific
+ */
+
 import { NextRequest } from "next/server";
 import {
   StandardErrorResponse,
@@ -89,31 +95,6 @@ export async function POST(_request: NextRequest) {
     // 3. Set up alerts for performance degradation
     // 4. Generate performance reports
 
-    // Example: Store in database (commented out as we don't have the schema)
-    /*
-    await prisma.performanceMetrics.create({
-      data: {
-        userId,
-        lcp: data.metrics.lcp,
-        fid: data.metrics.fid,
-        cls: data.metrics.cls,
-        memoryUsed: data.metrics.memory_used,
-        memoryTotal: data.metrics.memory_total,
-        memoryLimit: data.metrics.memory_limit,
-        networkType: data.networkInfo?.type,
-        effectiveType: data.networkInfo?.effectiveType,
-        downlink: data.networkInfo?.downlink,
-        rtt: data.networkInfo?.rtt,
-        saveData: data.networkInfo?.saveData,
-        userAgent: data.userAgent,
-        url: data.url,
-        deviceType: data.deviceType,
-        timestamp: new Date(data.timestamp),
-        ip: _request.ip,
-      },
-    });
-    */
-
     logger.info("Performance metrics processed successfully", "mobile", {
       requestId,
       userId,
@@ -188,18 +169,6 @@ export async function PUT(_request: NextRequest) {
     });
 
     // In production, store bundle metrics for analysis
-    /*
-    await prisma.bundleMetrics.create({
-      data: {
-        userId,
-        bundleName: data.bundleName,
-        size: data.size,
-        loadTime: data.loadTime,
-        cached: data.cached,
-        timestamp: new Date(data.timestamp),
-      },
-    });
-    */
 
     logger.info("Bundle performance metrics processed successfully", "mobile", {
       requestId,

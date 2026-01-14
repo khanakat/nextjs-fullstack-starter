@@ -10,3 +10,8 @@ export * from './create-template-handler';
 
 // Command Handlers - Scheduled Report Management
 export * from './create-scheduled-report-handler';
+export * from './activate-scheduled-report-handler';
+export * from './cancel-scheduled-report-handler';
+export * from './execute-scheduled-report-handler';
+export * from './get-scheduled-report-runs-handler';
+export * from './get-scheduled-report-stats-handler';

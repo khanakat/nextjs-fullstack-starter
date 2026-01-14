@@ -272,6 +272,7 @@ export class ReportsApiController {
    */
   async deleteReport(request: {
     reportId: string;
+    userId: string;
   }): Promise<{ success: boolean; error?: string }> {
     try {
       const command = new DeleteReportCommand({ reportId: request.reportId });
@@ -287,6 +288,166 @@ export class ReportsApiController {
 
       return {
         success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      };
+    }
+  }
+
+  /**
+   * Get report permissions
+   * GET /api/reports/permissions?reportId=xxx
+   */
+  async getReportPermissions(request: {
+    reportId: string;
+    userId: string;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const report = await this.getReportHandler.handle(
+        new GetReportQuery({ reportId: request.reportId })
+      );
+
+      if (report.isFailure || !report.value) {
+        return {
+          success: false,
+          error: 'Report not found',
+        };
+      }
+
+      const reportData = report.value;
+
+      // Check if user is owner
+      if (reportData.createdBy.id !== request.userId) {
+        return {
+          success: false,
+          error: 'Access denied. Only the report owner can view permissions.',
+        };
+      }
+
+      // Return permissions from the report entity
+      // Note: The current domain model doesn't include permissions in the aggregate
+      // This is a placeholder that would need to be implemented with a proper query/permissions handler
+      return {
+        success: true,
+        data: {
+          reportId: request.reportId,
+          permissions: [], // Would be populated from a proper permissions repository
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      };
+    }
+  }
+
+  /**
+   * Create report permission
+   * POST /api/reports/permissions
+   */
+  async createReportPermission(request: {
+    reportId: string;
+    userId: string;
+    targetUserId: string;
+    permission: string;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const report = await this.getReportHandler.handle(
+        new GetReportQuery({ reportId: request.reportId })
+      );
+
+      if (report.isFailure || !report.value) {
+        return {
+          success: false,
+          error: 'Report not found',
+        };
+      }
+
+      const reportData = report.value;
+
+      // Check if requesting user is owner
+      if (reportData.createdBy.id !== request.userId) {
+        return {
+          success: false,
+          error: 'Access denied. Only the report owner can grant permissions.',
+        };
+      }
+
+      // Note: This would need a proper CreatePermissionHandler and Permission aggregate
+      // For now, this is a placeholder that would be implemented with proper domain logic
+      return {
+        success: true,
+        data: {
+          id: crypto.randomUUID(),
+          reportId: request.reportId,
+          userId: request.targetUserId,
+          permissionType: request.permission,
+          grantedAt: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      };
+    }
+  }
+
+  /**
+   * Get report statistics
+   * GET /api/reports/stats
+   */
+  async getReportStats(request: {
+    userId: string;
+    organizationId?: string;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+      // Use ListReportsHandler to get stats
+      const allReportsResult = await this.listReportsHandler.handle(
+        new ListReportsQuery({
+          userId: request.userId,
+          organizationId: request.organizationId,
+          page: 1,
+          limit: 1000, // Get all for stats
+        })
+      );
+
+      if (allReportsResult.isFailure) {
+        return {
+          success: false,
+          error: 'Failed to fetch report statistics',
+        };
+      }
+
+      const allReports = allReportsResult.value?.reports || [];
+
+      // Calculate stats
+      const totalReports = allReports.length;
+      const reportsThisMonth = allReports.filter(
+        (r) => r.createdAt >= startOfMonth
+      ).length;
+      const reportsLastMonth = allReports.filter(
+        (r) => r.createdAt >= startOfLastMonth && r.createdAt <= endOfLastMonth
+      ).length;
+
+      return {
+        success: true,
+        data: {
+          totalReports,
+          reportsCreatedThisMonth: reportsThisMonth,
+          reportsCreatedLastMonth: reportsLastMonth,
+          totalViews: 0,
+          averageViews: 0,
+        },
       };
     } catch (error) {
       return {

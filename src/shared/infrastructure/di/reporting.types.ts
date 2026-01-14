@@ -7,6 +7,7 @@ export const ReportTypes = {
   // Repositories
   ReportRepository: Symbol.for('ReportRepository'),
   ReportTemplateRepository: Symbol.for('ReportTemplateRepository'),
+  ScheduledReportRepository: Symbol.for('ScheduledReportRepository'),
 
   // Handlers - Reports
   CreateReportHandler: Symbol.for('CreateReportHandler'),
@@ -26,7 +27,16 @@ export const ReportTypes = {
   ListTemplatesHandler: Symbol.for('ListTemplatesHandler'),
   UseTemplateHandler: Symbol.for('UseTemplateHandler'),
 
+  // Handlers - Scheduled Reports
+  CreateScheduledReportHandler: Symbol.for('CreateScheduledReportHandler'),
+  ActivateScheduledReportHandler: Symbol.for('ActivateScheduledReportHandler'),
+  CancelScheduledReportHandler: Symbol.for('CancelScheduledReportHandler'),
+  ExecuteScheduledReportHandler: Symbol.for('ExecuteScheduledReportHandler'),
+  GetScheduledReportRunsHandler: Symbol.for('GetScheduledReportRunsHandler'),
+  GetScheduledReportStatsHandler: Symbol.for('GetScheduledReportStatsHandler'),
+
   // Controllers
   ReportsApiController: Symbol.for('ReportsApiController'),
   ReportTemplatesApiController: Symbol.for('ReportTemplatesApiController'),
+  ScheduledReportsApiController: Symbol.for('ScheduledReportsApiController'),
 };
