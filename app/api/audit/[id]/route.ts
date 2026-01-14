@@ -15,7 +15,7 @@ export async function GET(
 ) {
   try {
     const controller = DIContainer.get<AuditApiController>(TYPES.AuditApiController);
-    return await controller.getAuditLog(params.id);
+    return await controller.getAuditLog(request, { params });
   } catch (error) {
     console.error('Error in GET /api/audit/[id]:', error);
     return new Response(

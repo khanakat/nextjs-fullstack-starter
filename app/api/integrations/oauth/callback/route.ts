@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { DIContainer } from '@/shared/infrastructure/di/container';
 import { IntegrationsApiController } from '@/slices/integrations/presentation/api/integrations-api.controller';
 import { TYPES } from '@/shared/infrastructure/di/types';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's organization
-    const userOrganization = await prisma.organizationMember.findFirst({
+    const userOrganization = await db.organizationMember.findFirst({
       where: { userId },
       include: { organization: true },
     });
