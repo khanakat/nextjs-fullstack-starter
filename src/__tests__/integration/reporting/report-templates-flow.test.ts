@@ -17,22 +17,23 @@ jest.mock('@clerk/nextjs/server', () => ({
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     reportTemplate: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn()
+      create: jest.fn().mockResolvedValue({}),
+      findUnique: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
+      update: jest.fn().mockResolvedValue({}),
+      delete: jest.fn().mockResolvedValue({}),
+      count: jest.fn().mockResolvedValue(0)
     },
     report: {
-      create: jest.fn(),
-      findUnique: jest.fn()
+      create: jest.fn().mockResolvedValue({}),
+      findUnique: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([])
     },
-    $transaction: jest.fn()
+    $transaction: jest.fn().mockResolvedValue([])
   }
 }));
 
-const mockPrisma = prisma as jest.Mocked<typeof prisma>;
+const mockPrisma = prisma as any;
 
 describe('Report Templates API Integration Tests', () => {
   beforeEach(() => {
@@ -127,7 +128,7 @@ describe('Report Templates API Integration Tests', () => {
       expect(responseData.success).toBe(true);
       expect(responseData.data.id).toBe('template-1');
       expect(responseData.data.name).toBe(templateData.name);
-      expect(responseData.data.category).toBe(ReportTemplateCategory.SALES);
+      expect(responseData.data.category).toBe(TemplateCategory.SALES);
       expect(mockPrisma.reportTemplate.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           name: templateData.name,
@@ -143,7 +144,7 @@ describe('Report Templates API Integration Tests', () => {
       const invalidTemplateData = {
         name: 'Invalid Template',
         description: 'Template with invalid config',
-        category: ReportTemplateCategory.STANDARD,
+        category: TemplateCategory.STANDARD,
         config: {
           // Missing required fields like layout
           title: 'Invalid Template'
@@ -405,7 +406,7 @@ describe('Report Templates API Integration Tests', () => {
         id: 'template-1',
         name: 'Original Template',
         description: 'Original description',
-        category: ReportTemplateCategory.SALES,
+        category: TemplateCategory.SALES,
         config: { title: 'Original Config' },
         isPublic: true,
         isActive: true,
@@ -502,7 +503,7 @@ describe('Report Templates API Integration Tests', () => {
         id: 'source-template',
         name: 'Source Template',
         description: 'Template to be cloned',
-        category: ReportTemplateCategory.STANDARD,
+        category: TemplateCategory.STANDARD,
         config: {
           title: 'Source Config',
           layout: {

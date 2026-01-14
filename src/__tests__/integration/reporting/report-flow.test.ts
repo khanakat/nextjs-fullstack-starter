@@ -2,8 +2,9 @@ import { NextRequest } from 'next/server';
 import { GET, POST } from '@/app/api/reports/route';
 import { GET as GetById, PUT as UpdateById, DELETE as DeleteById } from '@/app/api/reports/[id]/route';
 import { prisma } from '@/lib/prisma';
-import { ReportStatus } from '@/src/shared/domain/reporting/value-objects/report-status';
-import { ReportConfiguration } from '@/src/shared/domain/reporting/value-objects/report-configuration';
+import { ReportStatus } from '@/shared/domain/reporting/value-objects/report-status';
+// TODO: ReportConfiguration class doesn't exist yet - define or remove type annotation
+// import { ReportConfiguration } from '@/shared/domain/reporting/value-objects/report-configuration';
 
 // Mock authentication
 jest.mock('@clerk/nextjs/server', () => ({
@@ -17,18 +18,18 @@ jest.mock('@clerk/nextjs/server', () => ({
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     report: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn()
+      create: jest.fn().mockResolvedValue({}),
+      findUnique: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
+      update: jest.fn().mockResolvedValue({}),
+      delete: jest.fn().mockResolvedValue({}),
+      count: jest.fn().mockResolvedValue(0)
     },
-    $transaction: jest.fn()
+    $transaction: jest.fn().mockResolvedValue([])
   }
 }));
 
-const mockPrisma = prisma as jest.Mocked<typeof prisma>;
+const mockPrisma = prisma as any;
 
 describe('Report API Integration Tests', () => {
   beforeEach(() => {

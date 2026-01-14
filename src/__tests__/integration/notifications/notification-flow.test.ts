@@ -789,7 +789,7 @@ describe('Notification Flow Integration Tests', () => {
 
       // Verify all operations completed successfully
       responses.forEach(response => {
-        expect(response.status).toBeOneOf([200, 201]);
+        expect([200, 201]).toContain(response.status);
       });
 
       // Verify final state is consistent
