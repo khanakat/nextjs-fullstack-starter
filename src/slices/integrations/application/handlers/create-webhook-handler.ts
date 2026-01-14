@@ -44,7 +44,7 @@ export class CreateWebhookHandler extends CommandHandler<CreateWebhookCommand, {
       events: command.props.events,
       status: 'active' as any,
       httpMethod: command.props.method,
-      headers: command.props.headers ? JSON.stringify(command.props.headers) : undefined,
+      headers: command.props.headers,
       retryConfig: command.props.retryPolicy ? JSON.stringify(command.props.retryPolicy) : undefined,
       isActive: true,
       createdBy: command.userId,

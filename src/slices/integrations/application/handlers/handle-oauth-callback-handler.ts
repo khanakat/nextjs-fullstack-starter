@@ -14,20 +14,12 @@ export class HandleOAuthCallbackHandler extends CommandHandler<HandleOAuthCallba
     try {
       // Handle OAuth error if present
       if (error) {
-        return Result.failure({
-          success: false,
-          error: error,
-          errorDescription: errorDescription || 'OAuth authorization failed',
-        });
+        return Result.failure(new Error(`${error}: ${errorDescription || 'OAuth authorization failed'}`));
       }
 
       // Validate required parameters
       if (!code || !state || !integrationId) {
-        return Result.failure({
-          success: false,
-          error: 'invalid_request',
-          errorDescription: 'Missing required OAuth parameters',
-        });
+        return Result.failure(new Error('Missing required OAuth parameters'));
       }
 
       // Handle OAuth callback
@@ -41,11 +33,7 @@ export class HandleOAuthCallbackHandler extends CommandHandler<HandleOAuthCallba
       return Result.success(result);
     } catch (error) {
       console.error('Error handling OAuth callback:', error);
-      return Result.failure({
-        success: false,
-        error: 'callback_error',
-        errorDescription: 'OAuth callback processing failed',
-      });
+      return Result.failure(new Error('OAuth callback processing failed'));
     }
   }
 }

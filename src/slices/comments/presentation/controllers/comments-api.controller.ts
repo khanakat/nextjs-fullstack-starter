@@ -20,6 +20,13 @@ class GetCommentQuery { constructor(...args: any[]) {} };
 class ListCommentsQuery { constructor(...args: any[]) {} };
 class GetThreadQuery { constructor(...args: any[]) {} };
 
+class CommentSearchCriteria {
+  documentId?: any;
+  authorId?: string;
+  parentId?: any;
+  resolved?: boolean;
+}
+
 type CommentDto = any;
 type CommentThreadDto = any;
 type PaginatedCommentsDto = any;
@@ -71,26 +78,16 @@ export interface ListCommentsOptions {
 @injectable()
 export class CommentsApiController {
   // TODO: Uncomment when handlers are implemented
-  // constructor(
-  //   private readonly createCommentHandler: CreateCommentHandler,
-  //   private readonly updateCommentHandler: UpdateCommentHandler,
-  //   private readonly deleteCommentHandler: DeleteCommentHandler,
-  //   private readonly addReactionHandler: AddReactionHandler,
-  //   private readonly removeReactionHandler: RemoveReactionHandler,
-  //   private readonly getCommentHandler: GetCommentHandler,
-  //   private readonly listCommentsHandler: ListCommentsHandler,
-  //   private readonly getThreadHandler: GetThreadHandler
-  // ) {}
-
-  // Temporary placeholders to prevent TypeScript errors
-  private readonly createCommentHandler: any;
-  private readonly updateCommentHandler: any;
-  private readonly deleteCommentHandler: any;
-  private readonly addReactionHandler: any;
-  private readonly removeReactionHandler: any;
-  private readonly getCommentHandler: any;
-  private readonly listCommentsHandler: any;
-  private readonly getThreadHandler: any;
+  constructor(
+    private readonly createCommentHandler: any,
+    private readonly updateCommentHandler: any,
+    private readonly deleteCommentHandler: any,
+    private readonly addReactionHandler: any,
+    private readonly removeReactionHandler: any,
+    private readonly getCommentHandler: any,
+    private readonly listCommentsHandler: any,
+    private readonly getThreadHandler: any
+  ) {}
 
   /**
    * Create a new comment
@@ -215,7 +212,7 @@ export class CommentsApiController {
         };
       }
 
-      const commentsData: CommentDto[] = result.value.comments.map((comment) =>
+      const commentsData: CommentDto[] = result.value.comments.map((comment: any) =>
         this.toCommentDto(comment)
       );
 

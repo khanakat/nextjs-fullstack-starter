@@ -34,22 +34,14 @@ class GetCacheStatisticsQuery { constructor() {} };
 @injectable()
 export class CacheApiRoute {
   // TODO: Uncomment when handlers are implemented
-  // constructor(
-  //   private readonly setCacheHandler: SetCacheHandler,
-  //   private readonly deleteCacheHandler: DeleteCacheHandler,
-  //   private readonly invalidateCacheHandler: InvalidateCacheHandler,
-  //   private readonly clearCacheHandler: ClearCacheHandler,
-  //   private readonly getCacheHandler: GetCacheHandler,
-  //   private readonly getCacheStatisticsHandler: GetCacheStatisticsHandler
-  // ) {}
-
-  // Temporary placeholder to prevent TypeScript errors
-  private readonly setCacheHandler: any;
-  private readonly deleteCacheHandler: any;
-  private readonly invalidateCacheHandler: any;
-  private readonly clearCacheHandler: any;
-  private readonly getCacheHandler: any;
-  private readonly getCacheStatisticsHandler: any;
+  constructor(
+    private readonly setCacheHandler: any,
+    private readonly deleteCacheHandler: any,
+    private readonly invalidateCacheHandler: any,
+    private readonly clearCacheHandler: any,
+    private readonly getCacheHandler: any,
+    private readonly getCacheStatisticsHandler: any
+  ) {}
 
   /**
    * GET /api/cache/statistics
