@@ -50,7 +50,7 @@ export class RegisterDeviceHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       // Check if device already exists
@@ -104,7 +104,7 @@ export class RegisterDeviceHandler {
         });
       }
 
-      return Result.ok({
+      return Result.success({
         device: {
           id: device.id,
           deviceId: device.deviceId,
@@ -120,7 +120,7 @@ export class RegisterDeviceHandler {
       });
     } catch (error) {
       console.error('Error in RegisterDeviceHandler:', error);
-      return Result.fail('Failed to register device');
+      return Result.failure(new Error('Failed to register device');
     }
   }
 }
@@ -140,7 +140,7 @@ export class UpdateDeviceHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       const device = await prisma.deviceInfo.findFirst({
@@ -151,7 +151,7 @@ export class UpdateDeviceHandler {
       });
 
       if (!device) {
-        return Result.fail('Device not found');
+        return Result.failure(new Error('Device not found');
       }
 
       const updatedDevice = await prisma.deviceInfo.update({
@@ -175,7 +175,7 @@ export class UpdateDeviceHandler {
         },
       });
 
-      return Result.ok({
+      return Result.success({
         device: {
           ...updatedDevice,
           capabilities: JSON.parse(updatedDevice.capabilities || '{}'),
@@ -184,7 +184,7 @@ export class UpdateDeviceHandler {
       });
     } catch (error) {
       console.error('Error in UpdateDeviceHandler:', error);
-      return Result.fail('Failed to update device');
+      return Result.failure(new Error('Failed to update device');
     }
   }
 }
@@ -204,7 +204,7 @@ export class DeleteDeviceHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       const device = await prisma.deviceInfo.findFirst({
@@ -215,20 +215,20 @@ export class DeleteDeviceHandler {
       });
 
       if (!device) {
-        return Result.fail('Device not found');
+        return Result.failure(new Error('Device not found');
       }
 
       await prisma.deviceInfo.delete({
         where: { id: device.id },
       });
 
-      return Result.ok({
+      return Result.success({
         message: 'Device deleted successfully',
         deviceId: device.deviceId,
       });
     } catch (error) {
       console.error('Error in DeleteDeviceHandler:', error);
-      return Result.fail('Failed to delete device');
+      return Result.failure(new Error('Failed to delete device');
     }
   }
 }
@@ -248,7 +248,7 @@ export class GetDeviceHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       const device = await prisma.deviceInfo.findFirst({
@@ -276,13 +276,13 @@ export class GetDeviceHandler {
       });
 
       if (!device) {
-        return Result.fail('Device not found');
+        return Result.failure(new Error('Device not found');
       }
 
-      return Result.ok({ device });
+      return Result.success({ device });
     } catch (error) {
       console.error('Error in GetDeviceHandler:', error);
-      return Result.fail('Failed to retrieve device');
+      return Result.failure(new Error('Failed to retrieve device');
     }
   }
 }
@@ -302,7 +302,7 @@ export class GetDevicesHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       const whereClause: any = { userId: user.id };
@@ -332,7 +332,7 @@ export class GetDevicesHandler {
         orderBy: { lastSeen: 'desc' },
       });
 
-      return Result.ok({
+      return Result.success({
         devices: devices.map((device) => ({
           ...device,
           capabilities: JSON.parse(device.capabilities || '{}'),
@@ -342,7 +342,7 @@ export class GetDevicesHandler {
       });
     } catch (error) {
       console.error('Error in GetDevicesHandler:', error);
-      return Result.fail('Failed to retrieve devices');
+      return Result.failure(new Error('Failed to retrieve devices');
     }
   }
 }
@@ -362,7 +362,7 @@ export class SubscribePushHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       const existingSubscription = await prisma.pushSubscription.findUnique({
@@ -409,7 +409,7 @@ export class SubscribePushHandler {
         });
       }
 
-      return Result.ok({
+      return Result.success({
         subscription: {
           id: subscription.id,
           endpoint: subscription.endpoint,
@@ -419,7 +419,7 @@ export class SubscribePushHandler {
       });
     } catch (error) {
       console.error('Error in SubscribePushHandler:', error);
-      return Result.fail('Failed to subscribe to push notifications');
+      return Result.failure(new Error('Failed to subscribe to push notifications');
     }
   }
 }
@@ -439,7 +439,7 @@ export class UnsubscribePushHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       const whereClause: any = {
@@ -460,7 +460,7 @@ export class UnsubscribePushHandler {
       });
 
       if (activeSubscriptions.length === 0) {
-        return Result.fail('No active subscriptions found');
+        return Result.failure(new Error('No active subscriptions found');
       }
 
       const subscriptionIds = activeSubscriptions.map((sub) => sub.id);
@@ -474,7 +474,7 @@ export class UnsubscribePushHandler {
         },
       });
 
-      return Result.ok({
+      return Result.success({
         unsubscribed: updateResult.count,
         subscriptions: activeSubscriptions.map((sub) => ({
           id: sub.id,
@@ -484,7 +484,7 @@ export class UnsubscribePushHandler {
       });
     } catch (error) {
       console.error('Error in UnsubscribePushHandler:', error);
-      return Result.fail('Failed to unsubscribe from push notifications');
+      return Result.failure(new Error('Failed to unsubscribe from push notifications');
     }
   }
 }
@@ -507,7 +507,7 @@ export class SendPushNotificationHandler {
       } else if (options.userId) {
         targetUserIds = [options.userId];
       } else {
-        return Result.fail('No target users specified');
+        return Result.failure(new Error('No target users specified');
       }
 
       // Get push subscriptions
@@ -521,7 +521,7 @@ export class SendPushNotificationHandler {
       });
 
       if (subscriptions.length === 0) {
-        return Result.ok({
+        return Result.success({
           message: 'No active subscriptions found',
           sent: 0,
           failed: 0,
@@ -597,7 +597,7 @@ export class SendPushNotificationHandler {
         },
       });
 
-      return Result.ok({
+      return Result.success({
         notificationId: notification.id,
         sent: sentCount,
         failed: failedCount,
@@ -606,7 +606,7 @@ export class SendPushNotificationHandler {
       });
     } catch (error) {
       console.error('Error in SendPushNotificationHandler:', error);
-      return Result.fail('Failed to send push notification');
+      return Result.failure(new Error('Failed to send push notification');
     }
   }
 }
@@ -626,7 +626,7 @@ export class QueueOfflineActionHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       const queuedActions: string[] = [];
@@ -676,14 +676,14 @@ export class QueueOfflineActionHandler {
         });
       }
 
-      return Result.ok({
+      return Result.success({
         queuedActions,
         totalQueued: queuedActions.length,
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Error in QueueOfflineActionHandler:', error);
-      return Result.fail('Failed to queue offline actions');
+      return Result.failure(new Error('Failed to queue offline actions');
     }
   }
 }
@@ -703,7 +703,7 @@ export class GetOfflineActionsHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       const where: any = {
@@ -747,14 +747,14 @@ export class GetOfflineActionsHandler {
         data: JSON.parse(action.data),
       }));
 
-      return Result.ok({
+      return Result.success({
         actions: parsedActions,
         total: parsedActions.length,
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Error in GetOfflineActionsHandler:', error);
-      return Result.fail('Failed to retrieve offline actions');
+      return Result.failure(new Error('Failed to retrieve offline actions');
     }
   }
 }
@@ -774,7 +774,7 @@ export class UpdateOfflineActionHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       const existingAction = await prisma.offlineAction.findFirst({
@@ -785,7 +785,7 @@ export class UpdateOfflineActionHandler {
       });
 
       if (!existingAction) {
-        return Result.fail('Offline action not found');
+        return Result.failure(new Error('Offline action not found');
       }
 
       const updateData: any = {
@@ -825,7 +825,7 @@ export class UpdateOfflineActionHandler {
         },
       });
 
-      return Result.ok({
+      return Result.success({
         action: {
           ...updatedAction,
           data: JSON.parse(updatedAction.data),
@@ -834,7 +834,7 @@ export class UpdateOfflineActionHandler {
       });
     } catch (error) {
       console.error('Error in UpdateOfflineActionHandler:', error);
-      return Result.fail('Failed to update offline action');
+      return Result.failure(new Error('Failed to update offline action');
     }
   }
 }
@@ -854,7 +854,7 @@ export class DeleteOfflineActionHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       let deletedCount = 0;
@@ -869,7 +869,7 @@ export class DeleteOfflineActionHandler {
         deletedCount = result.count;
 
         if (deletedCount === 0) {
-          return Result.fail('Offline action not found');
+          return Result.failure(new Error('Offline action not found');
         }
       } else {
         const where: any = {
@@ -890,13 +890,13 @@ export class DeleteOfflineActionHandler {
         deletedCount = result.count;
       }
 
-      return Result.ok({
+      return Result.success({
         deletedCount,
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Error in DeleteOfflineActionHandler:', error);
-      return Result.fail('Failed to delete offline actions');
+      return Result.failure(new Error('Failed to delete offline actions');
     }
   }
 }
@@ -916,7 +916,7 @@ export class UpdateNotificationPreferencesHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       const preferences = await prisma.notificationPreferences.upsert({
@@ -928,7 +928,7 @@ export class UpdateNotificationPreferencesHandler {
         },
       });
 
-      return Result.ok({
+      return Result.success({
         preferences: {
           pushEnabled: preferences.pushEnabled,
           emailEnabled: preferences.emailEnabled,
@@ -951,7 +951,7 @@ export class UpdateNotificationPreferencesHandler {
       });
     } catch (error) {
       console.error('Error in UpdateNotificationPreferencesHandler:', error);
-      return Result.fail('Failed to update notification preferences');
+      return Result.failure(new Error('Failed to update notification preferences');
     }
   }
 }
@@ -971,7 +971,7 @@ export class GetNotificationPreferencesHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       let preferences = await prisma.notificationPreferences.findUnique({
@@ -986,7 +986,7 @@ export class GetNotificationPreferencesHandler {
         });
       }
 
-      return Result.ok({
+      return Result.success({
         preferences: {
           pushEnabled: preferences.pushEnabled,
           emailEnabled: preferences.emailEnabled,
@@ -1009,7 +1009,7 @@ export class GetNotificationPreferencesHandler {
       });
     } catch (error) {
       console.error('Error in GetNotificationPreferencesHandler:', error);
-      return Result.fail('Failed to retrieve notification preferences');
+      return Result.failure(new Error('Failed to retrieve notification preferences');
     }
   }
 }
@@ -1034,7 +1034,7 @@ export class SyncDataHandler {
       });
 
       if (!user) {
-        return Result.fail('User not found');
+        return Result.failure(new Error('User not found');
       }
 
       const organizationId = user.organizationMemberships[0]?.organizationId || null;
@@ -1072,7 +1072,7 @@ export class SyncDataHandler {
         });
       }
 
-      return Result.ok({
+      return Result.success({
         success: true,
         syncedActions,
         failedActions,
@@ -1081,7 +1081,7 @@ export class SyncDataHandler {
       });
     } catch (error) {
       console.error('Error in SyncDataHandler:', error);
-      return Result.fail('Failed to process sync request');
+      return Result.failure(new Error('Failed to process sync request');
     }
   }
 
@@ -1182,13 +1182,13 @@ export class GetServerUpdatesHandler {
       const syncDataHandler = new SyncDataHandler();
       const updates = await syncDataHandler['getServerUpdates'](userId, organizationId, new Date(lastSyncTimestamp));
 
-      return Result.ok({
+      return Result.success({
         updates,
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Error in GetServerUpdatesHandler:', error);
-      return Result.fail('Failed to retrieve server updates');
+      return Result.failure(new Error('Failed to retrieve server updates');
     }
   }
 }
@@ -1203,15 +1203,15 @@ export class GetVapidKeyHandler {
       const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
 
       if (!vapidPublicKey) {
-        return Result.fail('Push notifications are not configured');
+        return Result.failure(new Error('Push notifications are not configured');
       }
 
-      return Result.ok({
+      return Result.success({
         publicKey: vapidPublicKey,
       });
     } catch (error) {
       console.error('Error in GetVapidKeyHandler:', error);
-      return Result.fail('Failed to retrieve VAPID public key');
+      return Result.failure(new Error('Failed to retrieve VAPID public key');
     }
   }
 }

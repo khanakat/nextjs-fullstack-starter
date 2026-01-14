@@ -255,7 +255,7 @@ export class MobileApiController {
       const result = await this.registerDeviceHandler.handle(command);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to register device', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to register device', requestId);
       }
 
       return StandardSuccessResponse.created(result.value, requestId);
@@ -308,7 +308,7 @@ export class MobileApiController {
       const result = await this.getDevicesHandler.handle(query);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to retrieve devices', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to retrieve devices', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -357,7 +357,7 @@ export class MobileApiController {
       const result = await this.updateDeviceHandler.handle(command);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to update device', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to update device', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -402,7 +402,7 @@ export class MobileApiController {
       const result = await this.deleteDeviceHandler.handle(command);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to delete device', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to delete device', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -471,7 +471,7 @@ export class MobileApiController {
       const result = await this.subscribePushHandler.handle(command);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to subscribe', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to subscribe', requestId);
       }
 
       return StandardSuccessResponse.created(result.value, requestId);
@@ -514,7 +514,7 @@ export class MobileApiController {
       const result = await this.unsubscribePushHandler.handle(command);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to unsubscribe', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to unsubscribe', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -553,7 +553,7 @@ export class MobileApiController {
       const result = await this.sendPushNotificationHandler.handle(command);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to send notification', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to send notification', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -585,7 +585,7 @@ export class MobileApiController {
       const result = await this.getVapidKeyHandler.handle(query);
 
       if (result.isFailure) {
-        return StandardErrorResponse.internal(result.error || 'Failed to retrieve VAPID key', requestId);
+        return StandardErrorResponse.internal(result.error?.message || 'Failed to retrieve VAPID key', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -627,7 +627,7 @@ export class MobileApiController {
       const result = await this.queueOfflineActionHandler.handle(command);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to queue actions', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to queue actions', requestId);
       }
 
       return StandardSuccessResponse.created(result.value, requestId);
@@ -679,7 +679,7 @@ export class MobileApiController {
       const result = await this.getOfflineActionsHandler.handle(query);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to retrieve actions', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to retrieve actions', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -723,7 +723,7 @@ export class MobileApiController {
       const result = await this.updateOfflineActionHandler.handle(command);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to update action', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to update action', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -773,7 +773,7 @@ export class MobileApiController {
       const result = await this.deleteOfflineActionHandler.handle(command);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to delete actions', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to delete actions', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -807,7 +807,7 @@ export class MobileApiController {
       const result = await this.getNotificationPreferencesHandler.handle(query);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to retrieve preferences', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to retrieve preferences', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -848,7 +848,7 @@ export class MobileApiController {
       const result = await this.updateNotificationPreferencesHandler.handle(command);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to update preferences', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to update preferences', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -895,7 +895,7 @@ export class MobileApiController {
       const result = await this.syncDataHandler.handle(command);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to sync data', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to sync data', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
@@ -959,7 +959,7 @@ export class MobileApiController {
       const result = await this.getServerUpdatesHandler.handle(query);
 
       if (result.isFailure) {
-        return StandardErrorResponse.badRequest(result.error || 'Failed to retrieve updates', requestId);
+        return StandardErrorResponse.badRequest(result.error?.message || 'Failed to retrieve updates', requestId);
       }
 
       return StandardSuccessResponse.ok(result.value, requestId);
