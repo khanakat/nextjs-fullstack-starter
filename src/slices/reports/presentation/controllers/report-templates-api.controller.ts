@@ -93,10 +93,10 @@ export class ReportTemplatesApiController {
 
       const result = await this.createTemplateHandler.handle(command);
 
-      if (!result.success || !result.value) {
+      if (result.isFailure || !result.value) {
         return {
           success: false,
-          error: result.error || 'Failed to create template',
+          error: result.error?.message || 'Failed to create template',
         };
       }
 
@@ -124,10 +124,10 @@ export class ReportTemplatesApiController {
 
       const result = await this.getTemplateHandler.handle(query);
 
-      if (!result.success) {
+      if (result.isFailure) {
         return {
           success: false,
-          error: result.error || 'Failed to get template',
+          error: result.error?.message || 'Failed to get template',
         };
       }
 
@@ -190,10 +190,10 @@ export class ReportTemplatesApiController {
 
       const result = await this.listTemplatesHandler.handle(query);
 
-      if (!result.success || !result.value) {
+      if (result.isFailure || !result.value) {
         return {
           success: false,
-          error: result.error || 'Failed to list templates',
+          error: result.error?.message || 'Failed to list templates',
         };
       }
 
@@ -235,10 +235,10 @@ export class ReportTemplatesApiController {
 
       const result = await this.updateTemplateHandler.handle(command);
 
-      if (!result.success || !result.value) {
+      if (result.isFailure || !result.value) {
         return {
           success: false,
-          error: result.error || 'Failed to update template',
+          error: result.error?.message || 'Failed to update template',
         };
       }
 
@@ -269,10 +269,10 @@ export class ReportTemplatesApiController {
 
       const result = await this.deleteTemplateHandler.handle(command);
 
-      if (!result.success) {
+      if (result.isFailure) {
         return {
           success: false,
-          error: result.error || 'Failed to delete template',
+          error: result.error?.message || 'Failed to delete template',
         };
       }
 
@@ -309,10 +309,10 @@ export class ReportTemplatesApiController {
 
       const result = await this.useTemplateHandler.handle(command);
 
-      if (!result.success || !result.value) {
+      if (result.isFailure || !result.value) {
         return {
           success: false,
-          error: result.error || 'Failed to use template',
+          error: result.error?.message || 'Failed to use template',
         };
       }
 

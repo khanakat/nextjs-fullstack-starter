@@ -50,7 +50,7 @@ export class ReportsApiController {
       if (result.isFailure || !result.value) {
         return {
           success: false,
-          error: result.error || 'Failed to fetch reports',
+          error: result.error?.message || 'Failed to fetch reports',
         };
       }
 
@@ -107,7 +107,7 @@ export class ReportsApiController {
       if (result.isFailure || !result.value) {
         return {
           success: false,
-          error: result.error || 'Report not found',
+          error: result.error?.message || 'Report not found',
         };
       }
 
@@ -169,7 +169,7 @@ export class ReportsApiController {
       if (result.isFailure || !result.value) {
         return {
           success: false,
-          error: result.error || 'Failed to create report',
+          error: result.error?.message || 'Failed to create report',
         };
       }
 
@@ -231,7 +231,7 @@ export class ReportsApiController {
       if (result.isFailure || !result.value) {
         return {
           success: false,
-          error: result.error || 'Failed to update report',
+          error: result.error?.message || 'Failed to update report',
         };
       }
 
@@ -282,7 +282,7 @@ export class ReportsApiController {
       if (result.isFailure) {
         return {
           success: false,
-          error: result.error || 'Failed to delete report',
+          error: result.error?.message || 'Failed to delete report',
         };
       }
 
