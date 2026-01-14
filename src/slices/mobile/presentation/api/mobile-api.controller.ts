@@ -250,7 +250,7 @@ export class MobileApiController {
       const command = new RegisterDeviceCommand({
         userId,
         ...deviceData,
-      });
+      } as any);
 
       const result = await this.registerDeviceHandler.handle(command);
 
@@ -620,7 +620,7 @@ export class MobileApiController {
 
       const command = new QueueOfflineActionCommand({
         userId,
-        actions,
+        actions: actions as any,
         deviceId,
       });
 
@@ -716,7 +716,7 @@ export class MobileApiController {
         userId,
         actionId: id,
         retryCount,
-        priority,
+        priority: priority as any,
         synced,
       });
 
@@ -843,7 +843,7 @@ export class MobileApiController {
       const command = new UpdateNotificationPreferencesCommand({
         userId,
         ...preferencesData,
-      });
+      } as any);
 
       const result = await this.updateNotificationPreferencesHandler.handle(command);
 

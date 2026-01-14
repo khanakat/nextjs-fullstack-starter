@@ -116,8 +116,7 @@ export class OrganizationsApiController {
       const userId = request.headers.get('x-user-id') || undefined;
 
       const query = new GetOrganizationQuery({
-        organizationId,
-        userId,
+        id: organizationId,
       });
 
       const result = await this.getOrganizationHandler.handle(query);
@@ -152,15 +151,14 @@ export class OrganizationsApiController {
       const userId = request.headers.get('x-user-id') || undefined;
 
       const command = new UpdateOrganizationCommand({
-        organizationId,
-        userId,
+        id: organizationId,
         name: body.name,
         slug: body.slug,
         description: body.description,
         imageUrl: body.imageUrl,
         website: body.website,
         settings: body.settings ? JSON.stringify(body.settings) : undefined,
-      });
+      }, userId);
 
       const result = await this.updateOrganizationHandler.handle(command);
 
@@ -193,9 +191,8 @@ export class OrganizationsApiController {
       const userId = request.headers.get('x-user-id') || undefined;
 
       const command = new DeleteOrganizationCommand({
-        organizationId,
-        userId,
-      });
+        id: organizationId,
+      }, userId);
 
       const result = await this.deleteOrganizationHandler.handle(command);
 
