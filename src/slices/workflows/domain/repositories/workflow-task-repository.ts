@@ -1,8 +1,9 @@
 import { WorkflowTask, WorkflowTaskStatus, TaskType, Priority } from '../entities/workflow-task';
 import { WorkflowTaskId } from '../value-objects/workflow-task-id';
 
-// Re-export types for convenience
-export type { WorkflowTask, WorkflowTaskStatus, TaskType, Priority };
+// Re-export for convenience
+export { WorkflowTask };
+export type { WorkflowTaskStatus, TaskType, Priority };
 
 /**
  * Workflow Task Repository Interface

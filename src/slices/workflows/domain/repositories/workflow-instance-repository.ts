@@ -1,8 +1,9 @@
 import { WorkflowInstance, WorkflowInstanceStatus, Priority } from '../entities/workflow-instance';
 import { WorkflowInstanceId } from '../value-objects/workflow-instance-id';
 
-// Re-export types for convenience
-export type { WorkflowInstance, WorkflowInstanceStatus, Priority };
+// Re-export for convenience
+export { WorkflowInstance };
+export type { WorkflowInstanceStatus, Priority };
 
 /**
  * Workflow Instance Repository Interface

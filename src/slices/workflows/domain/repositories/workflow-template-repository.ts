@@ -1,8 +1,8 @@
 import { WorkflowTemplate } from '../entities/workflow-template';
 import { WorkflowTemplateId } from '../value-objects/workflow-template-id';
 
-// Re-export type for convenience
-export type { WorkflowTemplate };
+// Re-export for convenience
+export { WorkflowTemplate };
 
 /**
  * Workflow Template Repository Interface
