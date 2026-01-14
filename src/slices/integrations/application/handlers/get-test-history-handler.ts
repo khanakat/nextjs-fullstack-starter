@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { Handler, Result } from '@/shared/application/base/handler';
+import { CommandHandler, Result } from '@/shared/application/base';
 import { GetTestHistoryQuery } from '../../queries/get-test-history-query';
 import { ConnectionTestService } from '../../../../api/services/integrations/ConnectionTestService';
 import { db } from '@/lib/db';
@@ -8,7 +8,7 @@ import { db } from '@/lib/db';
  * Handler for getting test history
  */
 @injectable()
-export class GetTestHistoryHandler implements Handler<GetTestHistoryQuery, Result<any>> {
+export class GetTestHistoryHandler extends CommandHandler<GetTestHistoryQuery, Result<any>> {
   async handle(query: GetTestHistoryQuery): Promise<Result<any>> {
     const { integrationId, connectionId, limit = 50 } = query.props;
 
@@ -22,7 +22,7 @@ export class GetTestHistoryHandler implements Handler<GetTestHistoryQuery, Resul
       });
 
       if (!integration) {
-        return Result.fail('Integration not found');
+        return Result.failure(new Error('Integration not found'));
       }
 
       // Get test history
@@ -53,7 +53,7 @@ export class GetTestHistoryHandler implements Handler<GetTestHistoryQuery, Resul
           .slice(0, limit);
       }
 
-      return Result.ok({
+      return Result.success({
         integrationId: integration.id,
         testHistory,
         connections: integration.connections.map((c) => ({
@@ -65,7 +65,7 @@ export class GetTestHistoryHandler implements Handler<GetTestHistoryQuery, Resul
       });
     } catch (error) {
       console.error('Error getting test history:', error);
-      return Result.fail('Failed to get test history');
+      return Result.failure(new Error('Failed to get test history'));
     }
   }
 }

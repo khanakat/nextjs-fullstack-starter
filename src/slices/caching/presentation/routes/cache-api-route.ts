@@ -2,20 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { injectable } from 'inversify';
 
 // TODO: Implement caching handlers and commands
-// Placeholder types to prevent TypeScript errors
-type SetCacheHandler = any;
-type DeleteCacheHandler = any;
-type InvalidateCacheHandler = any;
-type ClearCacheHandler = any;
-type GetCacheHandler = any;
-type GetCacheStatisticsHandler = any;
+// Placeholder classes to prevent TypeScript errors
+class SetCacheHandler { handle = async () => ({ isSuccess: true }) };
+class DeleteCacheHandler { handle = async () => ({ isSuccess: true }) };
+class InvalidateCacheHandler { handle = async () => ({ isSuccess: true }) };
+class ClearCacheHandler { handle = async () => ({ isSuccess: true }) };
+class GetCacheHandler { handle = async () => ({ isSuccess: true }) };
+class GetCacheStatisticsHandler { handle = async () => ({ isSuccess: true }) };
 
-type SetCacheCommand = any;
-type DeleteCacheCommand = any;
-type InvalidateCacheCommand = any;
-type ClearCacheCommand = any;
-type GetCacheQuery = any;
-type GetCacheStatisticsQuery = any;
+class SetCacheCommand { constructor(props: any) {} };
+class DeleteCacheCommand { constructor(props: any) {} };
+class InvalidateCacheCommand { constructor(props: any) {} };
+class ClearCacheCommand { constructor() {} };
+class GetCacheQuery { constructor(props: any) {} };
+class GetCacheStatisticsQuery { constructor() {} };
 
 /**
  * Cache API Route

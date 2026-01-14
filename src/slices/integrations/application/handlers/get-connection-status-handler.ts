@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { Handler, Result } from '@/shared/application/base/handler';
+import { CommandHandler, Result } from '@/shared/application/base';
 import { GetConnectionStatusQuery } from '../../queries/get-connection-status-query';
 import { db } from '@/lib/db';
 
@@ -7,7 +7,7 @@ import { db } from '@/lib/db';
  * Handler for getting connection status
  */
 @injectable()
-export class GetConnectionStatusHandler implements Handler<GetConnectionStatusQuery, Result<any>> {
+export class GetConnectionStatusHandler extends CommandHandler<GetConnectionStatusQuery, Result<any>> {
   async handle(query: GetConnectionStatusQuery): Promise<Result<any>> {
     const { integrationId, organizationId } = query.props;
 
@@ -26,7 +26,7 @@ export class GetConnectionStatusHandler implements Handler<GetConnectionStatusQu
       });
 
       if (!integration) {
-        return Result.fail('Integration not found');
+        return Result.failure(new Error('Integration not found'));
       }
 
       const connections = integration.connections.map((connection) => ({
@@ -37,7 +37,7 @@ export class GetConnectionStatusHandler implements Handler<GetConnectionStatusQu
         createdAt: connection.createdAt,
       }));
 
-      return Result.ok({
+      return Result.success({
         integrationId: integration.id,
         status: integration.status,
         connections,
@@ -45,7 +45,7 @@ export class GetConnectionStatusHandler implements Handler<GetConnectionStatusQu
       });
     } catch (error) {
       console.error('Error getting connection status:', error);
-      return Result.fail('Failed to get connection status');
+      return Result.failure(new Error('Failed to get connection status'));
     }
   }
 }

@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { Handler, Result } from '@/shared/application/base/handler';
+import { CommandHandler, Result } from '@/shared/application/base';
 import { TestIntegrationCommand } from '../../commands/test-integration-command';
 import { ConnectionTestService } from '../../../../api/services/integrations/ConnectionTestService';
 import { db } from '@/lib/db';
@@ -8,7 +8,7 @@ import { db } from '@/lib/db';
  * Handler for testing integration connections
  */
 @injectable()
-export class TestIntegrationHandler implements Handler<TestIntegrationCommand, Result<any>> {
+export class TestIntegrationHandler extends CommandHandler<TestIntegrationCommand, Result<any>> {
   async handle(command: TestIntegrationCommand): Promise<Result<any>> {
     const { integrationId, connectionId, testCapabilities } = command.props;
 
@@ -32,7 +32,7 @@ export class TestIntegrationHandler implements Handler<TestIntegrationCommand, R
       });
 
       if (!integration) {
-        return Result.fail('Integration not found or access denied');
+        return Result.failure(new Error('Integration not found or access denied'));
       }
 
       // Determine which connection to test
@@ -42,7 +42,7 @@ export class TestIntegrationHandler implements Handler<TestIntegrationCommand, R
       }
 
       if (!targetConnectionId) {
-        return Result.fail('No active connection found for this integration');
+        return Result.failure(new Error('No active connection found for this integration'));
       }
 
       // Test the connection
@@ -60,7 +60,7 @@ export class TestIntegrationHandler implements Handler<TestIntegrationCommand, R
         );
       }
 
-      return Result.ok({
+      return Result.success({
         connectionTest: testResult,
         capabilityTest: capabilityResult,
         connectionId: targetConnectionId,
@@ -68,7 +68,7 @@ export class TestIntegrationHandler implements Handler<TestIntegrationCommand, R
       });
     } catch (error) {
       console.error('Error testing integration:', error);
-      return Result.fail('Failed to test integration');
+      return Result.failure(new Error('Failed to test integration'));
     }
   }
 }

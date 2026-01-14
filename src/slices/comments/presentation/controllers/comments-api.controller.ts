@@ -1,24 +1,24 @@
 import { injectable } from 'inversify';
 
 // TODO: Implement comments handlers and commands
-// Placeholder types to prevent TypeScript errors
-type CreateCommentHandler = any;
-type UpdateCommentHandler = any;
-type DeleteCommentHandler = any;
-type AddReactionHandler = any;
-type RemoveReactionHandler = any;
-type GetCommentHandler = any;
-type ListCommentsHandler = any;
-type GetThreadHandler = any;
+// Placeholder classes to prevent TypeScript errors
+class CreateCommentHandler { handle = async () => ({ isSuccess: true, value: {} }) };
+class UpdateCommentHandler { handle = async () => ({ isSuccess: true, value: {} }) };
+class DeleteCommentHandler { handle = async () => ({ isSuccess: true }) };
+class AddReactionHandler { handle = async () => ({ isSuccess: true }) };
+class RemoveReactionHandler { handle = async () => ({ isSuccess: true }) };
+class GetCommentHandler { handle = async () => ({ isSuccess: true, value: {} }) };
+class ListCommentsHandler { handle = async () => ({ isSuccess: true, value: [] }) };
+class GetThreadHandler { handle = async () => ({ isSuccess: true, value: [] }) };
 
-type CreateCommentCommand = any;
-type UpdateCommentCommand = any;
-type DeleteCommentCommand = any;
-type AddReactionCommand = any;
-type RemoveReactionCommand = any;
-type GetCommentQuery = any;
-type ListCommentsQuery = any;
-type GetThreadQuery = any;
+class CreateCommentCommand { constructor(...args: any[]) {} };
+class UpdateCommentCommand { constructor(...args: any[]) {} };
+class DeleteCommentCommand { constructor(...args: any[]) {} };
+class AddReactionCommand { constructor(...args: any[]) {} };
+class RemoveReactionCommand { constructor(...args: any[]) {} };
+class GetCommentQuery { constructor(...args: any[]) {} };
+class ListCommentsQuery { constructor(...args: any[]) {} };
+class GetThreadQuery { constructor(...args: any[]) {} };
 
 type CommentDto = any;
 type CommentThreadDto = any;

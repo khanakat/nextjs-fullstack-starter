@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { Handler, Result } from '@/shared/application/base/handler';
+import { CommandHandler, Result } from '@/shared/application/base';
 import { HandleOAuthCallbackCommand } from '../../commands/handle-oauth-callback-command';
 import { OAuthService } from '../../../../api/services/integrations/OAuthService';
 
@@ -7,14 +7,14 @@ import { OAuthService } from '../../../../api/services/integrations/OAuthService
  * Handler for OAuth callback processing
  */
 @injectable()
-export class HandleOAuthCallbackHandler implements Handler<HandleOAuthCallbackCommand, Result<any>> {
+export class HandleOAuthCallbackHandler extends CommandHandler<HandleOAuthCallbackCommand, Result<any>> {
   async handle(command: HandleOAuthCallbackCommand): Promise<Result<any>> {
     const { integrationId, code, state, organizationId, error, errorDescription } = command.props;
 
     try {
       // Handle OAuth error if present
       if (error) {
-        return Result.fail({
+        return Result.failure({
           success: false,
           error: error,
           errorDescription: errorDescription || 'OAuth authorization failed',
@@ -23,7 +23,7 @@ export class HandleOAuthCallbackHandler implements Handler<HandleOAuthCallbackCo
 
       // Validate required parameters
       if (!code || !state || !integrationId) {
-        return Result.fail({
+        return Result.failure({
           success: false,
           error: 'invalid_request',
           errorDescription: 'Missing required OAuth parameters',
@@ -38,10 +38,10 @@ export class HandleOAuthCallbackHandler implements Handler<HandleOAuthCallbackCo
         organizationId
       );
 
-      return Result.ok(result);
+      return Result.success(result);
     } catch (error) {
       console.error('Error handling OAuth callback:', error);
-      return Result.fail({
+      return Result.failure({
         success: false,
         error: 'callback_error',
         errorDescription: 'OAuth callback processing failed',

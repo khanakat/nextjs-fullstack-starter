@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { Handler, Result } from '@/shared/application/base/handler';
+import { CommandHandler, Result } from '@/shared/application/base';
 import { ConnectIntegrationCommand } from '../../commands/connect-integration-command';
 import { OAuthService } from '../../../../api/services/integrations/OAuthService';
 import { CredentialService } from '../../../../api/services/integrations/CredentialService';
@@ -9,7 +9,7 @@ import { db } from '@/lib/db';
  * Handler for connecting integrations (OAuth or direct credentials)
  */
 @injectable()
-export class ConnectIntegrationHandler implements Handler<ConnectIntegrationCommand, Result<any>> {
+export class ConnectIntegrationHandler extends CommandHandler<ConnectIntegrationCommand, Result<any>> {
   async handle(command: ConnectIntegrationCommand): Promise<Result<any>> {
     const { integrationId, connectionType, credentials, config, redirectUrl } = command.props;
 
@@ -27,7 +27,7 @@ export class ConnectIntegrationHandler implements Handler<ConnectIntegrationComm
       });
 
       if (!integration) {
-        return Result.fail('Integration not found or access denied');
+        return Result.failure(new Error('Integration not found or access denied'));
       }
 
       const provider = integration.provider as any;
@@ -47,7 +47,7 @@ export class ConnectIntegrationHandler implements Handler<ConnectIntegrationComm
             command.userId!
           );
 
-          return Result.ok({
+          return Result.success({
             type: 'oauth',
             authorizationUrl: authResult.authUrl,
             state: authResult.state,
@@ -60,7 +60,7 @@ export class ConnectIntegrationHandler implements Handler<ConnectIntegrationComm
         case 'custom':
           // Store credentials directly
           if (!credentials) {
-            return Result.fail('Credentials required for this connection type');
+            return Result.failure(new Error('Credentials required for this connection type'));
           }
 
           const credentialResult = await CredentialService.storeCredentials(
@@ -71,21 +71,21 @@ export class ConnectIntegrationHandler implements Handler<ConnectIntegrationComm
           );
 
           if (!credentialResult.success) {
-            return Result.fail(credentialResult.error || 'Failed to store credentials');
+            return Result.failure(credentialResult.error || 'Failed to store credentials');
           }
 
-          return Result.ok({
+          return Result.success({
             type: 'credentials',
             success: true,
             connectionId: credentialResult.connectionId,
           });
 
         default:
-          return Result.fail('Unsupported connection type');
+          return Result.failure(new Error('Unsupported connection type'));
       }
     } catch (error) {
       console.error('Error connecting integration:', error);
-      return Result.fail('Failed to connect integration');
+      return Result.failure(new Error('Failed to connect integration'));
     }
   }
 }

@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { Handler, Result } from '@/shared/application/base/handler';
+import { CommandHandler, Result } from '@/shared/application/base';
 import { DisconnectIntegrationCommand } from '../../commands/disconnect-integration-command';
 import { OAuthService } from '../../../../api/services/integrations/OAuthService';
 import { CredentialService } from '../../../../api/services/integrations/CredentialService';
@@ -9,7 +9,7 @@ import { db } from '@/lib/db';
  * Handler for disconnecting integration connections
  */
 @injectable()
-export class DisconnectIntegrationHandler implements Handler<DisconnectIntegrationCommand, Result<any>> {
+export class DisconnectIntegrationHandler extends CommandHandler<DisconnectIntegrationCommand, Result<any>> {
   async handle(command: DisconnectIntegrationCommand): Promise<Result<any>> {
     const { integrationId, connectionId } = command.props;
 
@@ -24,7 +24,7 @@ export class DisconnectIntegrationHandler implements Handler<DisconnectIntegrati
       });
 
       if (!integration) {
-        return Result.fail('Integration not found');
+        return Result.failure(new Error('Integration not found'));
       }
 
       // Revoke the connection
@@ -34,16 +34,16 @@ export class DisconnectIntegrationHandler implements Handler<DisconnectIntegrati
       );
 
       if (!result.success) {
-        return Result.fail(result.error || 'Failed to disconnect integration');
+        return Result.failure(result.error || 'Failed to disconnect integration');
       }
 
-      return Result.ok({
+      return Result.success({
         success: true,
         message: 'Integration disconnected successfully',
       });
     } catch (error) {
       console.error('Error disconnecting integration:', error);
-      return Result.fail('Failed to disconnect integration');
+      return Result.failure(new Error('Failed to disconnect integration'));
     }
   }
 }
