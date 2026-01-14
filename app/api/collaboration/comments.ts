@@ -1,7 +1,18 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { db as prisma } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
+import { container } from "@/shared/infrastructure/di/container";
+import { CommentTypes } from "@/shared/infrastructure/di/comments.types";
+import { CommentsApiController } from "@/slices/comments/presentation/controllers/comments-api.controller";
 
+/**
+ * Comments API Route
+ * Migrated to Clean Architecture
+ *
+ * GET /api/collaboration/comments - List comments with filtering
+ * POST /api/collaboration/comments - Create a new comment
+ * PUT /api/collaboration/comments - Update a comment
+ * DELETE /api/collaboration/comments - Delete a comment
+ */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -9,7 +20,7 @@ export default async function handler(
   try {
     const { userId } = auth();
     if (!userId) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ success: false, error: "Unauthorized" });
     }
 
     // Get organization ID from headers or query params
@@ -17,34 +28,42 @@ export default async function handler(
       (req.headers["x-organization-id"] as string) ||
       (req.query.organizationId as string);
 
+    // Get controller from DI container
+    const controller = container.get<CommentsApiController>(CommentTypes.CommentsApiController);
+
     switch (req.method) {
       case "GET":
-        return handleGetComments(req, res, userId, organizationId);
+        return handleGetComments(req, res, controller);
       case "POST":
-        return handleCreateComment(req, res, userId, organizationId);
+        return handleCreateComment(req, res, userId, controller);
       case "PUT":
-        return handleUpdateComment(req, res, userId, organizationId);
+        return handleUpdateComment(req, res, userId, controller);
       case "DELETE":
-        return handleDeleteComment(req, res, userId, organizationId);
+        return handleDeleteComment(req, res, userId, controller);
+      case "PATCH":
+        return handlePatchComment(req, res, userId, controller);
       default:
-        return res.status(405).json({ error: "Method not allowed" });
+        return res.status(405).json({ success: false, error: "Method not allowed" });
     }
   } catch (error) {
     console.error("Comments API error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ success: false, error: "Internal server error" });
   }
 }
 
+/**
+ * GET /api/collaboration/comments
+ * List comments with filtering and pagination
+ */
 async function handleGetComments(
   req: NextApiRequest,
   res: NextApiResponse,
-  _userId: string,
-  organizationId: string,
+  controller: CommentsApiController
 ) {
   const {
     documentId,
-    sessionId,
-    threadId,
+    authorId,
+    parentId,
     resolved,
     limit = "50",
     offset = "0",
@@ -52,466 +71,263 @@ async function handleGetComments(
     sortOrder = "desc",
   } = req.query;
 
-  if (!documentId && !sessionId) {
-    return res.status(400).json({
-      error: "Either documentId or sessionId is required",
-    });
-  }
-
-  let where: any = {
-    document: {
-      organizationId,
-    },
+  // Build filter options
+  const options: any = {
+    limit: parseInt(limit as string),
+    offset: parseInt(offset as string),
+    sortBy: sortBy as string,
+    sortOrder: sortOrder as 'asc' | 'desc',
   };
 
   if (documentId) {
-    where.documentId = documentId;
+    options.documentId = documentId as string;
   }
 
-  if (sessionId) {
-    where.document = {
-      ...where.document,
-      collaborationSessions: {
-        some: {
-          id: sessionId as string,
-        },
-      },
-    };
+  if (authorId) {
+    options.authorId = authorId as string;
   }
 
-  if (threadId) {
-    where.OR = [{ id: threadId }, { parentId: threadId }];
+  if (parentId) {
+    options.parentId = parentId as string;
   }
 
   if (resolved !== undefined) {
-    where.resolved = resolved === "true";
+    options.resolved = resolved === "true";
   }
 
-  const comments = await prisma.documentComment.findMany({
-    where,
-    include: {
-      replies: {
-        select: {
-          id: true,
-          content: true,
-          contentType: true,
-          authorId: true,
-          authorName: true,
-          createdAt: true,
-          updatedAt: true,
-          isResolved: true,
-        },
-        orderBy: {
-          createdAt: "asc",
-        },
-      },
-      _count: {
-        select: {
-          replies: true,
-        },
-      },
-    },
-    orderBy: {
-      [sortBy as string]: sortOrder,
-    },
-    take: parseInt(limit as string),
-    skip: parseInt(offset as string),
-  });
+  const result = await controller.listComments(options);
 
-  const total = await prisma.documentComment.count({ where });
-
-  // Group comments by thread (top-level comments with their replies)
-  const threads = comments
-    .filter((comment) => !comment.parentId)
-    .map((comment) => ({
-      ...comment,
-      replies: comments.filter((reply) => reply.parentId === comment.id),
-    }));
+  if (!result.success || !result.data) {
+    return res.status(400).json(result);
+  }
 
   return res.status(200).json({
-    comments: threads,
+    success: true,
+    comments: result.data.comments,
     pagination: {
-      total,
-      limit: parseInt(limit as string),
-      offset: parseInt(offset as string),
-      hasMore: total > parseInt(offset as string) + parseInt(limit as string),
+      total: result.data.total,
+      limit: options.limit,
+      offset: options.offset,
+      hasMore: result.data.hasMore,
     },
   });
 }
 
+/**
+ * POST /api/collaboration/comments
+ * Create a new comment
+ */
 async function handleCreateComment(
   req: NextApiRequest,
   res: NextApiResponse,
   userId: string,
-  organizationId: string,
+  controller: CommentsApiController
 ) {
   const {
     documentId,
     content,
     position,
     parentId,
-    metadata: _metadata = {},
+    metadata,
   } = req.body;
 
-  if (!documentId || !content) {
+  // Validation
+  if (!documentId || typeof documentId !== 'string') {
     return res.status(400).json({
-      error: "documentId and content are required",
+      success: false,
+      error: "documentId is required",
     });
   }
 
-  // Verify user has access to the document
-  const document = await prisma.collaborativeDocument.findFirst({
-    where: {
-      id: documentId,
-      organizationId,
-    },
-  });
-
-  if (!document) {
-    return res.status(404).json({ error: "Document not found" });
-  }
-
-  // If this is a reply, verify parent comment exists
-  if (parentId) {
-    const parentComment = await prisma.documentComment.findFirst({
-      where: {
-        id: parentId,
-        documentId,
-      },
+  if (!content || typeof content !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: "content is required",
     });
-
-    if (!parentComment) {
-      return res.status(404).json({ error: "Parent comment not found" });
-    }
   }
 
-  const comment = await prisma.documentComment.create({
-    data: {
-      documentId,
-      authorId: userId,
-      content,
-      position,
-      parentId,
-    },
-    include: {
-      replies: {
-        select: {
-          id: true,
-          content: true,
-          contentType: true,
-          authorId: true,
-          authorName: true,
-          createdAt: true,
-          updatedAt: true,
-          isResolved: true,
-        },
-        orderBy: {
-          createdAt: "asc",
-        },
-      },
-    },
+  // Get user info for authorName (you may want to fetch this from a user service)
+  const authorName = (req.query.authorName as string) || 'Unknown User';
+
+  const result = await controller.createComment(userId, authorName, {
+    documentId,
+    content,
+    position,
+    parentId,
+    metadata,
   });
 
-  // Log comment creation event
-  const activeSessions = await prisma.collaborationSession.findMany({
-    where: {
-      resourceId: documentId,
-      status: "active",
-    },
-    select: {
-      id: true,
-    },
+  if (!result.success || !result.data) {
+    return res.status(400).json(result);
+  }
+
+  return res.status(201).json({
+    success: true,
+    comment: result.data,
   });
-
-  await Promise.all(
-    activeSessions.map(({ id: sessionId }) =>
-      prisma.collaborationEvent.create({
-        data: {
-          sessionId,
-          type: parentId ? "comment_reply" : "comment_add",
-          data: JSON.stringify({
-            commentId: comment.id,
-            documentId,
-            content: content.substring(0, 100), // Truncate for event log
-            position,
-            parentId,
-          }),
-          userId,
-        },
-      }),
-    ),
-  );
-
-  return res.status(201).json({ comment });
 }
 
+/**
+ * PUT /api/collaboration/comments
+ * Update a comment
+ */
 async function handleUpdateComment(
   req: NextApiRequest,
   res: NextApiResponse,
   userId: string,
-  organizationId: string,
+  controller: CommentsApiController
 ) {
   const { commentId } = req.query;
   const { content, resolved, metadata } = req.body;
 
-  if (!commentId) {
-    return res.status(400).json({ error: "Comment ID is required" });
-  }
-
-  // Verify user owns the comment or has admin permissions
-  const comment = await prisma.documentComment.findFirst({
-    where: {
-      id: commentId as string,
-      document: {
-        organizationId,
-      },
-    },
-    include: {
-      document: true,
-    },
-  });
-
-  if (!comment) {
-    return res.status(404).json({ error: "Comment not found" });
-  }
-
-  // Check permissions: author can edit content, anyone can resolve
-  const canEditContent = comment.authorId === userId;
-  const canResolve = true; // Any team member can resolve comments
-
-  if (content && !canEditContent) {
-    return res.status(403).json({
-      error: "Only the comment author can edit content",
+  if (!commentId || typeof commentId !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: "Comment ID is required",
     });
   }
 
-  if (resolved !== undefined && !canResolve) {
-    return res.status(403).json({
-      error: "Insufficient permissions to resolve comment",
-    });
+  const result = await controller.updateComment(commentId, userId, {
+    content,
+    resolved,
+    metadata,
+  });
+
+  if (!result.success || !result.data) {
+    return res.status(400).json(result);
   }
 
-  const updatedComment = await prisma.documentComment.update({
-    where: { id: commentId as string },
-    data: {
-      ...(content && { content }),
-      ...(resolved !== undefined && { resolved }),
-      ...(metadata && { metadata }),
-      updatedAt: new Date(),
-    },
-    include: {
-      replies: {
-        select: {
-          id: true,
-          content: true,
-          contentType: true,
-          authorId: true,
-          authorName: true,
-          createdAt: true,
-          updatedAt: true,
-          isResolved: true,
-        },
-        orderBy: {
-          createdAt: "asc",
-        },
-      },
-    },
+  return res.status(200).json({
+    success: true,
+    comment: result.data,
   });
-
-  // Log comment update event
-  const activeSessions = await prisma.collaborationSession.findMany({
-    where: {
-      resourceId: comment.documentId,
-      status: "active",
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  await Promise.all(
-    activeSessions.map(({ id: sessionId }) =>
-      prisma.collaborationEvent.create({
-        data: {
-          sessionId,
-          type: resolved !== undefined ? "comment_resolve" : "comment_update",
-          data: JSON.stringify({
-            commentId: comment.id,
-            documentId: comment.documentId,
-            changes: { content, resolved, metadata },
-          }),
-          userId,
-        },
-      }),
-    ),
-  );
-
-  return res.status(200).json({ comment: updatedComment });
 }
 
+/**
+ * PATCH /api/collaboration/comments
+ * Handle comment-specific operations (resolve/unresolve)
+ */
+async function handlePatchComment(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  userId: string,
+  controller: CommentsApiController
+) {
+  const { commentId } = req.query;
+  const { action } = req.body;
+
+  if (!commentId || typeof commentId !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: "Comment ID is required",
+    });
+  }
+
+  let result;
+  switch (action) {
+    case 'resolve':
+      result = await controller.resolveComment(commentId, userId);
+      break;
+    case 'unresolve':
+      result = await controller.unresolveComment(commentId, userId);
+      break;
+    default:
+      return res.status(400).json({
+        success: false,
+        error: "Invalid action. Use 'resolve' or 'unresolve'",
+      });
+  }
+
+  if (!result.success || !result.data) {
+    return res.status(400).json(result);
+  }
+
+  return res.status(200).json({
+    success: true,
+    comment: result.data,
+  });
+}
+
+/**
+ * DELETE /api/collaboration/comments
+ * Delete a comment
+ */
 async function handleDeleteComment(
   req: NextApiRequest,
   res: NextApiResponse,
   userId: string,
-  organizationId: string,
+  controller: CommentsApiController
 ) {
   const { commentId } = req.query;
 
-  if (!commentId) {
-    return res.status(400).json({ error: "Comment ID is required" });
+  if (!commentId || typeof commentId !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: "Comment ID is required",
+    });
   }
 
-  // Verify user owns the comment or has admin permissions
-  const comment = await prisma.documentComment.findFirst({
-    where: {
-      id: commentId as string,
-      document: {
-        organizationId,
-      },
-    },
-    include: {
-      document: true,
-      replies: true,
-    },
+  const result = await controller.deleteComment(commentId, userId);
+
+  if (!result.success) {
+    return res.status(400).json(result);
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Comment deleted successfully",
   });
-
-  if (!comment) {
-    return res.status(404).json({ error: "Comment not found" });
-  }
-
-  if (comment.authorId !== userId) {
-    return res.status(403).json({
-      error: "Only the comment author can delete the comment",
-    });
-  }
-
-  // If comment has replies, soft delete by marking as deleted
-  if (comment.replies.length > 0) {
-    await prisma.documentComment.update({
-      where: { id: commentId as string },
-      data: {
-        content: "[deleted]",
-      },
-    });
-  } else {
-    // Hard delete if no replies
-    await prisma.documentComment.delete({
-      where: { id: commentId as string },
-    });
-  }
-
-  // Log comment deletion event
-  const activeSessions = await prisma.collaborationSession.findMany({
-    where: {
-      resourceId: comment.documentId,
-      status: "active",
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  await Promise.all(
-    activeSessions.map(({ id: sessionId }) =>
-      prisma.collaborationEvent.create({
-        data: {
-          sessionId,
-          type: "comment_delete",
-          data: JSON.stringify({
-            commentId: comment.id,
-            documentId: comment.documentId,
-            hadReplies: comment.replies.length > 0,
-          }),
-          userId,
-        },
-      }),
-    ),
-  );
-
-  return res.status(200).json({ message: "Comment deleted successfully" });
 }
 
-// Additional endpoints for comment reactions
+/**
+ * GET /api/collaboration/comments/[id]/thread
+ * Get a comment thread with all replies
+ */
+export async function getCommentThread(commentId: string) {
+  const controller = container.get<CommentsApiController>(CommentTypes.CommentsApiController);
+  const result = await controller.getCommentThread(commentId);
 
+  if (!result.success || !result.data) {
+    return null;
+  }
+
+  return result.data;
+}
+
+/**
+ * POST /api/collaboration/comments/[id]/reactions
+ * Add a reaction to a comment
+ */
 export async function addReaction(
   commentId: string,
   userId: string,
   emoji: string,
 ) {
-  // Since reactions are stored as JSON in the DocumentComment model,
-  // we need to update the reactions field directly
-  const comment = await prisma.documentComment.findUnique({
-    where: { id: commentId },
-  });
+  const controller = container.get<CommentsApiController>(CommentTypes.CommentsApiController);
+  const result = await controller.addReaction(commentId, userId, emoji);
 
-  if (!comment) {
-    throw new Error("Comment not found");
+  if (!result.success || !result.data) {
+    throw new Error(result.error || 'Failed to add reaction');
   }
 
-  const reactions = JSON.parse(comment.reactions || "{}");
-  if (!reactions[emoji]) {
-    reactions[emoji] = [];
-  }
-
-  if (!reactions[emoji].includes(userId)) {
-    reactions[emoji].push(userId);
-  }
-
-  await prisma.documentComment.update({
-    where: { id: commentId },
-    data: { reactions: JSON.stringify(reactions) },
-  });
-
-  return { emoji, userId };
+  return result.data;
 }
 
+/**
+ * DELETE /api/collaboration/comments/[id]/reactions
+ * Remove a reaction from a comment
+ */
 export async function removeReaction(
   commentId: string,
   userId: string,
   emoji: string,
 ) {
-  const comment = await prisma.documentComment.findUnique({
-    where: { id: commentId },
-  });
+  const controller = container.get<CommentsApiController>(CommentTypes.CommentsApiController);
+  const result = await controller.removeReaction(commentId, userId, emoji);
 
-  if (!comment) {
-    throw new Error("Comment not found");
+  if (!result.success || !result.data) {
+    throw new Error(result.error || 'Failed to remove reaction');
   }
 
-  const reactions = JSON.parse(comment.reactions || "{}");
-  if (reactions[emoji]) {
-    reactions[emoji] = reactions[emoji].filter((id: string) => id !== userId);
-    if (reactions[emoji].length === 0) {
-      delete reactions[emoji];
-    }
-  }
-
-  await prisma.documentComment.update({
-    where: { id: commentId },
-    data: { reactions: JSON.stringify(reactions) },
-  });
-}
-
-export async function getCommentThread(commentId: string) {
-  return await prisma.documentComment.findUnique({
-    where: { id: commentId },
-    include: {
-      replies: {
-        select: {
-          id: true,
-          content: true,
-          contentType: true,
-          authorId: true,
-          authorName: true,
-          createdAt: true,
-          updatedAt: true,
-          isResolved: true,
-          reactions: true,
-        },
-        orderBy: {
-          createdAt: "asc",
-        },
-      },
-    },
-  });
+  return result.data;
 }

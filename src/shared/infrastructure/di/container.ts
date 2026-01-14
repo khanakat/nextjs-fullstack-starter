@@ -8,11 +8,14 @@ import { InMemoryEventBus } from '../events/in-memory-event-bus';
 import { configureUserManagementContainer } from '../../../slices/user-management/infrastructure/di/user-management-container';
 import { configureNotificationsContainer } from '../../../slices/notifications/infrastructure/di/notifications-container';
 import { configureReportingContainer } from '../../../slices/reporting/infrastructure/di/reporting-container';
+import { configureCommentsContainer } from '../../../slices/comments/infrastructure/di/comments-container';
 import { configureAnalyticsContainer } from '../../../slices/analytics/infrastructure/di/analytics-container';
 import { configureIntegrationsContainer } from '../../../slices/integrations/infrastructure/di/integrations-container';
 import { configureFilesContainer } from '../../../slices/files/infrastructure/di/files-container';
 import { configureSettingsContainer } from '../../../slices/settings/infrastructure/di/settings-container';
 import { configureAuditContainer } from '../../../slices/audit/infrastructure/di/audit-container';
+import { configureWorkflowsContainer } from '../../../slices/workflows/infrastructure/di/workflows-container';
+import { configureOrganizationsContainer } from '../../../slices/organizations/infrastructure/di/organizations-container';
 
 /**
  * IoC Container configuration
@@ -44,13 +47,16 @@ export class DIContainer {
 
     // Configure vertical slices
     configureUserManagementContainer(container);
-    // configureNotificationsContainer(container); // Temporarily disabled due to missing TYPES symbols
+    configureNotificationsContainer(container);
     configureReportingContainer(container);
+    configureCommentsContainer(container);
     configureAnalyticsContainer(container);
     configureIntegrationsContainer(container);
     configureFilesContainer(container);
     configureSettingsContainer(container);
     configureAuditContainer(container);
+    configureWorkflowsContainer(container);
+    configureOrganizationsContainer(container);
 
     // Note: Additional vertical slices will be registered here as they are implemented
   }

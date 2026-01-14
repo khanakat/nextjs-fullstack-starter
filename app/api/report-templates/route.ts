@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
 import {
   StandardErrorResponse,
   StandardSuccessResponse,
@@ -8,6 +7,8 @@ import {
 import { logger } from "@/lib/logger";
 import { generateRequestId } from "@/lib/utils";
 import { auth } from "@clerk/nextjs/server";
+import { container } from "@/shared/infrastructure/di/container";
+import { ReportTypes } from "@/shared/infrastructure/di/reporting.types";
 
 const createTemplateSchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name too long"),
@@ -49,46 +50,53 @@ export async function GET(request: NextRequest) {
       popular,
     });
 
-    // Base where clause
-    const where: any = { isActive: true };
+    // Get controller from DI container
+    const controller = container.get<any>(ReportTypes.ReportTemplatesApiController);
+
+    // Build filter options
+    const options: any = {
+      limit,
+      offset: (page - 1) * limit,
+      sortBy,
+      sortOrder,
+    };
+
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-      ];
+      options.name = search;
     }
-    // Template model does not store category directly in schema; we ignore filter here
 
-    // Popular templates path: allow unauthenticated access
+    if (category) {
+      options.category = category;
+    }
+
     if (popular) {
-      const popularTemplates = await prisma.template.findMany({
-        where: { ...where },
-        orderBy: { createdAt: "desc" },
-        take: limit,
-      });
+      options.isSystem = false; // Popular templates are non-system
+    }
 
-      return StandardSuccessResponse.ok(
-        { templates: popularTemplates },
+    const result = await controller.listTemplates(options);
+
+    if (!result.success || !result.data) {
+      return StandardErrorResponse.internal(
+        result.error || "Failed to fetch templates",
         requestId,
       );
     }
 
-    // General listing with pagination
-    const skip = (page - 1) * limit;
-    const [templates, total] = await Promise.all([
-      prisma.template.findMany({
-        where,
-        orderBy: { [sortBy]: sortOrder },
-        skip,
-        take: limit,
-      }),
-      prisma.template.count({ where }),
-    ]);
+    if (popular) {
+      return StandardSuccessResponse.ok(
+        { templates: result.data.templates },
+        requestId,
+      );
+    }
 
     return StandardSuccessResponse.ok(
       {
-        templates,
-        pagination: { total, page, limit },
+        templates: result.data.templates,
+        pagination: {
+          total: result.data.pagination.total,
+          page,
+          limit,
+        },
       },
       requestId,
     );
@@ -123,27 +131,31 @@ export async function POST(request: NextRequest) {
     }
     const validatedData = createTemplateSchema.parse(body);
 
-    // Persist category mapping: 'sales' tagged templates are stored as PREMIUM
-    const storedCategory = Array.isArray(body?.tags) && body.tags.includes('sales')
-      ? 'PREMIUM'
-      : validatedData.category;
+    // Get controller from DI container
+    const controller = container.get<any>(ReportTypes.ReportTemplatesApiController);
 
-    const template = await prisma.template.create({
-      data: {
+    const result = await controller.createTemplate(
+      userId,
+      orgId || undefined,
+      {
         name: validatedData.name,
         description: validatedData.description,
-        // Persist config as JSON string per Prisma schema
-        config: JSON.stringify(validatedData.config ?? body?.config ?? {}),
-        isPublic: validatedData.isPublic ?? true,
-        createdBy: userId,
-        isSystem: false,
-        // CategoryId not used in this simplified mapping
-        categoryId: null,
-      },
-    });
+        category: validatedData.category,
+        config: validatedData.config,
+        isPublic: validatedData.isPublic,
+        tags: validatedData.tags,
+      }
+    );
+
+    if (!result.success || !result.data) {
+      return StandardErrorResponse.internal(
+        result.error || "Failed to create template",
+        requestId,
+      );
+    }
 
     // Map to UI category expected by tests ('SALES')
-    const responseData = { ...template, category: 'SALES' } as any;
+    const responseData = { ...result.data, category: 'SALES' } as any;
     return StandardSuccessResponse.created(responseData, requestId);
   } catch (error) {
     if (error instanceof z.ZodError) {

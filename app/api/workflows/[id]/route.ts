@@ -1,220 +1,60 @@
-import { NextRequest } from "next/server";
-import { ApiError, errorResponse } from "@/lib/api-utils";
-import {
-  StandardErrorResponse,
-  StandardSuccessResponse,
-} from "@/lib/standardized-error-responses";
-import { logger } from "@/lib/logger";
-import { auth } from "@/lib/auth";
-import { workflowService } from "@/lib/services/workflow/index";
-import { db } from "@/lib/db";
-import { generateRequestId } from "@/lib/utils";
+import { NextRequest } from 'next/server';
+import { DIContainer } from '@/shared/infrastructure/di/container';
+import { WorkflowsApiController } from '@/slices/workflows/presentation/api/workflows-api.controller';
+import { TYPES } from '@/shared/infrastructure/di/types';
 
+/**
+ * Workflow by ID API Routes
+ * Handles HTTP requests for individual workflow management using clean architecture
+ */
+
+// GET /api/workflows/[id] - Get workflow by ID
 export async function GET(
-  _request: NextRequest,
-  { params }: { params: { id: string } },
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
-  const requestId = generateRequestId();
-
   try {
-    const { userId } = auth();
-
-    if (!userId) {
-      return StandardErrorResponse.unauthorized(
-        "Authentication required",
-        "workflows",
-        requestId,
-      );
-    }
-
-    const { id } = params;
-
-    logger.info("Fetching workflow by ID", "workflows", {
-      requestId,
-      userId,
-      workflowId: id,
-    });
-
-    // Get user's primary organization (first organization they're a member of)
-    const userMembership = await db.organizationMember.findFirst({
-      where: { userId },
-      include: { organization: true },
-    });
-
-    const organizationId = userMembership?.organizationId || "default-org";
-
-    const workflow = await workflowService.getWorkflow(id, organizationId);
-
-    if (!workflow) {
-      logger.info("Workflow not found", "workflows", {
-        requestId,
-        userId,
-        workflowId: id,
-        organizationId,
-      });
-
-      return StandardErrorResponse.notFound("Workflow not found", requestId);
-    }
-
-    logger.info("Workflow retrieved successfully", "workflows", {
-      requestId,
-      userId,
-      workflowId: id,
-      workflowName: workflow.name,
-    });
-
-    return StandardSuccessResponse.ok(workflow, requestId);
+    const controller = DIContainer.get<WorkflowsApiController>(TYPES.WorkflowsApiController);
+    return await controller.getWorkflow(params.id);
   } catch (error) {
-    logger.apiError("Error processing workflow request", "workflows", error, {
-      requestId,
-      resourceId: params.id,
-      endpoint: "/api/workflows/:id",
-    });
-
-    if (error instanceof ApiError) {
-      return errorResponse(error);
-    }
-
-    return StandardErrorResponse.internal(
-      "Failed to retrieve workflow",
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      requestId,
+    console.error('Error in GET /api/workflows/[id]:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }
 
+// PUT /api/workflows/[id] - Update a workflow
 export async function PUT(
-  _request: NextRequest,
-  { params }: { params: { id: string } },
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
-  const requestId = generateRequestId();
-
   try {
-    const { userId } = auth();
-
-    if (!userId) {
-      return StandardErrorResponse.unauthorized(
-        "Authentication required",
-        "workflows",
-        requestId,
-      );
-    }
-
-    const { id } = params;
-    const body = await _request.json();
-
-    logger.info("Updating workflow", "workflows", {
-      requestId,
-      userId,
-      workflowId: id,
-    });
-
-    // Get user's primary organization (first organization they're a member of)
-    const userMembership = await db.organizationMember.findFirst({
-      where: { userId },
-      include: { organization: true },
-    });
-
-    const organizationId = userMembership?.organizationId || "default-org";
-
-    const workflow = await workflowService.updateWorkflow(
-      id,
-      body,
-      userId || "anonymous",
-      organizationId,
-    );
-
-    logger.info("Workflow updated successfully", "workflows", {
-      requestId,
-      userId,
-      workflowId: id,
-      workflowName: workflow.name,
-    });
-
-    return StandardSuccessResponse.updated(workflow, requestId);
+    const controller = DIContainer.get<WorkflowsApiController>(TYPES.WorkflowsApiController);
+    return await controller.updateWorkflow(params.id, request);
   } catch (error) {
-    logger.apiError("Error processing workflow request", "workflows", error, {
-      requestId,
-      resourceId: params.id,
-      endpoint: "/api/workflows/:id",
-    });
-
-    if (error instanceof ApiError) {
-      return errorResponse(error);
-    }
-
-    return StandardErrorResponse.internal(
-      "Failed to update workflow",
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      requestId,
+    console.error('Error in PUT /api/workflows/[id]:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }
 
+// DELETE /api/workflows/[id] - Delete a workflow
 export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: { id: string } },
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
-  const requestId = generateRequestId();
-
   try {
-    const { userId } = auth();
-
-    if (!userId) {
-      return StandardErrorResponse.unauthorized(
-        "Authentication required",
-        "workflows",
-        requestId,
-      );
-    }
-
-    const { id } = params;
-
-    logger.info("Deleting workflow", "workflows", {
-      requestId,
-      userId,
-      workflowId: id,
-    });
-
-    // Get user's primary organization (first organization they're a member of)
-    const userMembership = await db.organizationMember.findFirst({
-      where: { userId },
-      include: { organization: true },
-    });
-
-    const organizationId = userMembership?.organizationId || "default-org";
-
-    await workflowService.deleteWorkflow(
-      id,
-      userId || "anonymous",
-      organizationId,
-    );
-
-    logger.info("Workflow deleted successfully", "workflows", {
-      requestId,
-      userId,
-      workflowId: id,
-    });
-
-    return StandardSuccessResponse.deleted(requestId, {
-      message: "Workflow deleted successfully",
-      workflowId: id,
-    });
+    const controller = DIContainer.get<WorkflowsApiController>(TYPES.WorkflowsApiController);
+    return await controller.deleteWorkflow(params.id);
   } catch (error) {
-    logger.apiError("Error processing workflow request", "workflows", error, {
-      requestId,
-      resourceId: params.id,
-      endpoint: "/api/workflows/:id",
-    });
-
-    if (error instanceof ApiError) {
-      return errorResponse(error);
-    }
-
-    return StandardErrorResponse.internal(
-      "Failed to delete workflow",
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      requestId,
+    console.error('Error in DELETE /api/workflows/[id]:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }

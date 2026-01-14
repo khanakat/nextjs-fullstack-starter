@@ -2177,3 +2177,82 @@ model SecurityScanResult {
   @@index([target, status])
   @@map("security_scan_results")
 }
+
+// ============================================================================
+// BACKGROUND JOBS & QUEUE MANAGEMENT MODELS
+// ============================================================================
+
+// Job queue model for managing background job queues
+model JobQueue {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  
+  // Queue configuration
+  description    String?
+  defaultPriority Int     @default(5) @map("default_priority")
+  concurrency     Int      @default(1)
+  maxRetries     Int      @default(3) @map("max_retries")
+  defaultTimeout Int?     @map("default_timeout")
+  defaultDelay   Int?     @default(0) @map("default_delay")
+  
+  // Queue status
+  isActive       Boolean  @default(true) @map("is_active")
+  isPaused       Boolean  @default(false) @map("is_paused")
+  
+  // Statistics
+  jobCount       Int      @default(0) @map("job_count")
+  completedCount Int      @default(0) @map("completed_count")
+  failedCount    Int      @default(0) @map("failed_count")
+  pendingCount   Int      @default(0) @map("pending_count")
+  
+  // Metadata
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  jobs           BackgroundJob[]
+  
+  @@index([isActive, isPaused])
+  @@map("job_queues")
+}
+
+// Background job model for managing background job executions
+model BackgroundJob {
+  id             String   @id @default(cuid())
+  name           String
+  queueName      String   @map("queue_name")
+  
+  // Job status and priority
+  status         String   @default("pending") // pending, active, completed, failed, delayed, paused
+  priority       Int      @default(5)
+  
+  // Job data and results
+  data           String   @default("{}") // JSON string for job payload
+  result         String?  // JSON string for job result
+  error          String?  // Error message if job failed
+  
+  // Progress tracking
+  progress       Int      @default(0) // Progress percentage (0-100)
+  
+  // Retry configuration
+  attempts       Int      @default(0)
+  maxAttempts    Int      @default(3) @map("max_attempts")
+  delay          Int      @default(0) // Delay before execution in milliseconds
+  timeout        Int?     // Job timeout in milliseconds
+  
+  // Timestamps
+  createdAt      DateTime @default(now()) @map("created_at")
+  startedAt      DateTime? @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  failedAt       DateTime? @map("failed_at")
+  nextRetryAt    DateTime? @map("next_retry_at")
+  
+  // Relations
+  queue          JobQueue  @relation(fields: [queueName], references: [name], onDelete: Cascade)
+  
+  @@index([queueName, status])
+  @@index([status, createdAt])
+  @@index([priority, createdAt])
+  @@index([nextRetryAt])
+  @@map("background_jobs")
+}

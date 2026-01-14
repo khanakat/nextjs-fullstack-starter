@@ -12,6 +12,7 @@ import { UpdateIntegrationUseCase } from '../../../integrations/application/use-
 import { DeleteIntegrationUseCase } from '../../../integrations/application/use-cases/delete-integration-use-case';
 import { GetIntegrationUseCase } from '../../../integrations/application/use-cases/get-integration-use-case';
 import { GetIntegrationsUseCase } from '../../../integrations/application/use-cases/get-integrations-use-case';
+import { IntegrationsApiController } from '../../presentation/api/integrations-api.controller';
 
 /**
  * Configure Integrations slice dependencies in DI container
@@ -74,4 +75,10 @@ export function configureIntegrationsContainer(container: Container): void {
     .bind(TYPES.GetIntegrationsUseCase)
     .to(GetIntegrationsUseCase)
     .inTransientScope();
+
+  // Presentation Controllers
+  container
+    .bind(TYPES.IntegrationsApiController)
+    .to(IntegrationsApiController)
+    .inSingletonScope();
 }

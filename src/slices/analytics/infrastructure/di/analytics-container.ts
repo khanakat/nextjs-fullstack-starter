@@ -12,6 +12,7 @@ import { UpdateDashboardUseCase } from '../../../analytics/application/use-cases
 import { DeleteDashboardUseCase } from '../../../analytics/application/use-cases/delete-dashboard-use-case';
 import { GetDashboardUseCase } from '../../../analytics/application/use-cases/get-dashboard-use-case';
 import { GetDashboardsUseCase } from '../../../analytics/application/use-cases/get-dashboards-use-case';
+import { DashboardsApiController } from '../../../analytics/presentation/api/dashboards-api.controller';
 
 /**
  * Configure Analytics slice dependencies in DI container
@@ -74,4 +75,10 @@ export function configureAnalyticsContainer(container: Container): void {
     .bind(TYPES.GetDashboardsUseCase)
     .to(GetDashboardsUseCase)
     .inTransientScope();
+
+  // Controllers
+  container
+    .bind(TYPES.DashboardsController)
+    .to(DashboardsApiController)
+    .inSingletonScope();
 }

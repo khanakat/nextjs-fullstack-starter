@@ -15,6 +15,9 @@ import { ListAuditLogsHandler } from '../../application/handlers/list-audit-logs
 import { GetAuditLogsHandler } from '../../application/handlers/get-audit-logs-handler';
 import { GetAuditStatisticsHandler } from '../../application/handlers/get-audit-statistics-handler';
 
+// Presentation Controllers
+import { AuditApiController } from '../../presentation/api/audit-api.controller';
+
 /**
  * Audit Dependency Injection Container
  * Configures all dependencies for the audit vertical slice
@@ -61,4 +64,10 @@ export function configureAuditContainer(container: Container): void {
     .bind<GetAuditStatisticsHandler>(TYPES.GetAuditStatisticsHandler)
     .to(GetAuditStatisticsHandler)
     .inRequestScope();
+
+  // Presentation Controllers
+  container
+    .bind<AuditApiController>(TYPES.AuditApiController)
+    .to(AuditApiController)
+    .inSingletonScope();
 }

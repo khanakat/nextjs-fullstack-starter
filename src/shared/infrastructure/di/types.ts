@@ -99,6 +99,7 @@ export const TYPES = {
   DeleteWorkflowUseCase: Symbol.for('DeleteWorkflowUseCase'),
   GetWorkflowUseCase: Symbol.for('GetWorkflowUseCase'),
   GetWorkflowsUseCase: Symbol.for('GetWorkflowsUseCase'),
+  WorkflowsApiController: Symbol.for('WorkflowsApiController'),
 
   // Integrations
   IntegrationRepository: Symbol.for('IntegrationRepository'),
@@ -112,6 +113,7 @@ export const TYPES = {
   DeleteIntegrationUseCase: Symbol.for('DeleteIntegrationUseCase'),
   GetIntegrationUseCase: Symbol.for('GetIntegrationUseCase'),
   GetIntegrationsUseCase: Symbol.for('GetIntegrationsUseCase'),
+  IntegrationsApiController: Symbol.for('IntegrationsApiController'),
 
   // Reporting
   ReportRepository: Symbol.for('ReportRepository'),
@@ -205,6 +207,7 @@ export const TYPES = {
   ListAuditLogsHandler: Symbol.for('ListAuditLogsHandler'),
   GetAuditLogsHandler: Symbol.for('GetAuditLogsHandler'),
   GetAuditStatisticsHandler: Symbol.for('GetAuditStatisticsHandler'),
+  AuditApiController: Symbol.for('AuditApiController'),
 } as const;
 
 // Event Bus
