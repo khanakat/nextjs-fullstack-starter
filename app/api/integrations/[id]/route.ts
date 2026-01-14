@@ -1,302 +1,92 @@
-import { NextRequest } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { z } from "zod";
-import { db } from "@/lib/db";
-import { logger } from "@/lib/logger";
-import { generateRequestId } from "@/lib/utils";
-import {
-  StandardErrorResponse,
-  StandardSuccessResponse,
-} from "@/lib/standardized-error-responses";
-import { handleZodError } from "@/lib/error-handlers";
+import { NextRequest } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { DIContainer } from '@/shared/infrastructure/di/container';
+import { IntegrationsApiController } from '@/slices/integrations/presentation/api/integrations-api.controller';
+import { TYPES } from '@/shared/infrastructure/di/types';
 
-const updateIntegrationSchema = z.object({
-  name: z.string().min(1, "Name is required").optional(),
-  config: z.record(z.any()).optional(),
-  description: z.string().optional(),
-  status: z.enum(["active", "inactive", "error"]).optional(),
-});
-
+/**
+ * GET /api/integrations/[id] - Get integration by ID
+ */
 export async function GET(
-  _request: NextRequest,
-  { params }: { params: { id: string } },
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
-  const requestId = generateRequestId();
-
   try {
-    const { userId } = auth();
+    const authResult = auth();
+    const userId = authResult.userId;
+
     if (!userId) {
-      logger.warn("Unauthorized access attempt to integration details", "API", {
-        requestId,
-      });
-      return StandardErrorResponse.unauthorized(
-        "Authentication required",
-        requestId,
-      );
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const integrationId = params.id;
-    if (!integrationId) {
-      logger.warn("Missing integration ID parameter", "API", {
-        requestId,
-        userId,
-      });
-      return StandardErrorResponse.badRequest(
-        "Integration ID is required",
-        requestId,
-      );
-    }
-
-    // Get integration with organization check
-    const integration = await db.integration.findFirst({
-      where: {
-        id: integrationId,
-        organization: {
-          members: {
-            some: { userId },
-          },
-        },
-      },
-      include: {
-        organization: {
-          select: { id: true, name: true },
-        },
-        webhooks: {
-          select: { id: true, url: true, status: true },
-        },
-        _count: {
-          select: { webhooks: true },
-        },
-      },
-    });
-
-    if (!integration) {
-      logger.warn("Integration not found or access denied", "API", {
-        requestId,
-        userId,
-        integrationId,
-      });
-      return StandardErrorResponse.notFound("Integration not found", requestId);
-    }
-
-    logger.info("Integration retrieved successfully", "API", {
-      requestId,
-      userId,
-      integrationId,
-      organizationId: integration.organization.id,
-    });
-
-    return StandardSuccessResponse.ok(integration, requestId);
+    const controller = DIContainer.get<IntegrationsApiController>(TYPES.IntegrationsApiController);
+    return controller.getIntegration(params.id);
   } catch (error) {
-    logger.error("Failed to retrieve integration", "API", { requestId, error });
-    return StandardErrorResponse.internal(
-      "Failed to retrieve integration",
-      undefined,
-      requestId,
+    console.error('Failed to get integration:', error);
+    return Response.json(
+      { error: 'Failed to get integration' },
+      { status: 500 }
     );
   }
 }
 
+/**
+ * PUT /api/integrations/[id] - Update integration
+ */
 export async function PUT(
-  _request: NextRequest,
-  { params }: { params: { id: string } },
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
-  const requestId = generateRequestId();
-
   try {
-    const { userId } = auth();
+    const authResult = auth();
+    const userId = authResult.userId;
+
     if (!userId) {
-      logger.warn("Unauthorized access attempt to update integration", "API", {
-        requestId,
-      });
-      return StandardErrorResponse.unauthorized(
-        "Authentication required",
-        requestId,
-      );
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const integrationId = params.id;
-    if (!integrationId) {
-      logger.warn("Missing integration ID parameter", "API", {
-        requestId,
-        userId,
-      });
-      return StandardErrorResponse.badRequest(
-        "Integration ID is required",
-        requestId,
-      );
-    }
+    // Add user ID to request headers
+    const headers = new Headers(request.headers);
+    headers.set('x-user-id', userId);
 
-    let body;
-    try {
-      body = await _request.json();
-    } catch (error) {
-      logger.warn("Invalid JSON in request body", "API", { requestId, userId });
-      return StandardErrorResponse.badRequest(
-        "Invalid JSON in request body",
-        requestId,
-      );
-    }
-
-    // Validate request body
-    const validationResult = updateIntegrationSchema.safeParse(body);
-    if (!validationResult.success) {
-      logger.warn("Integration update validation failed", "API", {
-        requestId,
-        userId,
-        integrationId,
-        errors: validationResult.error.errors,
-      });
-      return handleZodError(validationResult.error, requestId);
-    }
-
-    const validatedData = validationResult.data;
-
-    // Check if integration exists and user has access
-    const existingIntegration = await db.integration.findFirst({
-      where: {
-        id: integrationId,
-        organization: {
-          members: {
-            some: { userId },
-          },
-        },
-      },
+    const requestWithUserId = new Request(request.url, {
+      ...request,
+      headers,
     });
 
-    if (!existingIntegration) {
-      logger.warn("Integration not found or access denied for update", "API", {
-        requestId,
-        userId,
-        integrationId,
-      });
-      return StandardErrorResponse.notFound("Integration not found", requestId);
-    }
-
-    // Update integration
-    const updatedIntegration = await db.integration.update({
-      where: { id: integrationId },
-      data: {
-        ...validatedData,
-        updatedAt: new Date(),
-      },
-      include: {
-        organization: {
-          select: { id: true, name: true },
-        },
-        webhooks: {
-          select: { id: true, url: true, status: true },
-        },
-        _count: {
-          select: { webhooks: true },
-        },
-      },
-    });
-
-    logger.info("Integration updated successfully", "API", {
-      requestId,
-      userId,
-      integrationId,
-      organizationId: updatedIntegration.organization.id,
-      updatedFields: Object.keys(validatedData),
-    });
-
-    return StandardSuccessResponse.ok(updatedIntegration, requestId);
+    const controller = DIContainer.get<IntegrationsApiController>(TYPES.IntegrationsApiController);
+    return controller.updateIntegration(params.id, requestWithUserId as NextRequest);
   } catch (error) {
-    logger.error("Failed to update integration", "API", { requestId, error });
-    return StandardErrorResponse.internal(
-      "Failed to update integration",
-      undefined,
-      requestId,
+    console.error('Failed to update integration:', error);
+    return Response.json(
+      { error: 'Failed to update integration' },
+      { status: 500 }
     );
   }
 }
 
+/**
+ * DELETE /api/integrations/[id] - Delete integration
+ */
 export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: { id: string } },
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
-  const requestId = generateRequestId();
-
   try {
-    const { userId } = auth();
+    const authResult = auth();
+    const userId = authResult.userId;
+
     if (!userId) {
-      logger.warn("Unauthorized access attempt to delete integration", "API", {
-        requestId,
-      });
-      return StandardErrorResponse.unauthorized(
-        "Authentication required",
-        requestId,
-      );
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const integrationId = params.id;
-    if (!integrationId) {
-      logger.warn("Missing integration ID parameter", "API", {
-        requestId,
-        userId,
-      });
-      return StandardErrorResponse.badRequest(
-        "Integration ID is required",
-        requestId,
-      );
-    }
-
-    // Check if integration exists and user has access
-    const existingIntegration = await db.integration.findFirst({
-      where: {
-        id: integrationId,
-        organization: {
-          members: {
-            some: { userId },
-          },
-        },
-      },
-      include: {
-        organization: {
-          select: { id: true, name: true },
-        },
-      },
-    });
-
-    if (!existingIntegration) {
-      logger.warn(
-        "Integration not found or access denied for deletion",
-        "API",
-        {
-          requestId,
-          userId,
-          integrationId,
-        },
-      );
-      return StandardErrorResponse.notFound("Integration not found", requestId);
-    }
-
-    // Delete integration (this should cascade to related records)
-    await db.integration.delete({
-      where: { id: integrationId },
-    });
-
-    logger.info("Integration deleted successfully", "API", {
-      requestId,
-      userId,
-      integrationId,
-      organizationId: existingIntegration.organization.id,
-    });
-
-    return StandardSuccessResponse.ok(
-      {
-        message: "Integration deleted successfully",
-        integrationId,
-      },
-      requestId,
-    );
+    const controller = DIContainer.get<IntegrationsApiController>(TYPES.IntegrationsApiController);
+    return controller.deleteIntegration(params.id);
   } catch (error) {
-    logger.error("Failed to delete integration", "API", { requestId, error });
-    return StandardErrorResponse.internal(
-      "Failed to delete integration",
-      undefined,
-      requestId,
+    console.error('Failed to delete integration:', error);
+    return Response.json(
+      { error: 'Failed to delete integration' },
+      { status: 500 }
     );
   }
 }

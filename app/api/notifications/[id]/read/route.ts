@@ -1,51 +1,40 @@
-import { NextRequest } from "next/server";
-import { ApiError, errorResponse } from "@/lib/api-utils";
-import { StandardErrorResponse, StandardSuccessResponse } from "@/lib/standardized-error-responses";
-import { logger } from "@/lib/logger";
-import { auth } from "@clerk/nextjs/server";
-import { notificationStore } from "@/lib/notifications";
-import { generateRequestId } from "@/lib/utils";
-
-interface RouteParams { params: { id: string } }
+import { NextRequest } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { DIContainer } from '@/shared/infrastructure/di/container';
+import { NotificationsController } from '@/slices/notifications/presentation/controllers/notifications-controller';
+import { TYPES } from '@/shared/infrastructure/di/types';
 
 /**
- * PUT /api/notifications/[id]/read - Mark notification as read (path used in tests)
+ * PUT /api/notifications/[id]/read - Mark notification as read (alias for PATCH)
  */
-export async function PUT(_request: NextRequest, { params }: RouteParams) {
-  const requestId = generateRequestId();
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const headerUserId = _request.headers.get("x-user-id");
-    const { userId: clerkUserId } = (() => { try { return auth(); } catch { return { userId: null as any }; } })();
-    const userId = headerUserId || clerkUserId;
+    const authResult = auth();
+    const userId = authResult.userId;
+
     if (!userId) {
-      return StandardErrorResponse.unauthorized("Authentication required", requestId);
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
-    if (!id) {
-      return StandardErrorResponse.badRequest("Notification ID is required", "notifications", { id }, requestId);
-    }
+    // Add user ID to request headers
+    const headers = new Headers(request.headers);
+    headers.set('x-user-id', userId);
 
-    const existing = await notificationStore.getNotificationById(id);
-    if (!existing) {
-      return StandardErrorResponse.notFound("Notification not found", requestId);
-    }
-    if (existing.userId !== userId) {
-      return errorResponse("Access denied", 403);
-    }
+    const requestWithUserId = new Request(request.url, {
+      ...request,
+      headers,
+    });
 
-    const success = await notificationStore.markAsRead(id, userId);
-    if (!success) {
-      return StandardErrorResponse.internal("Failed to mark notification as read", undefined, requestId);
-    }
-
-    const updated = await notificationStore.getNotificationById(id);
-    return StandardSuccessResponse.updated({ message: "Notification marked as read", notificationId: id, readAt: updated?.readAt ?? null, requestId }, requestId);
+    const controller = DIContainer.get<NotificationsController>(TYPES.NotificationsController);
+    return controller.markAsRead(requestWithUserId as NextRequest, { params });
   } catch (error) {
-    logger.apiError("Error marking notification read", "notification", error, { requestId, resourceId: params.id, endpoint: "/api/notifications/:id/read" });
-    if (error instanceof ApiError) {
-      return StandardErrorResponse.fromApiError(error, requestId);
-    }
-    return StandardErrorResponse.internal("Failed to process notification request", undefined, requestId);
+    console.error('Failed to mark notification as read:', error);
+    return Response.json(
+      { error: 'Failed to mark notification as read' },
+      { status: 500 }
+    );
   }
 }

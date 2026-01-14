@@ -171,10 +171,6 @@ export async function POST(_request: NextRequest) {
 // GET /api/audit/maintenance - Get maintenance information
 // ============================================================================
 
-// ============================================================================
-// GET /api/audit/maintenance - Get maintenance information
-// ============================================================================
-
 export async function GET(_request: NextRequest) {
   const requestId = generateRequestId();
 

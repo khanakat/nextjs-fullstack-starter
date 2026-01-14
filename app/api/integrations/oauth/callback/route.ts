@@ -1,201 +1,104 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { logger } from "@/lib/logger";
-import { db } from "@/lib/db";
-import { OAuthService } from "../../../../../api/services/integrations/OAuthService";
-import { generateRequestId } from "@/lib/utils";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { DIContainer } from '@/shared/infrastructure/di/container';
+import { IntegrationsApiController } from '@/slices/integrations/presentation/api/integrations-api.controller';
+import { TYPES } from '@/shared/infrastructure/di/types';
+import { prisma } from '@/lib/db';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 /**
  * GET /api/integrations/oauth/callback - Handle OAuth callback
  */
-export async function GET(_request: NextRequest) {
-  const requestId = generateRequestId();
-
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(_request.url);
-    const code = searchParams.get("code");
-    const state = searchParams.get("state");
-    const error = searchParams.get("error");
-    const integrationId = searchParams.get("integration_id");
-
-    logger.info("Processing OAuth callback", "API", {
-      requestId,
-      hasCode: !!code,
-      hasState: !!state,
-      hasError: !!error,
-      integrationId,
-    });
+    const { searchParams } = new URL(request.url);
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description') || 'OAuth authorization failed';
+    const integrationId = searchParams.get('integration_id');
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
     // Handle OAuth error
     if (error) {
-      const errorDescription =
-        searchParams.get("error_description") || "OAuth authorization failed";
-
-      logger.warn("OAuth authorization error received", "API", {
-        requestId,
-        error,
-        errorDescription,
-        integrationId,
-      });
-
-      // Redirect to frontend with error
-      const redirectUrl = new URL(
-        "/integrations",
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-      );
-      redirectUrl.searchParams.set("error", error);
-      redirectUrl.searchParams.set("error_description", errorDescription);
-
+      const redirectUrl = new URL('/integrations', appUrl);
+      redirectUrl.searchParams.set('error', error);
+      redirectUrl.searchParams.set('error_description', errorDescription);
       return NextResponse.redirect(redirectUrl);
     }
 
     // Validate required parameters
     if (!code || !state || !integrationId) {
-      logger.warn("Missing required OAuth parameters", "API", {
-        requestId,
-        hasCode: !!code,
-        hasState: !!state,
-        hasIntegrationId: !!integrationId,
-      });
-
-      const redirectUrl = new URL(
-        "/integrations",
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-      );
-      redirectUrl.searchParams.set("error", "invalid_request");
-      redirectUrl.searchParams.set(
-        "error_description",
-        "Missing required OAuth parameters",
-      );
-
+      const redirectUrl = new URL('/integrations', appUrl);
+      redirectUrl.searchParams.set('error', 'invalid_request');
+      redirectUrl.searchParams.set('error_description', 'Missing required OAuth parameters');
       return NextResponse.redirect(redirectUrl);
     }
 
-    const { userId } = auth();
+    const authResult = auth();
+    const userId = authResult.userId;
+
     if (!userId) {
-      logger.warn("Unauthorized OAuth callback attempt", "API", {
-        requestId,
-        integrationId,
-      });
-
-      const redirectUrl = new URL(
-        "/sign-in",
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-      );
-      redirectUrl.searchParams.set("redirect_url", _request.url);
-
+      const redirectUrl = new URL('/sign-in', appUrl);
+      redirectUrl.searchParams.set('redirect_url', request.url);
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Get user's organization through Clerk integration
-    const userOrganization = await db.organizationMember.findFirst({
+    // Get user's organization
+    const userOrganization = await prisma.organizationMember.findFirst({
       where: { userId },
       include: { organization: true },
     });
 
     if (!userOrganization) {
-      logger.warn("No organization found for OAuth callback user", "API", {
-        requestId,
-        userId,
-        integrationId,
-      });
-
-      const redirectUrl = new URL(
-        "/integrations",
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-      );
-      redirectUrl.searchParams.set("error", "no_organization");
-      redirectUrl.searchParams.set(
-        "error_description",
-        "No organization found",
-      );
-
+      const redirectUrl = new URL('/integrations', appUrl);
+      redirectUrl.searchParams.set('error', 'no_organization');
+      redirectUrl.searchParams.set('error_description', 'No organization found');
       return NextResponse.redirect(redirectUrl);
     }
 
     const organizationId = userOrganization.organizationId;
 
-    logger.info("Processing OAuth callback for authenticated user", "API", {
-      requestId,
-      userId,
-      organizationId,
-      integrationId,
+    // Add user ID and organization ID to request headers
+    const headers = new Headers(request.headers);
+    headers.set('x-user-id', userId);
+    headers.set('x-organization-id', organizationId);
+
+    const requestWithContext = new Request(request.url, {
+      ...request,
+      headers,
     });
 
-    // Handle OAuth callback
-    const result = await OAuthService.handleCallback(
-      integrationId,
-      code,
-      state,
-      organizationId,
-    );
+    const controller = DIContainer.get<IntegrationsApiController>(TYPES.IntegrationsApiController);
+    const response = await controller.handleOAuthCallback(requestWithContext as NextRequest);
 
-    logger.info("OAuth callback processing completed", "API", {
-      requestId,
-      userId,
-      organizationId,
-      integrationId,
-      success: result.success,
-      hasConnectionId: !!result.connectionId,
-      hasError: !!result.error,
-    });
+    // Parse the response and redirect accordingly
+    const responseData = await response.json();
+    const redirectUrl = new URL('/integrations', appUrl);
 
-    // Redirect to frontend with result
-    const redirectUrl = new URL(
-      "/integrations",
-      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    );
-
-    if (result.success) {
-      redirectUrl.searchParams.set("success", "true");
-      redirectUrl.searchParams.set("integration_id", integrationId);
-      redirectUrl.searchParams.set("connection_id", result.connectionId || "");
-
-      logger.info(
-        "OAuth callback successful, redirecting to success page",
-        "API",
-        {
-          requestId,
-          userId,
-          integrationId,
-          connectionId: result.connectionId,
-        },
-      );
+    if (responseData.data && responseData.data.success) {
+      redirectUrl.searchParams.set('success', 'true');
+      redirectUrl.searchParams.set('integration_id', integrationId);
+      redirectUrl.searchParams.set('connection_id', responseData.data.connectionId || '');
     } else {
-      redirectUrl.searchParams.set("error", "oauth_failed");
+      redirectUrl.searchParams.set('error', 'oauth_failed');
       redirectUrl.searchParams.set(
-        "error_description",
-        result.error || "OAuth callback failed",
+        'error_description',
+        responseData.data?.errorDescription || responseData.error || 'OAuth callback failed'
       );
-      redirectUrl.searchParams.set("integration_id", integrationId);
-
-      logger.warn("OAuth callback failed, redirecting to error page", "API", {
-        requestId,
-        userId,
-        integrationId,
-        error: result.error,
-      });
+      redirectUrl.searchParams.set('integration_id', integrationId);
     }
 
     return NextResponse.redirect(redirectUrl);
   } catch (error) {
-    logger.error("OAuth callback processing error", "API", {
-      requestId,
-      error,
-    });
+    console.error('OAuth callback processing error:', error);
 
-    const redirectUrl = new URL(
-      "/integrations",
-      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    );
-    redirectUrl.searchParams.set("error", "callback_error");
-    redirectUrl.searchParams.set(
-      "error_description",
-      "OAuth callback processing failed",
-    );
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const redirectUrl = new URL('/integrations', appUrl);
+    redirectUrl.searchParams.set('error', 'callback_error');
+    redirectUrl.searchParams.set('error_description', 'OAuth callback processing failed');
 
     return NextResponse.redirect(redirectUrl);
   }

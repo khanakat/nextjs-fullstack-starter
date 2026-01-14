@@ -1,42 +1,28 @@
 import { NextRequest } from "next/server";
-import { ApiError } from "@/lib/api-utils";
-import { StandardErrorResponse, StandardSuccessResponse } from "@/lib/standardized-error-responses";
-import { logger } from "@/lib/logger";
 import { auth } from "@clerk/nextjs/server";
-import { NotificationService } from "@/lib/notifications";
-import { generateRequestId } from "@/lib/utils";
+import { DIContainer } from "@/shared/infrastructure/di/container";
+import { NotificationsController } from "@/slices/notifications/presentation/controllers/notifications-controller";
+import { TYPES } from "@/shared/infrastructure/di/types";
 
+/**
+ * POST /api/notifications/schedule - Schedule a notification
+ */
 export async function POST(request: NextRequest) {
-  const requestId = generateRequestId();
   try {
-    const headerUserId = request.headers.get("x-user-id");
-    const { userId: clerkUserId } = (() => { try { return auth(); } catch { return { userId: null as any }; } })();
-    const userId = headerUserId || clerkUserId;
+    const authResult = auth();
+    const userId = authResult.userId;
+
     if (!userId) {
-      return StandardErrorResponse.unauthorized("Authentication required", requestId);
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const scheduledFor = new Date(body.scheduleFor);
-    const notification = await NotificationService.notify(body.recipientId || userId, {
-      title: body.title,
-      message: body.message,
-      type: body.type || "info",
-      priority: body.priority || "medium",
-      channels: body.channels || { inApp: true, email: false, push: false },
-      deliverAt: scheduledFor,
-    });
-
-    return StandardSuccessResponse.created({
-      id: notification.id,
-      status: "scheduled",
-      scheduledFor: scheduledFor.toISOString(),
-    }, requestId);
+    const controller = DIContainer.get<NotificationsController>(TYPES.NotificationsController);
+    return controller.sendNotification(request);
   } catch (error) {
-    logger.apiError("Schedule notification error", "notification", error, { requestId });
-    if (error instanceof ApiError) {
-      return StandardErrorResponse.fromApiError(error, requestId);
-    }
-    return StandardErrorResponse.internal("Failed to schedule notification", undefined, requestId);
+    console.error('Failed to schedule notification:', error);
+    return Response.json(
+      { error: 'Failed to schedule notification' },
+      { status: 500 }
+    );
   }
 }

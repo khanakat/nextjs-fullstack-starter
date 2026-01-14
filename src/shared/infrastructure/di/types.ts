@@ -133,12 +133,41 @@ export const TYPES = {
   DeleteIntegrationHandler: Symbol.for('DeleteIntegrationHandler'),
   GetIntegrationHandler: Symbol.for('GetIntegrationHandler'),
   GetIntegrationsHandler: Symbol.for('GetIntegrationsHandler'),
+  SyncIntegrationHandler: Symbol.for('SyncIntegrationHandler'),
   CreateIntegrationUseCase: Symbol.for('CreateIntegrationUseCase'),
   UpdateIntegrationUseCase: Symbol.for('UpdateIntegrationUseCase'),
   DeleteIntegrationUseCase: Symbol.for('DeleteIntegrationUseCase'),
   GetIntegrationUseCase: Symbol.for('GetIntegrationUseCase'),
   GetIntegrationsUseCase: Symbol.for('GetIntegrationsUseCase'),
   IntegrationsApiController: Symbol.for('IntegrationsApiController'),
+
+  // Integration Templates
+  IntegrationTemplateRepository: Symbol.for('IntegrationTemplateRepository'),
+  ListTemplatesHandler: Symbol.for('ListTemplatesHandler'),
+  CreateIntegrationFromTemplateHandler: Symbol.for('CreateIntegrationFromTemplateHandler'),
+  IntegrationTemplatesApiController: Symbol.for('IntegrationTemplatesApiController'),
+
+  // Webhooks
+  WebhookRepository: Symbol.for('WebhookRepository'),
+  WebhookEventRepository: Symbol.for('WebhookEventRepository'),
+  TestWebhookHandler: Symbol.for('TestWebhookHandler'),
+  GetWebhookStatsHandler: Symbol.for('GetWebhookStatsHandler'),
+  ListWebhooksHandler: Symbol.for('ListWebhooksHandler'),
+  CreateWebhookHandler: Symbol.for('CreateWebhookHandler'),
+  UpdateWebhookHandler: Symbol.for('UpdateWebhookHandler'),
+  DeleteWebhookHandler: Symbol.for('DeleteWebhookHandler'),
+  GetWebhookHandler: Symbol.for('GetWebhookHandler'),
+  GetWebhookDeliveriesHandler: Symbol.for('GetWebhookDeliveriesHandler'),
+  ProcessWebhookHandler: Symbol.for('ProcessWebhookHandler'),
+  WebhooksApiController: Symbol.for('WebhooksApiController'),
+
+  // Integration Connections
+  ConnectIntegrationHandler: Symbol.for('ConnectIntegrationHandler'),
+  DisconnectIntegrationHandler: Symbol.for('DisconnectIntegrationHandler'),
+  HandleOAuthCallbackHandler: Symbol.for('HandleOAuthCallbackHandler'),
+  GetConnectionStatusHandler: Symbol.for('GetConnectionStatusHandler'),
+  TestIntegrationHandler: Symbol.for('TestIntegrationHandler'),
+  GetTestHistoryHandler: Symbol.for('GetTestHistoryHandler'),
 
   // Reporting
   ReportRepository: Symbol.for('ReportRepository'),
