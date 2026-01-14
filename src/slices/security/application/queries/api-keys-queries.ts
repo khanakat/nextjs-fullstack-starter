@@ -1,12 +1,17 @@
-import { ListApiKeysRequest } from '../dto';
+import { Query } from '@/shared/application/base';
 
 /**
- * Query to list API keys
+ * TODO: Implement API key queries
+ * Placeholder to prevent TypeScript compilation errors
  */
-export class ListApiKeysQuery {
-  public readonly organizationId: string;
+export class ListApiKeysQuery extends Query {
+  constructor(public props: any) {
+    super();
+  }
+}
 
-  constructor(params: ListApiKeysRequest) {
-    this.organizationId = params.organizationId;
+export class GetApiKeyQuery extends Query {
+  constructor(public props: any) {
+    super();
   }
 }

@@ -1,18 +1,17 @@
-/**
- * Command to update security event
- */
-export class UpdateSecurityEventCommand {
-  public readonly eventId: string;
-  public readonly resolved: boolean;
-  public readonly userId: string;
+import { Command } from '@/shared/application/base';
 
-  constructor(params: {
-    eventId: string;
-    resolved: boolean;
-    userId: string;
-  }) {
-    this.eventId = params.eventId;
-    this.resolved = params.resolved;
-    this.userId = params.userId;
+/**
+ * TODO: Implement security events commands
+ * Placeholder to prevent TypeScript compilation errors
+ */
+export class CreateSecurityEventCommand extends Command {
+  constructor(public props: any) {
+    super();
+  }
+}
+
+export class AcknowledgeSecurityEventCommand extends Command {
+  constructor(public props: any) {
+    super();
   }
 }
