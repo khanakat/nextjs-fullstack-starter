@@ -1,15 +1,15 @@
-import { Command } from '../../command.base';
+import { Command } from '../../base/command';
 import { IndexName } from '../../../domain/search/index-name.vo';
 
 export interface DeleteIndexCommandProps {
   indexName: string;
 }
 
-export class DeleteIndexCommand extends Command<DeleteIndexCommandProps> {
+export class DeleteIndexCommand extends Command {
   readonly indexName: IndexName;
 
-  constructor(props: DeleteIndexCommandProps) {
-    super(props);
+  constructor(props: DeleteIndexCommandProps, userId?: string) {
+    super(userId);
     this.indexName = IndexName.create(props.indexName);
   }
 }

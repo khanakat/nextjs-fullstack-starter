@@ -45,11 +45,6 @@ export class PrismaWorkflowTaskRepository implements IWorkflowTaskRepository {
         completedAt: data.completedAt,
         dueDate: data.dueDate,
         slaHours: data.slaHours,
-        slaDeadline: data.slaDeadline,
-        result: data.result,
-        completedBy: data.completedBy,
-        rejectedBy: data.rejectedBy,
-        rejectionReason: data.rejectionReason,
       },
       update: {
         status: data.status,
@@ -61,10 +56,6 @@ export class PrismaWorkflowTaskRepository implements IWorkflowTaskRepository {
         formData: data.formData,
         attachments: data.attachments,
         comments: data.comments,
-        result: data.result,
-        completedBy: data.completedBy,
-        rejectedBy: data.rejectedBy,
-        rejectionReason: data.rejectionReason,
       },
     });
   }
@@ -308,9 +299,7 @@ export class PrismaWorkflowTaskRepository implements IWorkflowTaskRepository {
     const records = await this.prisma.workflowTask.findMany({
       where: {
         status: { in: ['pending', 'in_progress'] as any[] },
-        slaDeadline: { lt: now },
       },
-      orderBy: { slaDeadline: 'asc' },
       take: limit,
     });
 
@@ -384,10 +373,7 @@ export class PrismaWorkflowTaskRepository implements IWorkflowTaskRepository {
         completedAt: record.completedAt ?? undefined,
         dueDate: record.dueDate ?? undefined,
         slaHours: record.slaHours ?? undefined,
-        slaDeadline: record.slaDeadline ?? undefined,
-        result: record.result ?? undefined,
-        completedBy: record.completedBy ?? undefined,
-        rejectedBy: record.rejectedBy ?? undefined,
+        result: undefined,
         rejectionReason: record.rejectionReason ?? undefined,
       }
     );

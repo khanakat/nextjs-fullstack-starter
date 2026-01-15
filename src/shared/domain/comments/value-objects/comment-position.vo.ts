@@ -1,4 +1,4 @@
-import { ValueObject } from '../../base/value-object';
+import { ValueObject } from '@/shared/domain/base';
 
 export interface CommentPositionProps {
   pageNumber?: number;
@@ -11,6 +11,10 @@ export interface CommentPositionProps {
 }
 
 export class CommentPosition extends ValueObject<CommentPositionProps> {
+  get props(): CommentPositionProps {
+    return this.value;
+  }
+
   readonly pageNumber?: number;
   readonly x?: number;
   readonly y?: number;
@@ -27,28 +31,30 @@ export class CommentPosition extends ValueObject<CommentPositionProps> {
     this.selection = props.selection;
   }
 
-  static create(props: CommentPositionProps = {}): CommentPosition {
-    if (props.pageNumber !== undefined && props.pageNumber < 0) {
+  protected validate(value: CommentPositionProps): void {
+    if (value.pageNumber !== undefined && value.pageNumber < 0) {
       throw new Error('Page number cannot be negative');
     }
 
-    if (props.x !== undefined && (props.x < 0 || props.x > 100)) {
+    if (value.x !== undefined && (value.x < 0 || value.x > 100)) {
       throw new Error('X position must be between 0 and 100');
     }
 
-    if (props.y !== undefined && (props.y < 0 || props.y > 100)) {
+    if (value.y !== undefined && (value.y < 0 || value.y > 100)) {
       throw new Error('Y position must be between 0 and 100');
     }
 
-    if (props.selection) {
-      if (props.selection.start < 0 || props.selection.end < 0) {
+    if (value.selection) {
+      if (value.selection.start < 0 || value.selection.end < 0) {
         throw new Error('Selection positions cannot be negative');
       }
-      if (props.selection.end < props.selection.start) {
+      if (value.selection.end < value.selection.start) {
         throw new Error('Selection end must be greater than or equal to start');
       }
     }
+  }
 
+  static create(props: CommentPositionProps = {}): CommentPosition {
     return new CommentPosition(props);
   }
 

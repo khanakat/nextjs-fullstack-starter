@@ -1,20 +1,20 @@
-import { Command } from '../../command.base';
+import { Command } from '../../base/command';
 import { IndexName } from '../../../domain/search/index-name.vo';
 import { DocumentId } from '../../../domain/search/document-id.vo';
 
 export interface IndexDocumentCommandProps {
   indexName: string;
   documentId?: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
-export class IndexDocumentCommand extends Command<IndexDocumentCommandProps> {
+export class IndexDocumentCommand extends Command {
   readonly indexName: IndexName;
   readonly documentId: DocumentId;
-  readonly data: Record<string, any>;
+  readonly data: Record<string, unknown>;
 
-  constructor(props: IndexDocumentCommandProps) {
-    super(props);
+  constructor(props: IndexDocumentCommandProps, userId?: string) {
+    super(userId);
     this.indexName = IndexName.create(props.indexName);
     this.documentId = DocumentId.create(props.documentId || `${Date.now()}-${Math.random()}`);
     this.data = props.data;

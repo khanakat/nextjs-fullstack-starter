@@ -11,7 +11,7 @@ export interface UpdateReportCommandProps {
   metadata?: Record<string, any>;
 }
 
-export class UpdateReportCommand extends Command<UpdateReportCommandProps> {
+export class UpdateReportCommand extends Command {
   readonly reportId: UniqueId;
   readonly title?: string;
   readonly description?: string;
@@ -20,8 +20,8 @@ export class UpdateReportCommand extends Command<UpdateReportCommandProps> {
   readonly isPublic?: boolean;
   readonly metadata?: Record<string, any>;
 
-  constructor(props: UpdateReportCommandProps) {
-    super(props);
+  constructor(props: UpdateReportCommandProps, userId?: string) {
+    super(userId);
     this.reportId = UniqueId.create(props.reportId);
     this.title = props.title;
     this.description = props.description;

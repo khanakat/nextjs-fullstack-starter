@@ -14,7 +14,7 @@ export interface ListCommentsQueryProps {
   sortOrder?: string;
 }
 
-export class ListCommentsQuery extends Query<ListCommentsQueryProps> {
+export class ListCommentsQuery extends Query {
   readonly documentId?: UniqueId;
   readonly sessionId?: string;
   readonly threadId?: CommentId;
@@ -25,8 +25,8 @@ export class ListCommentsQuery extends Query<ListCommentsQueryProps> {
   readonly sortBy: string;
   readonly sortOrder: string;
 
-  constructor(props: ListCommentsQueryProps = {}) {
-    super(props);
+  constructor(props: ListCommentsQueryProps = {}, userId?: string) {
+    super(userId);
     this.documentId = props.documentId ? UniqueId.create(props.documentId) : undefined;
     this.sessionId = props.sessionId;
     this.threadId = props.threadId ? CommentId.create(props.threadId) : undefined;

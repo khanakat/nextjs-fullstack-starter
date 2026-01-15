@@ -90,7 +90,7 @@ export class JobQueueService {
       throw new Error(`Queue '${queueName}' not found`);
     }
 
-    if (!queue.isActive()) {
+    if (!queue.isActive) {
       throw new Error(`Queue '${queueName}' is not active`);
     }
 

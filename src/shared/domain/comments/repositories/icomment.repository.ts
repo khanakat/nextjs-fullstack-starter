@@ -1,7 +1,7 @@
-import { Result } from '../../result';
+import { Result } from '../../../application/base/result';
 import { Comment } from '../entities/comment.entity';
-import { CommentId } from '../value-objects/comment-id';
-import { UniqueId } from '../unique-id';
+import { CommentId } from '../value-objects/comment-id.vo';
+import { UniqueId } from '../../value-objects/unique-id';
 
 export interface CommentSearchCriteria {
   documentId?: UniqueId;

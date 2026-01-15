@@ -1,4 +1,4 @@
-import { DomainEvent } from '../../domain-event.base';
+import { DomainEvent } from '@/shared/domain/base';
 import { DocumentId } from '../document-id.vo';
 import { IndexName } from '../index-name.vo';
 
@@ -13,8 +13,12 @@ export class DocumentDeletedEvent extends DomainEvent {
   readonly indexName: IndexName;
 
   constructor(props: DocumentDeletedEventProps) {
-    super(props.occurredAt);
+    super();
     this.documentId = props.documentId;
     this.indexName = props.indexName;
+  }
+
+  getEventName(): string {
+    return 'DocumentDeleted';
   }
 }

@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { CommandHandler, Result } from '@/shared/application/base';
+import { QueryHandler, Result } from '@/shared/application/base';
 import { GetConnectionStatusQuery } from '../queries/get-connection-status-query';
 import { db } from '@/lib/db';
 
@@ -7,7 +7,7 @@ import { db } from '@/lib/db';
  * Handler for getting connection status
  */
 @injectable()
-export class GetConnectionStatusHandler extends CommandHandler<GetConnectionStatusQuery, Result<any>> {
+export class GetConnectionStatusHandler extends QueryHandler<GetConnectionStatusQuery, Result<any>> {
   async handle(query: GetConnectionStatusQuery): Promise<Result<any>> {
     const { integrationId, organizationId } = query.props;
 

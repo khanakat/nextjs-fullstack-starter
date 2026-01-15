@@ -1,25 +1,26 @@
-import { QueryHandler } from '../../query-handler.base';
+import { QueryHandler } from '../../base/query-handler';
 import { ListCommentsQuery } from '../queries/list-comments.query';
 import { ICommentRepository } from '../../../domain/comments/repositories/icomment.repository';
 import { Result } from '../../base/result';
 
-export class ListCommentsHandler implements QueryHandler<ListCommentsQuery, Result<any>> {
-  constructor(private commentRepository: ICommentRepository) {}
+export class ListCommentsHandler extends QueryHandler<ListCommentsQuery, unknown> {
+  constructor(private commentRepository: ICommentRepository) {
+    super();
+  }
 
-  async handle(query: ListCommentsQuery): Promise<Result<any>> {
+  async handle(query: ListCommentsQuery): Promise<Result<unknown>> {
     let searchResult;
 
     if (query.threadId) {
       // Get specific thread
       const threadResult = await this.commentRepository.getThread(query.threadId);
       if (threadResult.isFailure || !threadResult.value) {
-        return Result.failure<any>(threadResult.error || 'Thread not found');
+        return Result.failure<unknown>(new Error('Thread not found'));
       }
 
       // Convert to DTO format
-      const thread = threadResult.value;
-      return Result.success<any>({
-        comments: [thread.toJSON()],
+      return Result.success<unknown>({
+        comments: [threadResult.value.toJSON()],
         pagination: {
           total: 1,
           limit: query.limit,
@@ -44,13 +45,13 @@ export class ListCommentsHandler implements QueryHandler<ListCommentsQuery, Resu
     );
 
     if (searchResult.isFailure) {
-      return Result.failure<any>(searchResult.error);
+      return Result.failure<unknown>(searchResult.error);
     }
 
     // Convert to DTO format
-    const comments = searchResult.value.comments.map((c) => c.toJSON());
+    const comments = searchResult.value.comments.map((c: any) => c.toJSON());
 
-    return Result.success<any>({
+    return Result.success<unknown>({
       comments,
       pagination: {
         total: searchResult.value.total,

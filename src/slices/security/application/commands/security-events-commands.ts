@@ -15,3 +15,21 @@ export class AcknowledgeSecurityEventCommand extends Command {
     super();
   }
 }
+
+export class UpdateSecurityEventCommand extends Command {
+  constructor(public props: any) {
+    super();
+  }
+
+  get eventId(): string {
+    return this.props.eventId;
+  }
+
+  get resolved(): boolean {
+    return this.props.resolved;
+  }
+
+  get updaterUserId(): string {
+    return this.props.userId;
+  }
+}

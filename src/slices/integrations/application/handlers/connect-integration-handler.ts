@@ -71,7 +71,7 @@ export class ConnectIntegrationHandler extends CommandHandler<ConnectIntegration
           );
 
           if (!credentialResult.success) {
-            return Result.failure(credentialResult.error || 'Failed to store credentials');
+            return Result.failure(credentialResult.error || new Error('Failed to store credentials'));
           }
 
           return Result.success({

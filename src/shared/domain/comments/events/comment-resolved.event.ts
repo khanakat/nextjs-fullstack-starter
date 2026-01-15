@@ -11,8 +11,12 @@ export class CommentResolvedEvent extends DomainEvent {
   readonly documentId: string;
 
   constructor(props: CommentResolvedEventProps) {
-    super(props.occurredAt);
+    super();
     this.commentId = props.commentId;
     this.documentId = props.documentId;
+  }
+
+  getEventName(): string {
+    return 'CommentResolved';
   }
 }

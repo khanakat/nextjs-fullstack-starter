@@ -1,12 +1,14 @@
-import { CommandHandler } from '../../command-handler.base';
+import { CommandHandler } from '../../base/command-handler';
 import { CreateReportCommand } from '../commands/create-report.command';
 import { IReportRepository } from '../../../domain/reporting/repositories/report-repository';
 import { Report } from '../../../domain/reporting/entities/report';
 import { ReportConfig } from '../../../domain/reporting/value-objects/report-config';
 import { Result } from '../../base/result';
 
-export class CreateReportHandler implements CommandHandler<CreateReportCommand> {
-  constructor(private reportRepository: IReportRepository) {}
+export class CreateReportHandler extends CommandHandler<CreateReportCommand, Report> {
+  constructor(private reportRepository: IReportRepository) {
+    super();
+  }
 
   async handle(command: CreateReportCommand): Promise<Result<Report>> {
     const reportConfig = ReportConfig.create(command.config);
@@ -22,10 +24,7 @@ export class CreateReportHandler implements CommandHandler<CreateReportCommand> 
       metadata: command.metadata,
     });
 
-    if (report.isFailure) {
-      return Result.failure<Report>(report.error);
-    }
-
-    return this.reportRepository.save(report.value);
+    await this.reportRepository.save(report);
+    return Result.success(report);
   }
 }

@@ -91,7 +91,7 @@ export class PrismaReportTemplateRepository implements IReportTemplateRepository
   }
 
   async findActiveTemplates(options?: TemplateSearchOptions): Promise<TemplateSearchResult> {
-    return this.search({ isActive: true }, options);
+    return this.search({}, options);
   }
 
   async findByType(type: any, options?: TemplateSearchOptions): Promise<TemplateSearchResult> {
@@ -160,7 +160,7 @@ export class PrismaReportTemplateRepository implements IReportTemplateRepository
   }
 
   async findPopularTemplates(limit: number = 10, organizationId?: UniqueId): Promise<ReportTemplate[]> {
-    const where: any = { isActive: true };
+    const where: any = {};
     if (organizationId) {
       where.organizationId = organizationId.id;
     }
@@ -236,7 +236,7 @@ export class PrismaReportTemplateRepository implements IReportTemplateRepository
     try {
       await prisma.template.update({
         where: { id: id.id },
-        data: { isActive: false },
+        data: { isPublic: false },
       });
     } catch (error) {
       throw new Error(`Failed to delete template: ${error}`);
@@ -254,22 +254,40 @@ export class PrismaReportTemplateRepository implements IReportTemplateRepository
   }
 
   async getAvailableTemplates(userId: UniqueId, organizationId?: UniqueId, options?: TemplateSearchOptions): Promise<TemplateSearchResult> {
-    const criteria: TemplateSearchCriteria = { isActive: true };
-
     // Get user's own templates + system templates + organization templates
     const where: any = {
       OR: [
         { createdBy: userId.id },
         { isSystem: true },
+        { isPublic: true },
       ],
-      isActive: true,
     };
 
     if (organizationId) {
       where.OR.push({ organizationId: organizationId.id });
     }
 
-    return this.search(criteria, options);
+    // We need to use a direct Prisma query instead of search() since we're using Prisma-specific properties
+    try {
+      const models = await prisma.template.findMany({
+        where,
+        take: options?.limit || 10,
+        skip: options?.offset || 0,
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const total = await prisma.template.count({ where });
+
+      const templates = await Promise.all(models.map((model) => this.toDomainModel(model)));
+
+      return {
+        templates,
+        total,
+        hasMore: (options?.offset || 0) + (options?.limit || 10) < total,
+      };
+    } catch (error) {
+      throw new Error(`Failed to get available templates: ${error}`);
+    }
   }
 
   async getTemplateUsageStats(templateId: UniqueId): Promise<{
@@ -312,12 +330,15 @@ export class PrismaReportTemplateRepository implements IReportTemplateRepository
     templatesThisWeek: number;
     averageUsagePerTemplate: number;
   }> {
-    const baseCriteria = organizationId ? { organizationId } : {};
+    const where: any = {};
+    if (organizationId) {
+      where.organizationId = organizationId.id;
+    }
 
     const [total, active, system] = await Promise.all([
-      this.count(baseCriteria),
-      this.count({ ...baseCriteria, isActive: true }),
-      this.count({ ...baseCriteria, isSystem: true }),
+      prisma.template.count({ where }),
+      prisma.template.count({ where: { ...where, isPublic: true } }),
+      prisma.template.count({ where: { ...where, isSystem: true } }),
     ]);
 
     return {
@@ -332,13 +353,18 @@ export class PrismaReportTemplateRepository implements IReportTemplateRepository
   }
 
   async findUnusedTemplates(unusedSince: Date, excludeSystem: boolean = true): Promise<ReportTemplate[]> {
-    const criteria: TemplateSearchCriteria = { isActive: true };
+    const where: any = { isPublic: true };
     if (excludeSystem) {
-      criteria.isSystem = false;
+      where.isSystem = false;
     }
 
-    const result = await this.search(criteria, { limit: 100 });
-    return result.templates;
+    const models = await prisma.template.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    return Promise.all(models.map((model) => this.toDomainModel(model)));
   }
 
   async clone(templateId: UniqueId, newName: string, createdBy: UniqueId): Promise<ReportTemplate> {
@@ -356,7 +382,7 @@ export class PrismaReportTemplateRepository implements IReportTemplateRepository
       layout: original.layout,
       styling: original.styling,
       isSystem: false,
-      isActive: true,
+      isPublic: true,
       tags: original.tags,
       createdBy: createdBy.id,
       organizationId: original.organizationId?.id,
@@ -377,7 +403,6 @@ export class PrismaReportTemplateRepository implements IReportTemplateRepository
       isPublic: template.isPublic,
       createdBy: template.createdBy.id,
       isSystem: template.isSystem,
-      isActive: template.isActive,
       categoryId: template.category,
       organizationId: template.organizationId?.id,
       updatedAt: template.updatedAt,
@@ -407,7 +432,8 @@ export class PrismaReportTemplateRepository implements IReportTemplateRepository
         layout: undefined, // Could parse from config if needed
         styling: undefined,
         isSystem: model.isSystem,
-        isActive: model.isActive,
+        isPublic: model.isActive || false,
+        isActive: model.isActive || false,
         tags: [], // Tags would need to be stored separately
         createdBy: UniqueId.create(model.createdBy),
         organizationId: model.organizationId ? UniqueId.create(model.organizationId) : undefined,

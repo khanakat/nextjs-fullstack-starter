@@ -34,7 +34,7 @@ export class DisconnectIntegrationHandler extends CommandHandler<DisconnectInteg
       );
 
       if (!result.success) {
-        return Result.failure(result.error || 'Failed to disconnect integration');
+        return Result.failure(result.error || new Error('Failed to disconnect integration'));
       }
 
       return Result.success({

@@ -5,15 +5,17 @@ import { logger } from '@/lib/logger';
 import { ApiError, errorResponse } from '@/lib/api-utils';
 import {
   ListApiKeysQuery,
+  GetSecurityEventsQuery,
+  GetSecurityMetricsQuery,
   GetPermissionAnalyticsQuery,
   GetViolationsQuery,
   AuditUserPermissionsQuery,
   GetComplianceReportQuery,
-  ListSecurityEventsQuery,
-  GetSecurityMetricsQuery,
 } from '../../application/queries';
+
 import {
   CreateApiKeyCommand,
+  CreateSecurityEventCommand,
   ResolveViolationCommand,
   LogPermissionCheckCommand,
   CreateViolationCommand,
@@ -22,6 +24,8 @@ import {
 import {
   ListApiKeysHandler,
   CreateApiKeyHandler,
+  ListSecurityEventsHandler,
+  GetSecurityMetricsHandler,
   GetPermissionAnalyticsHandler,
   GetViolationsHandler,
   AuditUserPermissionsHandler,
@@ -29,9 +33,7 @@ import {
   ResolveViolationHandler,
   LogPermissionCheckHandler,
   CreateViolationHandler,
-  ListSecurityEventsHandler,
   UpdateSecurityEventHandler,
-  GetSecurityMetricsHandler,
 } from '../../application/handlers';
 
 /**
@@ -390,7 +392,7 @@ export class SecurityApiController {
         );
       }
 
-      const query = new ListSecurityEventsQuery({
+      const query = new GetSecurityEventsQuery({
         organizationId,
         page: Math.floor(offset / limit) + 1,
         limit,

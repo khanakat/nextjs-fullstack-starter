@@ -3,8 +3,10 @@
  * Placeholder to prevent TypeScript compilation errors
  */
 export class OAuthService {
-  static async connect() { return { success: true, connectionId: 'temp-id' }; }
-  static async revokeConnection() { return { success: true }; }
+  static async connect() { return { success: true, connectionId: 'temp-id', error: undefined }; }
+  static async revokeConnection(connectionId: string, organizationId: string) {
+    return { success: true, error: undefined };
+  }
   static async getAuthorizationUrl(provider: any, config: any, organizationId: string, userId: string) {
     return {
       authUrl: 'https://example.com/oauth',
@@ -12,10 +14,11 @@ export class OAuthService {
       integrationId: 'temp-integration-id'
     };
   }
-  static async handleCallback(provider: any, code: string, state: string) {
+  static async handleCallback(provider: any, code: string, state: string, organizationId?: string) {
     return {
       success: true,
-      connectionId: 'temp-connection-id'
+      connectionId: 'temp-connection-id',
+      error: undefined
     };
   }
 }

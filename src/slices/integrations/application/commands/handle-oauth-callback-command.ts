@@ -5,7 +5,7 @@ import { Command } from '@/shared/application/base';
  * Placeholder to prevent TypeScript compilation errors
  */
 export class HandleOAuthCallbackCommand extends Command {
-  constructor(public props: any) {
+  constructor(public props: any, public userId?: string) {
     super();
   }
 }

@@ -18,7 +18,7 @@ import { DeleteDocumentCommand } from '../../../../shared/application/search/com
 import { CreateIndexCommand } from '../../../../shared/application/search/commands/create-index.command';
 import { DeleteIndexCommand } from '../../../../shared/application/search/commands/delete-index.command';
 import { BulkIndexDocumentsCommand } from '../../../../shared/application/search/commands/bulk-index-documents.command';
-import { SearchQuery as SearchQry } from '../../../../shared/application/search/queries/search.query';
+import { PerformSearchQuery as SearchQry } from '../../../../shared/application/search/queries/search.query';
 import { GetDocumentQuery } from '../../../../shared/application/search/queries/get-document.query';
 import { GetIndexQuery } from '../../../../shared/application/search/queries/get-index.query';
 import { ListIndicesQuery } from '../../../../shared/application/search/queries/list-indices.query';
@@ -120,8 +120,8 @@ export class SearchApiRoute {
 
       return NextResponse.json(
         {
-          id: result.value.id.value,
-          indexName: result.value.indexName.value,
+          id: result.value.id,
+          indexName: result.value.indexName.value.value,
           data: result.value.data,
         },
         { status: 201 }
@@ -158,8 +158,8 @@ export class SearchApiRoute {
       }
 
       return NextResponse.json({
-        id: result.value.id.value,
-        indexName: result.value.indexName.value,
+        id: result.value.id,
+        indexName: result.value.indexName.value.value,
         data: result.value.data,
       });
     } catch (error) {
@@ -227,8 +227,8 @@ export class SearchApiRoute {
       }
 
       return NextResponse.json({
-        id: result.value.id.value,
-        indexName: result.value.indexName.value,
+        id: result.value.id,
+        indexName: result.value.indexName.value.value,
         data: result.value.data,
         indexedAt: result.value.indexedAt?.toISOString(),
         updatedAt: result.value.updatedAt.toISOString(),
@@ -266,8 +266,8 @@ export class SearchApiRoute {
       return NextResponse.json({
         successful: result.value.length,
         documents: result.value.map((doc) => ({
-          id: doc.id.value,
-          indexName: doc.indexName.value,
+          id: doc.id,
+          indexName: doc.indexName.value.value,
         })),
       });
     } catch (error) {

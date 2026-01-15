@@ -27,7 +27,7 @@ export class PrismaCommentRepository implements ICommentRepository {
 
       return Result.success<void>(undefined);
     } catch (error) {
-      return Result.failure<void>(`Failed to save comment: ${error}`);
+      return Result.failure<void>(new Error(`Failed to save comment: ${error}`));
     }
   }
 
@@ -41,9 +41,10 @@ export class PrismaCommentRepository implements ICommentRepository {
         return Result.success<Comment | null>(null);
       }
 
-      return this.toDomainModel(model);
+      const comment = await this.toDomainModel(model);
+      return Result.success<Comment | null>(comment);
     } catch (error) {
-      return Result.failure<Comment | null>(`Failed to find comment: ${error}`);
+      return Result.failure<Comment | null>(new Error(`Failed to find comment: ${error}`));
     }
   }
 
@@ -72,7 +73,7 @@ export class PrismaCommentRepository implements ICommentRepository {
         hasMore: offset + limit < total,
       });
     } catch (error) {
-      return Result.failure<CommentSearchResult>(`Failed to find comments: ${error}`);
+      return Result.failure<CommentSearchResult>(new Error(`Failed to find comments: ${error}`));
     }
   }
 
@@ -88,7 +89,7 @@ export class PrismaCommentRepository implements ICommentRepository {
 
       return Result.success<Comment[]>(comments);
     } catch (error) {
-      return Result.failure<Comment[]>(`Failed to find comments: ${error}`);
+      return Result.failure<Comment[]>(new Error(`Failed to find comments: ${error}`));
     }
   }
 
@@ -114,7 +115,7 @@ export class PrismaCommentRepository implements ICommentRepository {
         hasMore: offset + limit < total,
       });
     } catch (error) {
-      return Result.failure<CommentSearchResult>(`Failed to find comments: ${error}`);
+      return Result.failure<CommentSearchResult>(new Error(`Failed to find comments: ${error}`));
     }
   }
 
@@ -133,7 +134,7 @@ export class PrismaCommentRepository implements ICommentRepository {
 
       return Result.success<Comment[]>(comments);
     } catch (error) {
-      return Result.failure<Comment[]>(`Failed to find comments: ${error}`);
+      return Result.failure<Comment[]>(new Error(`Failed to find comments: ${error}`));
     }
   }
 
@@ -158,7 +159,7 @@ export class PrismaCommentRepository implements ICommentRepository {
 
       return Result.success<Comment[]>(comments);
     } catch (error) {
-      return Result.failure<Comment[]>(`Failed to find comments: ${error}`);
+      return Result.failure<Comment[]>(new Error(`Failed to find comments: ${error}`));
     }
   }
 
@@ -202,7 +203,7 @@ export class PrismaCommentRepository implements ICommentRepository {
         hasMore: offset + limit < total,
       });
     } catch (error) {
-      return Result.failure<CommentSearchResult>(`Failed to search comments: ${error}`);
+      return Result.failure<CommentSearchResult>(new Error(`Failed to search comments: ${error}`));
     }
   }
 
@@ -214,7 +215,7 @@ export class PrismaCommentRepository implements ICommentRepository {
 
       return Result.success<void>(undefined);
     } catch (error) {
-      return Result.failure<void>(`Failed to delete comment: ${error}`);
+      return Result.failure<void>(new Error(`Failed to delete comment: ${error}`));
     }
   }
 
@@ -242,7 +243,7 @@ export class PrismaCommentRepository implements ICommentRepository {
 
       return Result.success<number>(total);
     } catch (error) {
-      return Result.failure<number>(`Failed to count comments: ${error}`);
+      return Result.failure<number>(new Error(`Failed to count comments: ${error}`));
     }
   }
 
@@ -254,7 +255,7 @@ export class PrismaCommentRepository implements ICommentRepository {
 
       return Result.success<boolean>(count > 0);
     } catch (error) {
-      return Result.failure<boolean>(`Failed to check comment existence: ${error}`);
+      return Result.failure<boolean>(new Error(`Failed to check comment existence: ${error}`));
     }
   }
 
@@ -271,9 +272,10 @@ export class PrismaCommentRepository implements ICommentRepository {
         return Result.success<Comment | null>(null);
       }
 
-      return this.toDomainModel(model);
+      const comment = await this.toDomainModel(model);
+      return Result.success<Comment | null>(comment);
     } catch (error) {
-      return Result.failure<Comment | null>(`Failed to get comment thread: ${error}`);
+      return Result.failure<Comment | null>(new Error(`Failed to get comment thread: ${error}`));
     }
   }
 
@@ -320,6 +322,7 @@ export class PrismaCommentRepository implements ICommentRepository {
     return Comment.reconstitute(
       CommentId.create(model.id),
       {
+        id: CommentId.create(model.id),
         documentId: UniqueId.create(model.documentId),
         authorId: model.authorId,
         authorName: model.authorName,

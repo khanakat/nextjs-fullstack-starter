@@ -235,4 +235,17 @@ export class ReportStyling extends ValueObject<ReportStylingProps> {
   public isLightTheme(): boolean {
     return this._value.theme === 'light';
   }
+
+  /**
+   * Converts the styling to a plain JSON object
+   */
+  public toJSON(): Record<string, any> {
+    return {
+      theme: this.theme,
+      primaryColor: this.primaryColor,
+      secondaryColor: this.secondaryColor,
+      fontFamily: this.fontFamily,
+      fontSize: this.fontSize,
+    };
+  }
 }

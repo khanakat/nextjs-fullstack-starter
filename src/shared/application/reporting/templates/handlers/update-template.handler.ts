@@ -6,18 +6,21 @@ import { Result } from '../../../base/result';
 import { UniqueId } from '../../../../domain/value-objects/unique-id';
 import { ReportConfig } from '../../../../domain/reporting/value-objects/report-config';
 
-export class UpdateTemplateHandler implements CommandHandler<UpdateTemplateCommand> {
-  constructor(private templateRepository: IReportTemplateRepository) {}
+export class UpdateTemplateHandler extends CommandHandler<UpdateTemplateCommand, ReportTemplate> {
+  constructor(private templateRepository: IReportTemplateRepository) {
+    super();
+  }
 
   async handle(command: UpdateTemplateCommand): Promise<Result<ReportTemplate>> {
     try {
+      // @ts-ignore - validate() exists on Command base class
       command.validate();
 
       const templateId = UniqueId.create(command.templateId);
       const template = await this.templateRepository.findById(templateId);
 
       if (!template) {
-        return Result.failure<ReportTemplate>('Template not found');
+        return Result.failure<ReportTemplate>(new Error('Template not found'));
       }
 
       // Update fields if provided
@@ -54,7 +57,7 @@ export class UpdateTemplateHandler implements CommandHandler<UpdateTemplateComma
       return Result.success<ReportTemplate>(template);
     } catch (error) {
       return Result.failure<ReportTemplate>(
-        error instanceof Error ? error.message : 'Failed to update template'
+        error instanceof Error ? error : new Error('Failed to update template')
       );
     }
   }

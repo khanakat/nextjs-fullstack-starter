@@ -10,7 +10,7 @@ import { Result } from '../../../application/base/result';
  * Handles data persistence for Report aggregate using Prisma ORM
  */
 export class PrismaReportRepository implements IReportRepository {
-  async save(report: Report): Promise<Result<void>> {
+  async save(report: Report): Promise<void> {
     const reportData = this.toPrismaModel(report);
 
     try {
@@ -22,10 +22,8 @@ export class PrismaReportRepository implements IReportRepository {
           ...reportData,
         },
       });
-
-      return Result.success<void>(undefined);
     } catch (error) {
-      return Result.failure<void>(`Failed to save report: ${error}`);
+      throw new Error(`Failed to save report: ${error}`);
     }
   }
 
@@ -278,15 +276,13 @@ export class PrismaReportRepository implements IReportRepository {
     return count > 0;
   }
 
-  async delete(id: UniqueId): Promise<Result<void>> {
+  async delete(id: UniqueId): Promise<void> {
     try {
       await prisma.report.delete({
         where: { id: id.id },
       });
-
-      return Result.success<void>(undefined);
     } catch (error) {
-      return Result.failure<void>(`Failed to delete report: ${error}`);
+      throw new Error(`Failed to delete report: ${error}`);
     }
   }
 
@@ -418,7 +414,7 @@ export class PrismaReportRepository implements IReportRepository {
         description: model.description,
         config,
         content: model.content,
-        status: ReportStatus.fromValue(model.status),
+        status: ReportStatus.fromString(model.status),
         isPublic: model.isPublic,
         templateId: model.templateId ? UniqueId.create(model.templateId) : undefined,
         createdBy: UniqueId.create(model.createdBy),

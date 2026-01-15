@@ -63,10 +63,12 @@ export class Comment extends AggregateRoot<CommentId> {
     const comment = new Comment(commentId, commentProps);
 
     comment.addDomainEvent(
-      new CommentCreatedEvent(commentId.id, {
+      new CommentCreatedEvent({
+        commentId: commentId.id,
         documentId: props.documentId.id,
         authorId: props.authorId,
         parentId: props.parentId?.id,
+        occurredAt: now,
       })
     );
 
@@ -166,10 +168,12 @@ export class Comment extends AggregateRoot<CommentId> {
     this.props.updatedAt = new Date();
 
     this.addDomainEvent(
-      new CommentUpdatedEvent(this.id.id, {
+      new CommentUpdatedEvent({
+        commentId: this.id.id,
         field: 'content',
         oldValue: oldContent,
         newValue: newContent,
+        occurredAt: new Date(),
       })
     );
   }
@@ -183,8 +187,10 @@ export class Comment extends AggregateRoot<CommentId> {
     this.props.updatedAt = new Date();
 
     this.addDomainEvent(
-      new CommentResolvedEvent(this.id.id, {
+      new CommentResolvedEvent({
+        commentId: this.id.id,
         documentId: this.props.documentId.id,
+        occurredAt: new Date(),
       })
     );
   }
@@ -218,9 +224,11 @@ export class Comment extends AggregateRoot<CommentId> {
     this.props.updatedAt = new Date();
 
     this.addDomainEvent(
-      new CommentReactionAddedEvent(this.id.id, {
+      new CommentReactionAddedEvent({
+        commentId: this.id.id,
         emoji: reaction.emoji,
         userId: reaction.userId,
+        occurredAt: new Date(),
       })
     );
   }
@@ -250,9 +258,11 @@ export class Comment extends AggregateRoot<CommentId> {
     this.props.updatedAt = new Date();
 
     this.addDomainEvent(
-      new CommentReactionRemovedEvent(this.id.id, {
+      new CommentReactionRemovedEvent({
+        commentId: this.id.id,
         emoji,
         userId,
+        occurredAt: new Date(),
       })
     );
   }
@@ -267,9 +277,11 @@ export class Comment extends AggregateRoot<CommentId> {
     this.props.updatedAt = new Date();
 
     this.addDomainEvent(
-      new CommentDeletedEvent(this.id.id, {
+      new CommentDeletedEvent({
+        commentId: this.id.id,
         documentId: this.props.documentId.id,
         softDelete: true,
+        occurredAt: new Date(),
       })
     );
   }
@@ -280,9 +292,11 @@ export class Comment extends AggregateRoot<CommentId> {
     }
 
     this.addDomainEvent(
-      new CommentDeletedEvent(this.id.id, {
+      new CommentDeletedEvent({
+        commentId: this.id.id,
         documentId: this.props.documentId.id,
         softDelete: false,
+        occurredAt: new Date(),
       })
     );
   }

@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { CommandHandler, Result } from '@/shared/application/base';
+import { QueryHandler, Result } from '@/shared/application/base';
 import { GetTestHistoryQuery } from '../queries/get-test-history-query';
 import { ConnectionTestService } from '../../../../api/services/integrations/ConnectionTestService';
 import { db } from '@/lib/db';
@@ -8,7 +8,7 @@ import { db } from '@/lib/db';
  * Handler for getting test history
  */
 @injectable()
-export class GetTestHistoryHandler extends CommandHandler<GetTestHistoryQuery, Result<any>> {
+export class GetTestHistoryHandler extends QueryHandler<GetTestHistoryQuery, Result<any>> {
   async handle(query: GetTestHistoryQuery): Promise<Result<any>> {
     const { integrationId, connectionId, limit = 50 } = query.props;
 

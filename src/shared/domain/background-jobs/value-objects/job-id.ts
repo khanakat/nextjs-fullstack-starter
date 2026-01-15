@@ -1,4 +1,4 @@
-import { ValueObject } from '../../base/value-object';
+import { ValueObject } from '@/shared/domain/base';
 
 /**
  * Job ID Value Object
@@ -9,10 +9,13 @@ export class JobId extends ValueObject<string> {
     super(value);
   }
 
-  public static create(value: string): JobId {
+  protected validate(value: string): void {
     if (!value || value.trim().length === 0) {
       throw new Error('Job ID cannot be empty');
     }
+  }
+
+  public static create(value: string): JobId {
     return new JobId(value);
   }
 

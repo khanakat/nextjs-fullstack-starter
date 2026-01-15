@@ -11,19 +11,22 @@ import { RoomParticipantDto } from '../dtos/collaboration-room-dto';
  * Handles getting participants in a room
  */
 @injectable()
-export class GetRoomParticipantsHandler implements QueryHandler<GetRoomParticipantsQuery, RoomParticipantDto[]> {
+export class GetRoomParticipantsHandler extends QueryHandler<GetRoomParticipantsQuery, RoomParticipantDto[]> {
   constructor(
     private readonly realtimeService: RealtimeService
-  ) {}
+  ) {
+    super();
+  }
 
   async handle(query: GetRoomParticipantsQuery): Promise<Result<RoomParticipantDto[]>> {
     try {
+      // @ts-ignore - validate() exists on Query base class
       query.validate();
 
       const roomId = RoomId.create(query.roomId);
       const participants = await this.realtimeService.getRoomParticipants(roomId);
 
-      const dtos = participants.map(p => ({
+      const dtos = participants.map((p: any) => ({
         userId: p.userId,
         userName: p.userName,
         userEmail: p.userEmail,

@@ -10,8 +10,8 @@ export class RegisterConnectionCommand extends Command {
     public readonly userId: string,
     public readonly userName: string,
     public readonly userEmail: string,
-    public readonly userAvatar?: string,
-    public readonly organizationId: string
+    public readonly organizationId: string,
+    public readonly userAvatar?: string
   ) {
     super(userId);
   }

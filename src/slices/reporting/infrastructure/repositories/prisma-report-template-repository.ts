@@ -274,6 +274,7 @@ export class PrismaReportTemplateRepository implements IReportTemplateRepository
         layout,
         styling,
         isSystem: templateData.isSystem ?? false,
+        isPublic: templateData.isPublic ?? true,
         isActive: configData.isActive ?? templateData.isPublic ?? true,
         tags: Array.isArray(configData.tags) ? configData.tags : [],
         previewImageUrl: templateData.previewUrl || configData.previewImageUrl,

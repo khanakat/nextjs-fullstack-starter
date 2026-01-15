@@ -5,11 +5,11 @@ export interface DeleteReportCommandProps {
   reportId: string;
 }
 
-export class DeleteReportCommand extends Command<DeleteReportCommandProps> {
+export class DeleteReportCommand extends Command {
   readonly reportId: UniqueId;
 
-  constructor(props: DeleteReportCommandProps) {
-    super(props);
+  constructor(props: DeleteReportCommandProps, userId?: string) {
+    super(userId);
     this.reportId = UniqueId.create(props.reportId);
   }
 }

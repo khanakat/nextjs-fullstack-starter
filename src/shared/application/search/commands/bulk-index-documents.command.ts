@@ -1,9 +1,9 @@
-import { Command } from '../../command.base';
+import { Command } from '../../base/command';
 import { IndexName } from '../../../domain/search/index-name.vo';
 
 export interface BulkIndexDocument {
   documentId?: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 export interface BulkIndexDocumentsCommandProps {
@@ -11,12 +11,12 @@ export interface BulkIndexDocumentsCommandProps {
   documents: BulkIndexDocument[];
 }
 
-export class BulkIndexDocumentsCommand extends Command<BulkIndexDocumentsCommandProps> {
+export class BulkIndexDocumentsCommand extends Command {
   readonly indexName: IndexName;
   readonly documents: BulkIndexDocument[];
 
-  constructor(props: BulkIndexDocumentsCommandProps) {
-    super(props);
+  constructor(props: BulkIndexDocumentsCommandProps, userId?: string) {
+    super(userId);
     this.indexName = IndexName.create(props.indexName);
     this.documents = props.documents;
 

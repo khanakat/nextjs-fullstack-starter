@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { BulkDeleteExportJobsCommand } from '../../commands/bulk-delete-export-jobs-command';
+import { BulkDeleteExportJobsCommand } from '@/slices/reporting/application/commands';
 import { ExportJob, ExportJobStatus } from '../../domain/entities/export-job';
 import type { IExportJobRepository } from '../../domain/repositories/export-job-repository';
 import { Result } from '@/shared/application/base';

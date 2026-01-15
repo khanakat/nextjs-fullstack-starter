@@ -13,9 +13,13 @@ export class CommentReactionRemovedEvent extends DomainEvent {
   readonly userId: string;
 
   constructor(props: CommentReactionRemovedEventProps) {
-    super(props.occurredAt);
+    super();
     this.commentId = props.commentId;
     this.emoji = props.emoji;
     this.userId = props.userId;
+  }
+
+  getEventName(): string {
+    return 'CommentReactionRemoved';
   }
 }

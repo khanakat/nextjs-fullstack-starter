@@ -1,4 +1,4 @@
-import { ValueObject } from '../../base/value-object';
+import { ValueObject } from '@/shared/domain/base';
 
 export interface CommentReactionProps {
   emoji: string;
@@ -6,6 +6,10 @@ export interface CommentReactionProps {
 }
 
 export class CommentReaction extends ValueObject<CommentReactionProps> {
+  get props(): CommentReactionProps {
+    return this.value;
+  }
+
   readonly emoji: string;
   readonly userId: string;
 
@@ -15,21 +19,23 @@ export class CommentReaction extends ValueObject<CommentReactionProps> {
     this.userId = props.userId;
   }
 
-  static create(emoji: string, userId: string): CommentReaction {
-    if (!emoji || emoji.trim().length === 0) {
+  protected validate(value: CommentReactionProps): void {
+    if (!value.emoji || value.emoji.trim().length === 0) {
       throw new Error('Emoji cannot be empty');
     }
 
-    if (!userId || userId.trim().length === 0) {
+    if (!value.userId || value.userId.trim().length === 0) {
       throw new Error('User ID cannot be empty');
     }
 
     // Validate emoji (basic validation for common emojis)
     const emojiRegex = /^[\u{1F600}-\u{1F64F}]|[\u{2702}-\u{27B0}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{1F300}-\u{1F5FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E0}-\u{1F1FF}]/u;
-    if (!emojiRegex.test(emoji)) {
+    if (!emojiRegex.test(value.emoji)) {
       throw new Error('Invalid emoji format');
     }
+  }
 
+  static create(emoji: string, userId: string): CommentReaction {
     return new CommentReaction({ emoji: emoji.trim(), userId: userId.trim() });
   }
 

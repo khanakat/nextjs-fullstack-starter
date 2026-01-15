@@ -1,4 +1,4 @@
-import { ValueObject } from '../value-object.base';
+import { ValueObject } from '@/shared/domain/base';
 
 export interface SearchQueryProps {
   query: string;
@@ -9,6 +9,10 @@ export interface SearchQueryProps {
 }
 
 export class SearchQuery extends ValueObject<SearchQueryProps> {
+  get props(): SearchQueryProps {
+    return this.value;
+  }
+
   get query(): string {
     return this.props.query;
   }
@@ -33,15 +37,21 @@ export class SearchQuery extends ValueObject<SearchQueryProps> {
     super(props);
   }
 
-  static create(props: SearchQueryProps): SearchQuery {
-    if (props.page !== undefined && props.page < 1) {
+  protected validate(value: SearchQueryProps): void {
+    if (!value.query || value.query.trim().length === 0) {
+      throw new Error('Search query cannot be empty');
+    }
+
+    if (value.page !== undefined && value.page < 1) {
       throw new Error('Page number must be greater than 0');
     }
 
-    if (props.limit !== undefined && (props.limit < 1 || props.limit > 100)) {
+    if (value.limit !== undefined && (value.limit < 1 || value.limit > 100)) {
       throw new Error('Limit must be between 1 and 100');
     }
+  }
 
+  static create(props: SearchQueryProps): SearchQuery {
     return new SearchQuery({
       query: props.query,
       filters: props.filters,

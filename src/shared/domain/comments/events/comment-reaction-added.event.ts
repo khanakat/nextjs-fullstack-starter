@@ -13,9 +13,13 @@ export class CommentReactionAddedEvent extends DomainEvent {
   readonly userId: string;
 
   constructor(props: CommentReactionAddedEventProps) {
-    super(props.occurredAt);
+    super();
     this.commentId = props.commentId;
     this.emoji = props.emoji;
     this.userId = props.userId;
+  }
+
+  getEventName(): string {
+    return 'CommentReactionAdded';
   }
 }

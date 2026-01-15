@@ -4,26 +4,26 @@ import { UniqueId } from '../../../domain/value-objects/unique-id';
 export interface CreateReportCommandProps {
   title: string;
   description?: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   isPublic?: boolean;
   templateId?: string;
   createdBy: string;
   organizationId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
-export class CreateReportCommand extends Command<CreateReportCommandProps> {
+export class CreateReportCommand extends Command {
   readonly title: string;
   readonly description?: string;
-  readonly config: Record<string, any>;
+  readonly config: Record<string, unknown>;
   readonly isPublic: boolean;
   readonly templateId?: UniqueId;
   readonly createdBy: UniqueId;
   readonly organizationId?: UniqueId;
-  readonly metadata?: Record<string, any>;
+  readonly metadata?: Record<string, unknown>;
 
-  constructor(props: CreateReportCommandProps) {
-    super(props);
+  constructor(props: CreateReportCommandProps, userId?: string) {
+    super(userId);
     this.title = props.title;
     this.description = props.description;
     this.config = props.config;

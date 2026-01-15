@@ -1,24 +1,24 @@
-import { Query } from '../../query.base';
+import { Query } from '../../base/query';
 import { IndexName } from '../../../domain/search/index-name.vo';
-import { SearchQuery } from '../../../domain/search/search-query.vo';
+import { SearchQuery as SearchQueryVO } from '../../../domain/search/search-query.vo';
 
-export interface SearchQueryProps {
+export interface PerformSearchQueryProps {
   indexName: string;
   query: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   sort?: Array<{ field: string; order: 'asc' | 'desc' }>;
   page?: number;
   limit?: number;
 }
 
-export class SearchQuery extends Query<SearchQueryProps> {
+export class PerformSearchQuery extends Query {
   readonly indexName: IndexName;
-  readonly searchQuery: SearchQuery;
+  readonly searchQuery: SearchQueryVO;
 
-  constructor(props: SearchQueryProps) {
-    super(props);
+  constructor(props: PerformSearchQueryProps, userId?: string) {
+    super(userId);
     this.indexName = IndexName.create(props.indexName);
-    this.searchQuery = SearchQuery.create({
+    this.searchQuery = SearchQueryVO.create({
       query: props.query,
       filters: props.filters,
       sort: props.sort,

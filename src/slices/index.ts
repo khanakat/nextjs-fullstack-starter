@@ -8,5 +8,5 @@ export * from './reports';
 export * from './notifications';
 export * from './files';
 export * from './settings';
-export * from './audit';
+// Note: './audit' omitted to avoid duplicate exports with './security'
 export * from './security';

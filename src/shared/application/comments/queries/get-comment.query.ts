@@ -5,11 +5,11 @@ export interface GetCommentQueryProps {
   commentId: string;
 }
 
-export class GetCommentQuery extends Query<GetCommentQueryProps> {
+export class GetCommentQuery extends Query {
   readonly commentId: CommentId;
 
-  constructor(props: GetCommentQueryProps) {
-    super(props);
+  constructor(props: GetCommentQueryProps, userId?: string) {
+    super(userId);
     this.commentId = CommentId.create(props.commentId);
   }
 }

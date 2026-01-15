@@ -1,6 +1,6 @@
-import { Entity } from '../entity.base';
-import { SearchId } from './search-id.vo';
-import { Result } from '../result';
+import { Entity } from '../base/entity';
+import { SearchId } from '@/shared/domain/search/search-id.vo';
+import { Result } from '../../application/base/result';
 
 export interface SearchSuggestionProps {
   id: SearchId;
@@ -10,53 +10,58 @@ export interface SearchSuggestionProps {
   createdAt: Date;
 }
 
-export class SearchSuggestion extends Entity<SearchSuggestionProps> {
-  get id(): SearchId {
-    return this.props.id;
+export class SearchSuggestion extends Entity<string> {
+  private _props: SearchSuggestionProps;
+
+  get searchId(): SearchId {
+    return this._props.id;
   }
 
   get text(): string {
-    return this.props.text;
+    return this._props.text;
   }
 
   get weight(): number {
-    return this.props.weight || 1.0;
+    return this._props.weight || 1.0;
   }
 
   get context(): Record<string, any> | undefined {
-    return this.props.context;
+    return this._props.context;
   }
 
   get createdAt(): Date {
-    return this.props.createdAt;
+    return this._props.createdAt;
   }
 
-  private constructor(props: SearchSuggestionProps) {
-    super(props);
+  private constructor(id: string, props: SearchSuggestionProps) {
+    super(id);
+    this._props = props;
   }
 
   static create(props: SearchSuggestionProps): Result<SearchSuggestion> {
     if (!props.text || props.text.trim().length === 0) {
-      return Result.failure<SearchSuggestion>('Suggestion text cannot be empty');
+      return Result.failure<SearchSuggestion>(new Error('Suggestion text cannot be empty'));
     }
 
     if (props.text.length > 100) {
-      return Result.failure<SearchSuggestion>('Suggestion text cannot exceed 100 characters');
+      return Result.failure<SearchSuggestion>(new Error('Suggestion text cannot exceed 100 characters'));
     }
 
     if (props.weight !== undefined && (props.weight < 0 || props.weight > 1)) {
-      return Result.failure<SearchSuggestion>('Weight must be between 0 and 1');
+      return Result.failure<SearchSuggestion>(new Error('Weight must be between 0 and 1'));
     }
 
-    return Result.success<SearchSuggestion>(new SearchSuggestion(props));
+    // @ts-ignore - SearchId extends UniqueId which has .id property
+    const id = (props.id as any).id;
+    return Result.success<SearchSuggestion>(new SearchSuggestion(id, props));
   }
 
   updateWeight(weight: number): Result<SearchSuggestion> {
     if (weight < 0 || weight > 1) {
-      return Result.failure<SearchSuggestion>('Weight must be between 0 and 1');
+      return Result.failure<SearchSuggestion>(new Error('Weight must be between 0 and 1'));
     }
 
-    this.props.weight = weight;
+    this._props.weight = weight;
 
     return Result.success<SearchSuggestion>(this);
   }

@@ -1,5 +1,5 @@
 import { Command } from '../../base/command';
-import { RoomType } from '../../../shared/domain/realtime/value-objects/room-type';
+import { RoomType } from '@/shared/domain/realtime/value-objects/room-type';
 
 /**
  * Join Room Command

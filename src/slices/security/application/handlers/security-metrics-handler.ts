@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import { Result } from '@/shared/application/base/result';
-import { GetSecurityMetricsQuery } from '../../queries/security-metrics-queries';
+import { GetSecurityMetricsQuery } from '@/slices/security/application/queries/security-metrics-queries';
 
 /**
  * Get Security Metrics Handler

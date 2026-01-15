@@ -1,6 +1,6 @@
-import { SearchSuggestion } from '../search-suggestion.entity';
-import { SearchId } from '../search-id.vo';
-import { Result } from '../../result';
+import { SearchSuggestion } from '@/shared/domain/search/search-suggestion.entity';
+import { SearchId } from '@/shared/domain/search/search-id.vo';
+import { Result } from '@/shared/application/base/result';
 
 export interface ISearchSuggestionRepository {
   save(suggestion: SearchSuggestion): Promise<Result<SearchSuggestion>>;

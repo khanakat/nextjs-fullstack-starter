@@ -4,8 +4,10 @@ import { ICommentRepository } from '../../../domain/comments/repositories/icomme
 import { Comment } from '../../../domain/comments/entities/comment.entity';
 import { Result } from '../../base/result';
 
-export class GetThreadHandler implements QueryHandler<GetThreadQuery, Comment | null> {
-  constructor(private commentRepository: ICommentRepository) {}
+export class GetThreadHandler extends QueryHandler<GetThreadQuery, Comment | null> {
+  constructor(private commentRepository: ICommentRepository) {
+    super();
+  }
 
   async handle(query: GetThreadQuery): Promise<Result<Comment | null>> {
     return this.commentRepository.getThread(query.commentId);

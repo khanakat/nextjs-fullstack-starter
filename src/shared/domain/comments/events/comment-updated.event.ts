@@ -3,22 +3,26 @@ import { DomainEvent } from '../../base/domain-event';
 export interface CommentUpdatedEventProps {
   commentId: string;
   field: string;
-  oldValue: any;
-  newValue: any;
+  oldValue: unknown;
+  newValue: unknown;
   occurredAt: Date;
 }
 
 export class CommentUpdatedEvent extends DomainEvent {
   readonly commentId: string;
   readonly field: string;
-  readonly oldValue: any;
-  readonly newValue: any;
+  readonly oldValue: unknown;
+  readonly newValue: unknown;
 
   constructor(props: CommentUpdatedEventProps) {
-    super(props.occurredAt);
+    super();
     this.commentId = props.commentId;
     this.field = props.field;
     this.oldValue = props.oldValue;
     this.newValue = props.newValue;
+  }
+
+  getEventName(): string {
+    return 'CommentUpdated';
   }
 }

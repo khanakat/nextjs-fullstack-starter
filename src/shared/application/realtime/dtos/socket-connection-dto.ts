@@ -11,11 +11,11 @@ export class SocketConnectionDto extends Dto {
     public readonly userId: string,
     public readonly userName: string,
     public readonly userEmail: string,
-    public readonly userAvatar?: string,
     public readonly organizationId: string,
     public readonly status: string,
-    public readonly currentRoom?: string,
     public readonly lastActivityAt: Date,
+    public readonly userAvatar?: string,
+    public readonly currentRoom?: string,
     updatedAt?: Date
   ) {
     super(id, createdAt, updatedAt);

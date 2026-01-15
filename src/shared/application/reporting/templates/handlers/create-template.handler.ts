@@ -5,11 +5,14 @@ import { ReportTemplate } from '../../../../domain/reporting/entities/report-tem
 import { Result } from '../../../base/result';
 import { toTemplateDto } from '../dto/template.dto';
 
-export class CreateTemplateHandler implements CommandHandler<CreateTemplateCommand> {
-  constructor(private templateRepository: IReportTemplateRepository) {}
+export class CreateTemplateHandler extends CommandHandler<CreateTemplateCommand, ReportTemplate> {
+  constructor(private templateRepository: IReportTemplateRepository) {
+    super();
+  }
 
   async handle(command: CreateTemplateCommand): Promise<Result<ReportTemplate>> {
     try {
+      // @ts-ignore - validate() exists on Command base class
       command.validate();
 
       // Create the template using the factory method
@@ -34,7 +37,7 @@ export class CreateTemplateHandler implements CommandHandler<CreateTemplateComma
       return Result.success<ReportTemplate>(template);
     } catch (error) {
       return Result.failure<ReportTemplate>(
-        error instanceof Error ? error.message : 'Failed to create template'
+        error instanceof Error ? error : new Error('Failed to create template')
       );
     }
   }

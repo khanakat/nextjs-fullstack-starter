@@ -270,6 +270,16 @@ export class ReportLayout extends ValueObject<ReportLayoutProps> {
   }
 
   /**
+   * Converts the layout to a plain JSON object
+   */
+  public toJSON(): Record<string, any> {
+    return {
+      components: this.components,
+      grid: this.grid,
+    };
+  }
+
+  /**
    * Creates a default grid layout
    */
   public static createDefault(): ReportLayout {

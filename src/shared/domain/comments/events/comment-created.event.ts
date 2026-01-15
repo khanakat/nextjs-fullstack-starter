@@ -15,10 +15,14 @@ export class CommentCreatedEvent extends DomainEvent {
   readonly parentId?: string;
 
   constructor(props: CommentCreatedEventProps) {
-    super(props.occurredAt);
+    super();
     this.commentId = props.commentId;
     this.documentId = props.documentId;
     this.authorId = props.authorId;
     this.parentId = props.parentId;
+  }
+
+  getEventName(): string {
+    return 'CommentCreated';
   }
 }

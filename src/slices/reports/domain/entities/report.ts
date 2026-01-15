@@ -250,18 +250,16 @@ export class Report {
     return this._domainEvents.length > 0;
   }
 
-  /**
-   * Create a new Report (factory method)
-   */
   static create(props: Omit<ReportProps, 'id' | 'status' | 'createdAt' | 'updatedAt'>): Report {
     const id = ReportId.create();
-    const report = new Report({
+    const reportProps = {
       ...props,
-      id,
+      id: id.getValue(),
       status: ReportStatus.DRAFT,
       createdAt: new Date(),
       updatedAt: new Date(),
-    });
+    } as ReportProps;
+    const report = new Report(reportProps, id);
     report.addDomainEvent(new ReportCreatedEvent(id.getValue(), report.name));
     return report;
   }

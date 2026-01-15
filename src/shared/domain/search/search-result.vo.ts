@@ -1,4 +1,4 @@
-import { ValueObject } from '../value-object.base';
+import { ValueObject } from '@/shared/domain/base';
 
 export interface SearchResultHit {
   id: string;
@@ -17,6 +17,10 @@ export interface SearchResultProps {
 }
 
 export class SearchResult extends ValueObject<SearchResultProps> {
+  get props(): SearchResultProps {
+    return this.value;
+  }
+
   get totalHits(): number {
     return this.props.totalHits;
   }
@@ -45,23 +49,25 @@ export class SearchResult extends ValueObject<SearchResultProps> {
     super(props);
   }
 
-  static create(props: SearchResultProps): SearchResult {
-    if (props.totalHits < 0) {
+  protected validate(value: SearchResultProps): void {
+    if (value.totalHits < 0) {
       throw new Error('Total hits cannot be negative');
     }
 
-    if (props.currentPage < 1) {
+    if (value.currentPage < 1) {
       throw new Error('Current page must be greater than 0');
     }
 
-    if (props.totalPages < 0) {
+    if (value.totalPages < 0) {
       throw new Error('Total pages cannot be negative');
     }
 
-    if (props.executionTime < 0) {
+    if (value.executionTime < 0) {
       throw new Error('Execution time cannot be negative');
     }
+  }
 
+  static create(props: SearchResultProps): SearchResult {
     return new SearchResult(props);
   }
 }

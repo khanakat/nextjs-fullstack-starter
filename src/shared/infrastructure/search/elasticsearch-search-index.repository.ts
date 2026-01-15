@@ -1,7 +1,7 @@
-import { ISearchIndexRepository } from '../../../domain/search/isearch-index.repository';
-import { SearchIndex } from '../../../domain/search/search-index.entity';
-import { IndexName } from '../../../domain/search/index-name.vo';
-import { Result } from '../../../application/base/result';
+import { ISearchIndexRepository } from '@/shared/domain/search/isearch-index.repository';
+import { SearchIndex } from '@/shared/domain/search/search-index.entity';
+import { IndexName } from '@/shared/domain/search/index-name.vo';
+import { Result } from '@/shared/application/base/result';
 
 /**
  * Elasticsearch implementation of ISearchIndexRepository
@@ -12,12 +12,12 @@ export class ElasticsearchSearchIndexRepository implements ISearchIndexRepositor
   private indices: Map<string, SearchIndex> = new Map();
 
   async save(index: SearchIndex): Promise<Result<SearchIndex>> {
-    this.indices.set(index.name.value, index);
+    this.indices.set(index.name.value.value, index);
     return Result.success<SearchIndex>(index);
   }
 
   async findByName(indexName: IndexName): Promise<Result<SearchIndex | null>> {
-    const index = this.indices.get(indexName.value);
+    const index = this.indices.get(indexName.value.value);
     return Result.success<SearchIndex | null>(index || null);
   }
 
@@ -27,12 +27,12 @@ export class ElasticsearchSearchIndexRepository implements ISearchIndexRepositor
   }
 
   async delete(indexName: IndexName): Promise<Result<void>> {
-    this.indices.delete(indexName.value);
+    this.indices.delete(indexName.value.value);
     return Result.success<void>(undefined);
   }
 
   async exists(indexName: IndexName): Promise<Result<boolean>> {
-    const exists = this.indices.has(indexName.value);
+    const exists = this.indices.has(indexName.value.value);
     return Result.success<boolean>(exists);
   }
 }

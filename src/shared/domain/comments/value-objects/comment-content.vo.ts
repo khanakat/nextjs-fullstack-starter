@@ -1,32 +1,33 @@
-import { ValueObject } from '../../base/value-object';
+import { ValueObject } from '@/shared/domain/base';
 
 export interface CommentContentProps {
   value: string;
 }
 
 export class CommentContent extends ValueObject<CommentContentProps> {
-  get value(): string {
-    return this.props.value;
+  get props(): CommentContentProps {
+    return this.value;
   }
 
   private constructor(props: CommentContentProps) {
     super(props);
   }
 
-  static create(content: string): CommentContent {
-    if (!content || content.trim().length === 0) {
+  protected validate(value: CommentContentProps): void {
+    if (!value.value || value.value.trim().length === 0) {
       throw new Error('Comment content cannot be empty');
     }
-
-    if (content.length > 10000) {
+    if (value.value.length > 10000) {
       throw new Error('Comment content cannot exceed 10,000 characters');
     }
+  }
 
+  static create(content: string): CommentContent {
     return new CommentContent({ value: content.trim() });
   }
 
   isDeleted(): boolean {
-    return this.props.value === '[deleted]';
+    return this.value.value === '[deleted]';
   }
 
   markAsDeleted(): CommentContent {

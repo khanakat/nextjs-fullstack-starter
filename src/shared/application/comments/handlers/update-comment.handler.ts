@@ -4,14 +4,16 @@ import { ICommentRepository } from '../../../domain/comments/repositories/icomme
 import { Comment } from '../../../domain/comments/entities/comment.entity';
 import { Result } from '../../base/result';
 
-export class UpdateCommentHandler implements CommandHandler<UpdateCommentCommand> {
-  constructor(private commentRepository: ICommentRepository) {}
+export class UpdateCommentHandler extends CommandHandler<UpdateCommentCommand, Comment> {
+  constructor(private commentRepository: ICommentRepository) {
+    super();
+  }
 
   async handle(command: UpdateCommentCommand): Promise<Result<Comment>> {
     const commentResult = await this.commentRepository.findById(command.commentId);
 
     if (commentResult.isFailure || !commentResult.value) {
-      return Result.failure<Comment>(commentResult.error || 'Comment not found');
+      return Result.failure<Comment>(new Error('Comment not found'));
     }
 
     const comment = commentResult.value;
@@ -32,6 +34,11 @@ export class UpdateCommentHandler implements CommandHandler<UpdateCommentCommand
       comment.updateMetadata(command.metadata);
     }
 
-    return this.commentRepository.save(comment);
+    const saveResult = await this.commentRepository.save(comment);
+    if (saveResult.isFailure) {
+      return Result.failure<Comment>(saveResult.error);
+    }
+
+    return Result.success<Comment>(comment);
   }
 }

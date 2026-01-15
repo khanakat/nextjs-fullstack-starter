@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import { Result } from '@/shared/application/base/result';
-import { ListApiKeysQuery } from '../../queries/api-keys-queries';
-import { ApiKeyDto } from '../../dto';
+import { ListApiKeysQuery } from '@/slices/security/application/queries/api-keys-queries';
+import { ApiKeyDto } from '@/slices/security/application/dto';
 
 /**
  * List API Keys Handler

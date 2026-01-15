@@ -1,4 +1,5 @@
 import { injectable } from 'inversify';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * TODO: Implement ExportsApiController
@@ -7,20 +8,20 @@ import { injectable } from 'inversify';
 @injectable()
 export class ExportsApiController {
   // Placeholder methods
-  async createExport() { return { success: true }; }
-  async createExportJob() { return { success: true }; }
-  async cancelExport() { return { success: true }; }
-  async cancelExportJob() { return { success: true }; }
-  async retryExport() { return { success: true }; }
-  async retryExportJob() { return { success: true }; }
-  async deleteExport() { return { success: true }; }
-  async deleteExportJob() { return { success: true }; }
-  async bulkDeleteExportJobs() { return { success: true }; }
-  async downloadExport() { return { success: true }; }
-  async downloadExportFile() { return { success: true }; }
-  async getExport() { return { success: true }; }
-  async getExportJob() { return { success: true }; }
-  async getExportJobs() { return { success: true }; }
-  async listExports() { return { success: true }; }
-  async generateDirectExport() { return { success: true }; }
+  async createExport(request: NextRequest): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async createExportJob(request: NextRequest): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async cancelExport(request: NextRequest): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async cancelExportJob(request: NextRequest, options: { params: { id: string } }): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async retryExport(request: NextRequest, options: { params: { id: string } }): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async retryExportJob(request: NextRequest, options: { params: { id: string } }): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async deleteExport(request: NextRequest): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async deleteExportJob(request: NextRequest, options: { params: { id: string } }): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async bulkDeleteExportJobs(request: NextRequest): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async downloadExport(request: NextRequest): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async downloadExportFile(request: NextRequest, options: { params: { id: string } }): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async getExport(request: NextRequest, options: { params: { id: string } }): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async getExportJob(request: NextRequest, options: { params: { id: string } }): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async getExportJobs(request: NextRequest): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async listExports(request: NextRequest): Promise<NextResponse> { return NextResponse.json({ success: true }); }
+  async generateDirectExport(request: NextRequest): Promise<NextResponse> { return NextResponse.json({ success: true }); }
 }

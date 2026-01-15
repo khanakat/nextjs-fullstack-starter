@@ -1,7 +1,7 @@
-import { ISearchSuggestionRepository } from '../../../domain/search/isearch-suggestion.repository';
-import { SearchSuggestion } from '../../../domain/search/search-suggestion.entity';
-import { SearchId } from '../../../domain/search/search-id.vo';
-import { Result } from '../../../application/base/result';
+import { ISearchSuggestionRepository } from '@/shared/domain/search/isearch-suggestion.repository';
+import { SearchSuggestion } from '@/shared/domain/search/search-suggestion.entity';
+import { SearchId } from '@/shared/domain/search/search-id.vo';
+import { Result } from '@/shared/application/base/result';
 
 /**
  * In-memory implementation of ISearchSuggestionRepository
@@ -11,12 +11,12 @@ export class InMemorySearchSuggestionRepository implements ISearchSuggestionRepo
   private suggestions: Map<string, SearchSuggestion> = new Map();
 
   async save(suggestion: SearchSuggestion): Promise<Result<SearchSuggestion>> {
-    this.suggestions.set(suggestion.id.value, suggestion);
+    this.suggestions.set(suggestion.id, suggestion);
     return Result.success<SearchSuggestion>(suggestion);
   }
 
   async findById(id: SearchId): Promise<Result<SearchSuggestion | null>> {
-    const suggestion = this.suggestions.get(id.value);
+    const suggestion = this.suggestions.get(id.id);
     return Result.success<SearchSuggestion | null>(suggestion || null);
   }
 
@@ -30,7 +30,7 @@ export class InMemorySearchSuggestionRepository implements ISearchSuggestionRepo
   }
 
   async delete(id: SearchId): Promise<Result<void>> {
-    this.suggestions.delete(id.value);
+    this.suggestions.delete(id.id);
     return Result.success<void>(undefined);
   }
 

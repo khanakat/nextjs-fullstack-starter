@@ -6,8 +6,10 @@ import { CommentContent } from '../../../domain/comments/value-objects/comment-c
 import { CommentPosition } from '../../../domain/comments/value-objects/comment-position.vo';
 import { Result } from '../../base/result';
 
-export class CreateCommentHandler implements CommandHandler<CreateCommentCommand> {
-  constructor(private commentRepository: ICommentRepository) {}
+export class CreateCommentHandler extends CommandHandler<CreateCommentCommand, Comment> {
+  constructor(private commentRepository: ICommentRepository) {
+    super();
+  }
 
   async handle(command: CreateCommentCommand): Promise<Result<Comment>> {
     const content = CommentContent.create(command.content);
@@ -24,10 +26,11 @@ export class CreateCommentHandler implements CommandHandler<CreateCommentCommand
       metadata: command.metadata,
     });
 
-    if (comment.isFailure) {
-      return Result.failure<Comment>(comment.error);
+    const saveResult = await this.commentRepository.save(comment);
+    if (saveResult.isFailure) {
+      return Result.failure<Comment>(saveResult.error);
     }
 
-    return this.commentRepository.save(comment.value);
+    return Result.success<Comment>(comment);
   }
 }

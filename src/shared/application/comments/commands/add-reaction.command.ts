@@ -7,13 +7,13 @@ export interface AddReactionCommandProps {
   userId: string;
 }
 
-export class AddReactionCommand extends Command<AddReactionCommandProps> {
+export class AddReactionCommand extends Command {
   readonly commentId: CommentId;
   readonly emoji: string;
   readonly userId: string;
 
-  constructor(props: AddReactionCommandProps) {
-    super(props);
+  constructor(props: AddReactionCommandProps, userId?: string) {
+    super(userId);
     this.commentId = CommentId.create(props.commentId);
     this.emoji = props.emoji;
     this.userId = props.userId;

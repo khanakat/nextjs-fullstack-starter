@@ -1,4 +1,4 @@
-import { Query } from '../../query.base';
+import { Query } from '../../base/query';
 import { IndexName } from '../../../domain/search/index-name.vo';
 
 export interface GetSuggestionsQueryProps {
@@ -7,13 +7,13 @@ export interface GetSuggestionsQueryProps {
   limit?: number;
 }
 
-export class GetSuggestionsQuery extends Query<GetSuggestionsQueryProps> {
+export class GetSuggestionsQuery extends Query {
   readonly prefix: string;
   readonly indexName?: IndexName;
   readonly limit: number;
 
-  constructor(props: GetSuggestionsQueryProps) {
-    super(props);
+  constructor(props: GetSuggestionsQueryProps, userId?: string) {
+    super(userId);
     this.prefix = props.prefix;
 
     if (!props.prefix || props.prefix.trim().length === 0) {

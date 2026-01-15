@@ -5,11 +5,11 @@ export interface GetThreadQueryProps {
   commentId: string;
 }
 
-export class GetThreadQuery extends Query<GetThreadQueryProps> {
+export class GetThreadQuery extends Query {
   readonly commentId: CommentId;
 
-  constructor(props: GetThreadQueryProps) {
-    super(props);
+  constructor(props: GetThreadQueryProps, userId?: string) {
+    super(userId);
     this.commentId = CommentId.create(props.commentId);
   }
 }

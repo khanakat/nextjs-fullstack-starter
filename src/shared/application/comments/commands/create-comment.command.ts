@@ -15,10 +15,10 @@ export interface CreateCommentCommandProps {
     selection?: { start: number; end: number };
   };
   parentId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
-export class CreateCommentCommand extends Command<CreateCommentCommandProps> {
+export class CreateCommentCommand extends Command {
   readonly documentId: UniqueId;
   readonly authorId: string;
   readonly authorName: string;
@@ -26,10 +26,10 @@ export class CreateCommentCommand extends Command<CreateCommentCommandProps> {
   readonly contentType: 'text' | 'code' | 'suggestion';
   readonly position?: CreateCommentCommandProps['position'];
   readonly parentId?: CommentId;
-  readonly metadata?: Record<string, any>;
+  readonly metadata?: Record<string, unknown>;
 
-  constructor(props: CreateCommentCommandProps) {
-    super(props);
+  constructor(props: CreateCommentCommandProps, userId?: string) {
+    super(userId);
     this.documentId = UniqueId.create(props.documentId);
     this.authorId = props.authorId;
     this.authorName = props.authorName;

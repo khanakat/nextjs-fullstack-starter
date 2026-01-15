@@ -13,9 +13,13 @@ export class CommentDeletedEvent extends DomainEvent {
   readonly softDelete: boolean;
 
   constructor(props: CommentDeletedEventProps) {
-    super(props.occurredAt);
+    super();
     this.commentId = props.commentId;
     this.documentId = props.documentId;
     this.softDelete = props.softDelete;
+  }
+
+  getEventName(): string {
+    return 'CommentDeleted';
   }
 }

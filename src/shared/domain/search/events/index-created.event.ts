@@ -1,4 +1,4 @@
-import { DomainEvent } from '../../domain-event.base';
+import { DomainEvent } from '@/shared/domain/base';
 import { IndexName } from '../index-name.vo';
 
 export interface IndexCreatedEventProps {
@@ -10,7 +10,11 @@ export class IndexCreatedEvent extends DomainEvent {
   readonly indexName: IndexName;
 
   constructor(props: IndexCreatedEventProps) {
-    super(props.occurredAt);
+    super();
     this.indexName = props.indexName;
+  }
+
+  getEventName(): string {
+    return 'IndexCreated';
   }
 }

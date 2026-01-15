@@ -7,13 +7,13 @@ export interface RemoveReactionCommandProps {
   userId: string;
 }
 
-export class RemoveReactionCommand extends Command<RemoveReactionCommandProps> {
+export class RemoveReactionCommand extends Command {
   readonly commentId: CommentId;
   readonly emoji: string;
   readonly userId: string;
 
-  constructor(props: RemoveReactionCommandProps) {
-    super(props);
+  constructor(props: RemoveReactionCommandProps, userId?: string) {
+    super(userId);
     this.commentId = CommentId.create(props.commentId);
     this.emoji = props.emoji;
     this.userId = props.userId;

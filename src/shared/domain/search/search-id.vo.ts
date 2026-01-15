@@ -1,4 +1,4 @@
-import { UniqueId } from '../unique-id/unique-id.vo';
+import { UniqueId } from '../value-objects/unique-id';
 
 export class SearchId extends UniqueId {
   private constructor(value: string) {

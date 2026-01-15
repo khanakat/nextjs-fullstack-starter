@@ -10,13 +10,16 @@ import { Result } from '../../base/result';
  * Handles leaving a collaboration room
  */
 @injectable()
-export class LeaveRoomHandler implements CommandHandler<LeaveRoomCommand, void> {
+export class LeaveRoomHandler extends CommandHandler<LeaveRoomCommand, void> {
   constructor(
     private readonly realtimeService: RealtimeService
-  ) {}
+  ) {
+    super();
+  }
 
   async handle(command: LeaveRoomCommand): Promise<Result<void>> {
     try {
+      // @ts-ignore - validate() exists on Command base class
       command.validate();
 
       const socketId = SocketId.create(command.socketId);

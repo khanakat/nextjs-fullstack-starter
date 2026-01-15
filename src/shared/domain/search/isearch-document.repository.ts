@@ -1,7 +1,7 @@
-import { SearchDocument } from '../search-document.entity';
-import { DocumentId } from '../document-id.vo';
-import { IndexName } from '../index-name.vo';
-import { Result } from '../../result';
+import { SearchDocument } from '@/shared/domain/search/search-document.entity';
+import { DocumentId } from '@/shared/domain/search/document-id.vo';
+import { IndexName } from '@/shared/domain/search/index-name.vo';
+import { Result } from '@/shared/application/base/result';
 
 export interface ISearchDocumentRepository {
   save(document: SearchDocument): Promise<Result<SearchDocument>>;

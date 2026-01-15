@@ -249,6 +249,21 @@ export class ReportConfig extends ValueObject<ReportConfigProps> {
   }
 
   /**
+   * Converts the configuration to a plain JSON object
+   */
+  public toJSON(): Record<string, any> {
+    return {
+      title: this.title,
+      description: this.description,
+      templateId: this.templateId,
+      filters: this.filters,
+      parameters: this.parameters,
+      layout: this.layout.toJSON ? this.layout.toJSON() : this.layout,
+      styling: this.styling.toJSON ? this.styling.toJSON() : this.styling,
+    };
+  }
+
+  /**
    * Creates a default report configuration
    */
   public static createDefault(): ReportConfig {

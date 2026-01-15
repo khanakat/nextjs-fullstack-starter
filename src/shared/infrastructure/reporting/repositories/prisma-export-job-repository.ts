@@ -15,12 +15,10 @@ export class PrismaExportJobRepository implements IExportJobRepository {
         status: data.status,
         filePath: data.filePath,
         downloadUrl: data.downloadUrl,
-        fileUrl: data.fileUrl,
         fileSize: data.fileSize,
         errorMessage: data.errorMessage,
         queueJobId: data.queueJobId,
         completedAt: data.completedAt,
-        updatedAt: new Date(),
       },
       create: {
         id: data.id,
@@ -28,7 +26,6 @@ export class PrismaExportJobRepository implements IExportJobRepository {
         format: data.format,
         status: data.status,
         userId: data.userId,
-        organizationId: data.organizationId,
         options: data.options,
         queueJobId: data.queueJobId,
       },
@@ -110,7 +107,7 @@ export class PrismaExportJobRepository implements IExportJobRepository {
   }
 
   async findByQueueJobId(queueJobId: string): Promise<ExportJob | null> {
-    const record = await this.prisma.exportJob.findUnique({
+    const record = await this.prisma.exportJob.findFirst({
       where: { queueJobId },
       include: {
         report: {

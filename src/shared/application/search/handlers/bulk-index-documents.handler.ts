@@ -1,12 +1,14 @@
-import { CommandHandler } from '../../command-handler.base';
+import { CommandHandler } from '../../base/command-handler';
 import { BulkIndexDocumentsCommand } from '../commands/bulk-index-documents.command';
 import { ISearchService } from '../../../domain/search/isearch.service';
 import { SearchDocument } from '../../../domain/search/search-document.entity';
 import { DocumentId } from '../../../domain/search/document-id.vo';
 import { Result } from '../../base/result';
 
-export class BulkIndexDocumentsHandler implements CommandHandler<BulkIndexDocumentsCommand> {
-  constructor(private searchService: ISearchService) {}
+export class BulkIndexDocumentsHandler extends CommandHandler<BulkIndexDocumentsCommand, SearchDocument[]> {
+  constructor(private searchService: ISearchService) {
+    super();
+  }
 
   async handle(command: BulkIndexDocumentsCommand): Promise<Result<SearchDocument[]>> {
     const documents = command.documents.map((doc) => {

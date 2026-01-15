@@ -1,4 +1,4 @@
-import { ValueObject } from '../value-object.base';
+import { ValueObject } from '@/shared/domain/base';
 
 export type FilterOperator = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'exists';
 
@@ -15,6 +15,10 @@ export interface SearchFilterProps {
 }
 
 export class SearchFilter extends ValueObject<SearchFilterProps> {
+  get props(): SearchFilterProps {
+    return this.value;
+  }
+
   get conditions(): FilterCondition[] {
     return this.props.conditions;
   }
@@ -27,32 +31,13 @@ export class SearchFilter extends ValueObject<SearchFilterProps> {
     super(props);
   }
 
-  static create(props: SearchFilterProps): SearchFilter {
-    if (props.conditions.length === 0) {
+  protected validate(value: SearchFilterProps): void {
+    if (!value.conditions || value.conditions.length === 0) {
       throw new Error('At least one filter condition is required');
     }
+  }
 
-    // Validate conditions
-    for (const condition of props.conditions) {
-      if (!condition.field) {
-        throw new Error('Filter field is required');
-      }
-
-      if (!['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'nin', 'exists'].includes(condition.operator)) {
-        throw new Error(`Invalid filter operator: ${condition.operator}`);
-      }
-
-      if (condition.operator === 'in' || condition.operator === 'nin') {
-        if (!condition.values || condition.values.length === 0) {
-          throw new Error(`Filter operator '${condition.operator}' requires values array`);
-        }
-      } else if (condition.operator !== 'exists') {
-        if (condition.value === undefined) {
-          throw new Error(`Filter operator '${condition.operator}' requires a value`);
-        }
-      }
-    }
-
+  static create(props: SearchFilterProps): SearchFilter {
     return new SearchFilter({
       conditions: props.conditions,
       logic: props.logic || 'AND',

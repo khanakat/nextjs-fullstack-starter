@@ -1,9 +1,9 @@
 import { SearchQuery } from './search-query.vo';
 import { SearchResult } from './search-result.vo';
 import { SearchDocument } from './search-document.entity';
-import { DocumentId } from './document-id.vo';
-import { IndexName } from './index-name.vo';
-import { Result } from '../result';
+import { DocumentId } from '@/shared/domain/search/document-id.vo';
+import { IndexName } from '@/shared/domain/search/index-name.vo';
+import { Result } from '../../application/base/result';
 
 export interface ISearchService {
   // Document operations

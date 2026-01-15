@@ -8,14 +8,13 @@ import { CacheEntry } from '../entities/cache-entry';
 export class CacheEntryCreatedEvent extends DomainEvent {
   constructor(public readonly cacheEntry: CacheEntry) {
     super();
-    this.occurredOn = new Date();
   }
 
   get aggregateId(): string {
     return this.cacheEntry.key.getValue();
   }
 
-  get eventType(): string {
+  getEventName(): string {
     return 'CacheEntryCreated';
   }
 }
@@ -27,14 +26,13 @@ export class CacheEntryCreatedEvent extends DomainEvent {
 export class CacheEntryUpdatedEvent extends DomainEvent {
   constructor(public readonly cacheEntry: CacheEntry) {
     super();
-    this.occurredOn = new Date();
   }
 
   get aggregateId(): string {
     return this.cacheEntry.key.getValue();
   }
 
-  get eventType(): string {
+  getEventName(): string {
     return 'CacheEntryUpdated';
   }
 }
@@ -46,14 +44,13 @@ export class CacheEntryUpdatedEvent extends DomainEvent {
 export class CacheEntryDeletedEvent extends DomainEvent {
   constructor(public readonly cacheEntry: CacheEntry) {
     super();
-    this.occurredOn = new Date();
   }
 
   get aggregateId(): string {
     return this.cacheEntry.key.getValue();
   }
 
-  get eventType(): string {
+  getEventName(): string {
     return 'CacheEntryDeleted';
   }
 }
@@ -65,14 +62,13 @@ export class CacheEntryDeletedEvent extends DomainEvent {
 export class CacheEntryExpiredEvent extends DomainEvent {
   constructor(public readonly cacheEntry: CacheEntry) {
     super();
-    this.occurredOn = new Date();
   }
 
   get aggregateId(): string {
     return this.cacheEntry.key.getValue();
   }
 
-  get eventType(): string {
+  getEventName(): string {
     return 'CacheEntryExpired';
   }
 }
@@ -83,19 +79,18 @@ export class CacheEntryExpiredEvent extends DomainEvent {
  */
 export class CacheInvalidatedEvent extends DomainEvent {
   constructor(
+    public readonly count: number,
     public readonly tag?: string,
-    public readonly pattern?: string,
-    public readonly count: number
+    public readonly pattern?: string
   ) {
     super();
-    this.occurredOn = new Date();
   }
 
   get aggregateId(): string {
     return this.tag || this.pattern || 'global';
   }
 
-  get eventType(): string {
+  getEventName(): string {
     return 'CacheInvalidated';
   }
 }
@@ -107,14 +102,13 @@ export class CacheInvalidatedEvent extends DomainEvent {
 export class CacheClearedEvent extends DomainEvent {
   constructor(public readonly count: number) {
     super();
-    this.occurredOn = new Date();
   }
 
   get aggregateId(): string {
     return 'global';
   }
 
-  get eventType(): string {
+  getEventName(): string {
     return 'CacheCleared';
   }
 }

@@ -1,4 +1,4 @@
-import { DomainEvent } from '../../domain-event.base';
+import { DomainEvent } from '@/shared/domain/base';
 import { SearchQuery } from '../search-query.vo';
 import { SearchResult } from '../search-result.vo';
 
@@ -15,9 +15,13 @@ export class SearchPerformedEvent extends DomainEvent {
   readonly userId?: string;
 
   constructor(props: SearchPerformedEventProps) {
-    super(props.occurredAt);
+    super();
     this.query = props.query;
     this.result = props.result;
     this.userId = props.userId;
+  }
+
+  getEventName(): string {
+    return 'SearchPerformed';
   }
 }

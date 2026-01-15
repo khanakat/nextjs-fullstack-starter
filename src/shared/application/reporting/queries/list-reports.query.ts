@@ -9,16 +9,16 @@ export interface ListReportsQueryProps {
   limit?: number;
 }
 
-export class ListReportsQuery extends Query<ListReportsQueryProps> {
-  readonly userId?: UniqueId;
+export class ListReportsQuery extends Query {
+  readonly filterUserId?: UniqueId;
   readonly organizationId?: UniqueId;
   readonly status?: string;
   readonly page: number;
   readonly limit: number;
 
-  constructor(props: ListReportsQueryProps = {}) {
-    super(props);
-    this.userId = props.userId ? UniqueId.create(props.userId) : undefined;
+  constructor(props: ListReportsQueryProps = {}, userId?: string) {
+    super(userId);
+    this.filterUserId = props.userId ? UniqueId.create(props.userId) : undefined;
     this.organizationId = props.organizationId ? UniqueId.create(props.organizationId) : undefined;
     this.status = props.status;
     this.page = props.page || 1;

@@ -5,11 +5,11 @@ export interface DeleteCommentCommandProps {
   commentId: string;
 }
 
-export class DeleteCommentCommand extends Command<DeleteCommentCommandProps> {
+export class DeleteCommentCommand extends Command {
   readonly commentId: CommentId;
 
-  constructor(props: DeleteCommentCommandProps) {
-    super(props);
+  constructor(props: DeleteCommentCommandProps, userId?: string) {
+    super(userId);
     this.commentId = CommentId.create(props.commentId);
   }
 }

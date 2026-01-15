@@ -5,11 +5,11 @@ export interface ArchiveReportCommandProps {
   reportId: string;
 }
 
-export class ArchiveReportCommand extends Command<ArchiveReportCommandProps> {
+export class ArchiveReportCommand extends Command {
   readonly reportId: UniqueId;
 
-  constructor(props: ArchiveReportCommandProps) {
-    super(props);
+  constructor(props: ArchiveReportCommandProps, userId?: string) {
+    super(userId);
     this.reportId = UniqueId.create(props.reportId);
   }
 }

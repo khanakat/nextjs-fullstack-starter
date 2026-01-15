@@ -33,6 +33,7 @@ export interface ReportTemplateProps {
   layout?: ReportLayout;
   styling?: ReportStyling;
   isSystem: boolean;
+  isPublic: boolean;
   isActive: boolean;
   tags: string[];
   previewImageUrl?: string;
@@ -96,6 +97,7 @@ export class ReportTemplate extends AggregateRoot<UniqueId> {
       layout: normalizedLayout,
       styling: normalizedStyling,
       isSystem: Boolean(props.isSystem),
+      isPublic: Boolean(props.isPublic),
       tags: Array.isArray(props.tags) ? props.tags : [],
       previewImageUrl: props.previewImageUrl,
       createdBy: props.createdBy,
@@ -213,6 +215,10 @@ export class ReportTemplate extends AggregateRoot<UniqueId> {
 
   get isSystem(): boolean {
     return this.props.isSystem;
+  }
+
+  get isPublic(): boolean {
+    return this.props.isPublic;
   }
 
   get isActive(): boolean {

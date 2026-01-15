@@ -9,7 +9,8 @@ export class CredentialService {
   static async storeCredentials(integrationId: string, credentials: any, connectionType: string, organizationId: string) {
     return {
       success: true,
-      connectionId: 'temp-connection-id'
+      connectionId: 'temp-connection-id',
+      error: undefined
     };
   }
 }

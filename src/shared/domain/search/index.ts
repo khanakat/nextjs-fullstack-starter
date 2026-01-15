@@ -1,7 +1,7 @@
 // Value Objects
-export * from './search-id.vo';
-export * from './index-name.vo';
-export * from './document-id.vo';
+export * from '@/shared/domain/search/search-id.vo';
+export * from '@/shared/domain/search/index-name.vo';
+export * from '@/shared/domain/search/document-id.vo';
 export * from './search-query.vo';
 export * from './search-result.vo';
 export * from './search-filter.vo';

@@ -1,4 +1,4 @@
-import { ValueObject } from '../../base/value-object';
+import { ValueObject } from '@/shared/domain/base';
 import { ValidationError } from '../../exceptions/validation-error';
 
 /**

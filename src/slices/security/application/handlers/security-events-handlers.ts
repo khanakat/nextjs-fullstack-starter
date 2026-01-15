@@ -1,24 +1,24 @@
 import { injectable } from 'inversify';
 import { Result } from '@/shared/application/base/result';
-import { ListSecurityEventsQuery } from '../../queries/security-events-queries';
-import { UpdateSecurityEventCommand } from '../../commands/security-events-commands';
-import { SecurityEventDto } from '../../dto';
+import { GetSecurityEventsQuery } from '@/slices/security/application/queries/security-events-queries';
+import { UpdateSecurityEventCommand } from '@/slices/security/application/commands/security-events-commands';
+import { SecurityEventDto } from '@/slices/security/application/dto';
 
 /**
  * List Security Events Handler
  */
 @injectable()
 export class ListSecurityEventsHandler {
-  async handle(query: ListSecurityEventsQuery): Promise<Result<{ events: SecurityEventDto[] }>> {
+  async handle(query: GetSecurityEventsQuery): Promise<Result<{ events: SecurityEventDto[] }>> {
     try {
       const { SecurityService } = await import('@/lib/services/security-service');
 
-      const events = await SecurityService.getSecurityEvents(
+      const result = await SecurityService.getSecurityEvents(
         { organizationId: query.organizationId },
         { page: query.page, limit: query.limit },
       );
 
-      return Result.success({ events });
+      return Result.success({ events: result.events as SecurityEventDto[] });
     } catch (error) {
       return Result.failure(
         error instanceof Error ? error : new Error('Failed to list security events'),
@@ -50,7 +50,7 @@ export class UpdateSecurityEventHandler {
         where: { id: command.eventId },
         data: {
           status: command.resolved ? 'resolved' : 'open',
-          resolvedBy: command.resolved ? command.userId : null,
+          resolvedBy: command.resolved ? command.updaterUserId : null,
           resolvedAt: command.resolved ? new Date() : null,
         },
       });

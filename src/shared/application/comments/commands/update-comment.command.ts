@@ -5,17 +5,17 @@ export interface UpdateCommentCommandProps {
   commentId: string;
   content?: string;
   resolved?: boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
-export class UpdateCommentCommand extends Command<UpdateCommentCommandProps> {
+export class UpdateCommentCommand extends Command {
   readonly commentId: CommentId;
   readonly content?: string;
   readonly resolved?: boolean;
-  readonly metadata?: Record<string, any>;
+  readonly metadata?: Record<string, unknown>;
 
-  constructor(props: UpdateCommentCommandProps) {
-    super(props);
+  constructor(props: UpdateCommentCommandProps, userId?: string) {
+    super(userId);
     this.commentId = CommentId.create(props.commentId);
     this.content = props.content;
     this.resolved = props.resolved;

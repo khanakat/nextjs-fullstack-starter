@@ -132,12 +132,12 @@ export interface ICacheRepository {
   /**
    * Increment a counter value in cache
    */
-  increment(key: CacheKey, amount: number = 1): Promise<number>;
+  increment(key: CacheKey, amount: number): Promise<number>;
 
   /**
    * Decrement a counter value in cache
    */
-  decrement(key: CacheKey, amount: number = 1): Promise<number>;
+  decrement(key: CacheKey, amount: number): Promise<number>;
 
   /**
    * Get and set a value atomically

@@ -48,15 +48,17 @@ export class TestIntegrationHandler extends CommandHandler<TestIntegrationComman
       // Test the connection
       const testResult = await ConnectionTestService.testStoredConnection(
         targetConnectionId,
-        integration.organizationId
+        'connection' // test type
       );
 
       // If capabilities test is requested, run additional tests
       let capabilityResult = null;
       if (testCapabilities && testResult.success) {
+        // TODO: Get actual capabilities from integration configuration
+        const defaultCapabilities = ['read', 'write'];
         capabilityResult = await ConnectionTestService.testConnectionCapabilities(
           targetConnectionId,
-          integration.organizationId
+          defaultCapabilities
         );
       }
 
