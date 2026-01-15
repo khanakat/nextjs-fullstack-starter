@@ -5,12 +5,12 @@ import {
   GetViolationsQuery,
   AuditUserPermissionsQuery,
   GetComplianceReportQuery,
-} from '../../queries/audit-queries';
+} from '@/slices/security/application/queries/audit-queries';
 import {
   ResolveViolationCommand,
   LogPermissionCheckCommand,
   CreateViolationCommand,
-} from '../../commands/audit-commands';
+} from '@/slices/security/application/commands/audit-commands';
 
 /**
  * Get Permission Analytics Handler
@@ -77,7 +77,7 @@ export class AuditUserPermissionsHandler {
       const { getPermissionAuditService } = await import('@/lib/security/permission-audit');
       const auditService = getPermissionAuditService();
 
-      const audit = await auditService.auditUserPermissions(query.userId);
+      const audit = await auditService.auditUserPermissions(query.targetUserId);
 
       return Result.success({ audit });
     } catch (error) {
@@ -123,7 +123,7 @@ export class ResolveViolationHandler {
 
       const resolved = await auditService.resolveViolation(
         command.violationId,
-        command.userId,
+        command.resolverUserId,
         command.resolution,
       );
 
@@ -156,9 +156,9 @@ export class LogPermissionCheckHandler {
       await auditService.logPermissionCheck(
         command.targetUserId,
         command.targetUserEmail,
-        command.targetUserRole,
-        command.resource,
-        command.action,
+        command.targetUserRole as any,
+        command.resource as any,
+        command.action as any,
         command.granted,
         command.context,
       );

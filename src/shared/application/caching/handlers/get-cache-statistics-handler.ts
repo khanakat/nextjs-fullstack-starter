@@ -35,9 +35,9 @@ export class GetCacheStatisticsHandler implements IQueryHandler<GetCacheStatisti
         stats.totalMisses,
         stats.hitRate,
         stats.memoryUsage,
+        Object.fromEntries(stats.entriesByTag),
         stats.oldestEntry,
-        stats.newestEntry,
-        Object.fromEntries(stats.entriesByTag.entries())
+        stats.newestEntry
       );
 
       return Result.success(dto);

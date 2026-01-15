@@ -1,9 +1,9 @@
-import { ICacheRepository } from '../repositories/cache-repository';
+import { ICacheRepository, CacheStatistics } from '../repositories/cache-repository';
 import { CacheEntry } from '../entities/cache-entry';
 import { CacheKey } from '../value-objects/cache-key';
 import { CacheTTL } from '../value-objects/cache-ttl';
 import { CacheTag } from '../value-objects/cache-tag';
-import { Result } from '../../../application/result';
+import { Result } from '@/shared/application/base/result';
 
 /**
  * Cache Service

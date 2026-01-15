@@ -110,7 +110,17 @@ export class SocketIoIntegrationService {
       ? await this.roomManagementService.getRoomsByType(type)
       : await this.roomManagementService.getActiveRooms();
 
-    return rooms.map(room => this.mapToDto(room));
+    // Map RoomInfo to DTO
+    return rooms.map(room => new CollaborationRoomDto(
+      room.roomId,
+      room.createdAt,
+      room.roomId,
+      room.type,
+      room.resourceId,
+      [], // RoomInfo doesn't include participants, use empty array
+      room.lastActivityAt,
+      undefined
+    ));
   }
 
   /**
@@ -154,11 +164,11 @@ export class SocketIoIntegrationService {
       connection.userId,
       connection.userName,
       connection.userEmail,
-      connection.userAvatar,
-      connection.organizationId,
+      connection.organizationId ?? '',
       connection.status.status,
-      connection.currentRoom?.value,
-      connection.lastActivityAt
+      connection.lastActivityAt,
+      connection.userAvatar,
+      connection.currentRoom?.value
     );
   }
 

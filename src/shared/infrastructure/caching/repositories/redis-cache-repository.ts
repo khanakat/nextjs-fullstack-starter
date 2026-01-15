@@ -130,7 +130,7 @@ export class RedisCacheRepository implements ICacheRepository {
 
     if (criteria.tags && criteria.tags.length > 0) {
       results = results.filter(entry =>
-        entry.hasAnyTag(criteria.tags)
+        entry.hasAnyTag(criteria.tags ?? [])
       );
     }
 

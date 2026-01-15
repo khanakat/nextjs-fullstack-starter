@@ -325,7 +325,7 @@ export class TemplatesController {
       const command = new DeleteTemplateCommand(templateId, userId);
 
       // Execute command
-      const result = await this.templateManagementUseCase.deleteTemplate(command);
+      const result = await this.templateManagementUseCase.deleteTemplate(templateId, userId);
       
       if (!result.isSuccess) {
         return NextResponse.json(

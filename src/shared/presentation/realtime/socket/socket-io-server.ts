@@ -1,4 +1,4 @@
-import { Server as SocketIOServer, Socket } from 'socket.io';
+import { Server as SocketIOServerType, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { injectable, inject } from 'inversify';
 import { SocketIoIntegrationService } from '../../../infrastructure/realtime/socket/socket-io-integration';
@@ -11,7 +11,7 @@ import { RoomType } from '../../../domain/realtime/value-objects/room-type';
  */
 @injectable()
 export class SocketIOServer {
-  private io: SocketIOServer | null = null;
+  private io: SocketIOServerType | null = null;
   private readonly CONNECTION_TIMEOUT = 30000; // 30 seconds
 
   constructor(
@@ -27,7 +27,7 @@ export class SocketIOServer {
       return;
     }
 
-    this.io = new SocketIOServer(httpServer, {
+    this.io = new SocketIOServerType(httpServer, {
       cors: {
         origin: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
         methods: ['GET', 'POST'],
@@ -63,6 +63,7 @@ export class SocketIOServer {
       }) => {
         try {
           const connectionInfo: RealtimeConnectionInfo = {
+            socketId: socket.id,
             userId: data.userId,
             userName: data.userName,
             userEmail: data.userEmail,
@@ -99,7 +100,7 @@ export class SocketIOServer {
               // Notify others in the room
               socket.to(room.roomId.value).emit('user-joined', {
                 roomId: room.roomId.value,
-                user: room.getParticipants().find(p => p.socketId === socket.id),
+                user: room.getParticipants().find((p: any) => p.socketId === socket.id),
               });
 
               socket.emit('room-joined', {
@@ -152,9 +153,10 @@ export class SocketIOServer {
       });
 
       // Handle custom events for room communication
-      socket.on('room-message', (data: { roomId: string; message: any }) => {
+      socket.on('room-message', (data: { roomId: string; message: unknown }) => {
         socket.to(data.roomId).emit('room-message', {
-          ...data,
+          roomId: data.roomId,
+          message: data.message,
           senderSocketId: socket.id,
         });
       });
@@ -191,14 +193,14 @@ export class SocketIOServer {
   /**
    * Get Socket.IO server instance
    */
-  public getServer(): SocketIOServer | null {
+  public getServer(): SocketIOServerType | null {
     return this.io;
   }
 
   /**
    * Broadcast message to all connected clients
    */
-  public broadcast(event: string, data: any): void {
+  public broadcast(event: string, data: unknown): void {
     if (this.io) {
       this.io.emit(event, data);
     }
@@ -207,7 +209,7 @@ export class SocketIOServer {
   /**
    * Broadcast message to a specific room
    */
-  public broadcastToRoom(roomId: string, event: string, data: any): void {
+  public broadcastToRoom(roomId: string, event: string, data: unknown): void {
     if (this.io) {
       this.io.to(roomId).emit(event, data);
     }
@@ -216,7 +218,7 @@ export class SocketIOServer {
   /**
    * Send message to a specific socket
    */
-  public sendToSocket(socketId: string, event: string, data: any): void {
+  public sendToSocket(socketId: string, event: string, data: unknown): void {
     if (this.io) {
       this.io.to(socketId).emit(event, data);
     }

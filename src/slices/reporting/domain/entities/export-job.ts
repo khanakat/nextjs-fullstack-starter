@@ -37,7 +37,7 @@ export interface ExportJobProps {
   updatedAt?: Date;
 }
 
-export class ExportJob extends Entity<ExportJobProps> {
+export class ExportJob extends Entity<UniqueId> {
   private readonly reportId: string;
   private readonly format: ExportFormat;
   private status: ExportJobStatus;
@@ -51,9 +51,11 @@ export class ExportJob extends Entity<ExportJobProps> {
   private errorMessage?: string;
   private queueJobId?: string;
   private completedAt?: Date;
+  private createdAt?: Date;
+  private updatedAt?: Date;
 
-  private constructor(props: ExportJobProps) {
-    super(props.id || UniqueId.generate());
+  private constructor(id: UniqueId, props: ExportJobProps) {
+    super(id);
     this.reportId = props.reportId;
     this.format = props.format;
     this.status = props.status;
@@ -67,10 +69,12 @@ export class ExportJob extends Entity<ExportJobProps> {
     this.errorMessage = props.errorMessage;
     this.queueJobId = props.queueJobId;
     this.completedAt = props.completedAt;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
   }
 
   static create(props: ExportJobProps): ExportJob {
-    return new ExportJob(props);
+    return new ExportJob(props.id || UniqueId.generate(), props);
   }
 
   // Getters
@@ -124,6 +128,14 @@ export class ExportJob extends Entity<ExportJobProps> {
 
   getCompletedAt(): Date | undefined {
     return this.completedAt;
+  }
+
+  getCreatedAt(): Date | undefined {
+    return this.createdAt;
+  }
+
+  getUpdatedAt(): Date | undefined {
+    return this.updatedAt;
   }
 
   // Business logic methods

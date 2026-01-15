@@ -48,7 +48,7 @@ export class RealtimeController extends BaseController {
         body.userId,
         body.userName,
         body.userEmail,
-        body.userAvatar,
+        body.userAvatar ?? '',
         body.organizationId
       );
 

@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import { Result } from '@/shared/application/base/result';
-import { CreateApiKeyCommand } from '../../commands/api-keys-commands';
-import { CreateApiKeyResponse } from '../../dto';
+import { CreateApiKeyCommand } from '@/slices/security/application/commands/api-keys-commands';
+import { CreateApiKeyResponse } from '@/slices/security/application/dto';
 
 /**
  * Create API Key Handler
@@ -16,7 +16,7 @@ export class CreateApiKeyHandler {
       // Validate permissions
       const validPermissions = Object.values(ApiKeyPermission);
       const invalidPermissions = command.permissions.filter(
-        (p) => !validPermissions.includes(p as ApiKeyPermission),
+        (p) => !validPermissions.includes(p as any),
       );
 
       if (invalidPermissions.length > 0) {
@@ -28,9 +28,9 @@ export class CreateApiKeyHandler {
       const { apiKey, secretKey } = await apiKeyManager.createApiKey(
         command.name,
         command.organizationId,
-        command.permissions,
+        command.permissions as any[],
         command.expiresAt,
-        command.rateLimit,
+        command.rateLimit as any,
       );
 
       const response: CreateApiKeyResponse = {

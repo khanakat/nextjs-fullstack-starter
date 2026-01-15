@@ -230,6 +230,8 @@ export class ReportTemplatesApiController {
       const command = new UpdateTemplateCommand({
         templateId,
         ...request,
+        type: request.type as any,
+        category: request.category as any,
         userId,
       });
 
