@@ -7,10 +7,17 @@ import { NextRequest } from 'next/server';
 import { DIContainer } from '@/shared/infrastructure/di/container';
 import { TYPES } from '@/shared/infrastructure/di/types';
 
-const getController = () => {
-  return DIContainer.get<any>(TYPES.MobileApiController);
-};
+// Prevent prerendering - this route requires runtime dependencies
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  return getController().getVapidKey(request);
+  try {
+    const controller = DIContainer.get<any>(TYPES.MobileApiController);
+    return controller.getVapidKey(request);
+  } catch (error) {
+    return Response.json(
+      { error: 'Failed to get VAPID key' },
+      { status: 500 }
+    );
+  }
 }
